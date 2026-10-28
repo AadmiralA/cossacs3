@@ -310,6 +310,129 @@ end;
 // _player_UpdateFOW
 '@
 $player = ReplaceOnce $player (FormatLines $playerMarker $nlPlayer) (FormatLines $playerAddon $nlPlayer) 'AI artillery access gate'
+# Gold-only crisis, without ANY passive unit gold maintenance:
+# - zero gold triggers once per shortage episode (track using existing gPlayer.brebellion)
+# - unformed nonbuilding units all defect to the native mercenary (hostile) faction
+# - exactly one 25% chance roll PER FORMED SQUAD (not per soldier)
+# - gold restoration rearms the next crisis
+# - new mechanic only in single-player; multiplayer uses native behavior
+$playerStart = @'
+procedure _player_ProcessResourceConsume(const plInd : Integer; const deltatime : Float);
+begin
+'@
+$playerStartNew = @'
+procedure _player_ProcessResourceConsume(const plInd : Integer; const deltatime : Float);
+begin
+   // Previous tick's crisis flag survives native resource bookkeeping.
+   var ovrWasGoldCrisis : Boolean = gPlayer[plInd].brebellion;
+'@
+$player = ReplaceOnce $player (FormatLines $playerStart $nlPlayer) (FormatLines $playerStartNew $nlPlayer) 'Gold crisis state capture'
+$playerFinish = @'
+   if (gPlayer[plInd].bfamine) and ((not gPlayer[plInd].res[gc_resource_type_food]>0) or (gPlayer[plInd].counter.resconsume[gc_resource_type_food]<=0)) then
+   gPlayer[plInd].bfamine := False;
+end;
+
+// _player_CheckAccessControlRequirements
+'@
+$playerFinishNew = @'
+   if (gPlayer[plInd].bfamine) and ((not gPlayer[plInd].res[gc_resource_type_food]>0) or (gPlayer[plInd].counter.resconsume[gc_resource_type_food]<=0)) then
+   gPlayer[plInd].bfamine := False;
+
+   // Gameplay Overhaul: no gold is a morale crisis, not a recurring payroll bill.
+   // The native mercenary mutiny is suppressed in offline unit ticks to avoid
+   // adding repeated per-unit rolls on top of our once-per-crisis formation draw.
+   if (_net_IsOffline) and (plInd<>gc_player_mercenaryind) then
+   begin
+      var ovrNowGoldCrisis : Boolean = gPlayer[plInd].res[gc_resource_type_gold]<=0;
+      if ovrNowGoldCrisis and (not ovrWasGoldCrisis) and
+         ((gInterface.gamemode=gc_gamemode_game) or (gInterface.gamemode=gc_gamemode_spectator)) then
+      begin
+         var ovrMercHnd : Integer = GetPlayerHandleByIndex(gc_player_mercenaryind);
+         var ovrPlHnd : Integer = GetPlayerHandleByIndex(plInd);
+         var ovrFormedSquads : Integer = 0;
+         var ovrRebelSquads : Integer = 0;
+         var ovrRebelSoldiers : Integer = 0;
+         var ovrRebelUnformed : Integer = 0;
+         var ovrS, ovrJ, ovrI : Integer;
+
+         // One roll per genuine regiment, not per soldier and not every tick.
+         for ovrS:=gPlayer[plInd].squads.GetCount-1 downto 0 do
+         begin
+            var ovrSquad : Pointer = gPlayer[plInd].squads.Get(ovrS);
+            if ovrSquad<>nil then
+            if TSquad(ovrSquad).fFormation>=0 then
+            begin
+               ovrFormedSquads := ovrFormedSquads+1;
+               if RandomExt<0.25 then
+               begin
+                  ovrRebelSquads := ovrRebelSquads+1;
+                  Log('OVDIAG GOLD_SQUAD_REVOLT pl='+IntToStr(plInd)+' squad='+IntToStr(ovrS)+' members='+IntToStr(TSquad(ovrSquad).GetCount));
+                  for ovrJ:=TSquad(ovrSquad).GetCount-1 downto 0 do
+                  begin
+                     var ovrSquadUnitHnd : Integer = TSquad(ovrSquad).Get(ovrJ);
+                     if ovrSquadUnitHnd<>0 then
+                     begin
+                        _misc_ChangePlayer(ovrSquadUnitHnd, ovrMercHnd, False, False, True);
+                        ovrRebelSoldiers := ovrRebelSoldiers+1;
+                     end;
+                  end;
+               end;
+            end;
+         end;
+
+         // All remaining *unformed* units (including workers) switch sides.
+         // Formed non-rebellious squads remain intact; structures never defect.
+         for ovrI:=GetPlayerGameObjectsCountByHandle(ovrPlHnd)-1 downto 0 do
+         begin
+            var ovrUnitHnd : Integer = GetGameObjectHandleByIndex(ovrI, ovrPlHnd);
+            if ovrUnitHnd<>0 then
+            begin
+               var ovrObj : Pointer = _unit_GetTObj(ovrUnitHnd);
+               if ovrObj<>nil then
+               if (not TObj(ovrObj).bdead) and (TObj(ovrObj).insideofuid=0) then
+               begin
+                  var ovrUnitProp : Pointer = gObjProp[TObj(ovrObj).cid][TObj(ovrObj).id];
+                  if (ovrUnitProp<>nil) and (not TObjProp(ovrUnitProp).bbuilding) then
+                  begin
+                     var ovrFormed : Boolean = False;
+                     if TObj(ovrObj).squad>=0 then
+                     begin
+                        var ovrUnitSquad : Pointer = gPlayer[plInd].squads.Get(TObj(ovrObj).squad);
+                        if ovrUnitSquad<>nil then
+                        ovrFormed := TSquad(ovrUnitSquad).fFormation>=0;
+                     end;
+                     if not ovrFormed then
+                     begin
+                        _misc_ChangePlayer(ovrUnitHnd, ovrMercHnd, False, False, True);
+                        ovrRebelUnformed := ovrRebelUnformed+1;
+                     end;
+                  end;
+               end;
+            end;
+         end;
+         Log('OVDIAG GOLD_CRISIS pl='+IntToStr(plInd)+
+             ' formedSquads='+IntToStr(ovrFormedSquads)+
+             ' rebelSquads='+IntToStr(ovrRebelSquads)+
+             ' rebelFormedUnits='+IntToStr(ovrRebelSoldiers)+
+             ' rebelUnformedUnits='+IntToStr(ovrRebelUnformed));
+      end;
+      if (not ovrNowGoldCrisis) and ovrWasGoldCrisis then
+      Log('OVDIAG GOLD_RECOVERED pl='+IntToStr(plInd)+' gold='+IntToStr(gPlayer[plInd].res[gc_resource_type_gold]));
+      gPlayer[plInd].brebellion := ovrNowGoldCrisis;
+   end;
+end;
+
+// _player_CheckAccessControlRequirements
+'@
+$player = ReplaceOnce $player (FormatLines $playerFinish $nlPlayer) (FormatLines $playerFinishNew $nlPlayer) 'One-off zero-gold rebellion'
+
+# Stop the original random *per-mercenary* offline revolt from triggering
+# repeatedly while our player crisis flag is set. Online original unchanged.
+$nativeRevolt = '      [*] = ;         if (gPlayer[plInd].brebellion) and (TObjProp(pobjprop).bmercenary) and (plInd<>gc_player_mercenaryind) and (bplayable) then'
+$offlineRevolt = '      [*] = ;         if (not _net_IsOffline) and (gPlayer[plInd].brebellion) and (TObjProp(pobjprop).bmercenary) and (plInd<>gc_player_mercenaryind) and (bplayable) then'
+$tick = ReplaceOnce $tick $nativeRevolt $offlineRevolt 'Suppress duplicate offline native mercenary rebellion'
+
+
 
 # Commit outputs only after validating all anchors. A failed run can leave v7 outputs
 # from the underlying generator, but it never overwrites original source files.
