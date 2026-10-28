@@ -105,7 +105,7 @@ $spawnProbe=@'
 $initial=ReplaceOnce $initial $spawnAnchor ((Lines $spawnProbe $ni)+$ni+$spawnAnchor) 'Relevant unit spawn config'
 
 $initCav='      [*] = ;   SetGameObjectMyTrackPointMoveStep(0.03*arg_obj.cavalrySpeedFraction);'
-$initCavLog="      [*] = ;   Log('OVDIAG CAV_INIT sid='+basename+' player='+IntToStr(arg_obj.pl)+' squad='+IntToStr(arg_obj.squad)+' step='+FloatToStr(0.03*arg_obj.cavalrySpeedFraction));"
+$initCavLog="      [*] = ;   Log('OVDIAG CAV_INIT hnd='+IntToStr(myHnd)+' sid='+basename+' time='+FloatToStr(GetGameTime)+' player='+IntToStr(arg_obj.pl)+' squad='+IntToStr(arg_obj.squad)+' step='+FloatToStr(0.03*arg_obj.cavalrySpeedFraction));"
 $initial=ReplaceOnce $initial $initCav ($initCav+$ni+$initCavLog) 'Cavalry initialization'
 $initGun="      [*] = ;SetGameObjectMyTrackPointMoveStep(0.018);"
 $initGunReplacement=@'
@@ -124,24 +124,24 @@ $nt=Newline $tick
 $movingAnchor='      [*] = ;            if cavMoving then'
 $stateLog=@'
       [*] = ;            if (progresstick mod 64=0) then
-      [*] = ;            Log('OVDIAG CAV_STATE sid='+TObjProp(pobjprop).sid+' squad='+IntToStr(arg_obj.squad)+' formed='+BoolToStr(cavFormed)+' moving='+BoolToStr(cavMoving)+' baseSpeed='+FloatToStr(arg_obj.cavalrySpeedFraction)+' chargeSpeed='+FloatToStr(arg_obj.cavalryChargeBoost)+' t='+FloatToStr(gametime));
+      [*] = ;            Log('OVDIAG CAV_STATE hnd='+IntToStr(myHnd)+' sid='+TObjProp(pobjprop).sid+' squad='+IntToStr(arg_obj.squad)+' formed='+BoolToStr(cavFormed)+' moving='+BoolToStr(cavMoving)+' baseSpeed='+FloatToStr(arg_obj.cavalrySpeedFraction)+' chargeSpeed='+FloatToStr(arg_obj.cavalryChargeBoost)+' effectiveFactor='+FloatToStr(arg_obj.cavalrySpeedFraction*arg_obj.cavalryChargeBoost)+' t='+FloatToStr(gametime));
       [*] = ;            if cavMoving and (not cavFormed) and (progresstick mod 64=0) then
-      [*] = ;            Log('OVDIAG CAV_BLOCK reason=NO_FORMATION sid='+TObjProp(pobjprop).sid+' squad='+IntToStr(arg_obj.squad));
+      [*] = ;            Log('OVDIAG CAV_BLOCK reason=NO_FORMATION hnd='+IntToStr(myHnd)+' sid='+TObjProp(pobjprop).sid+' squad='+IntToStr(arg_obj.squad));
 '@
 $tick=ReplaceOnce $tick $movingAnchor ((Lines $stateLog $nt)+$nt+$movingAnchor) 'Cavalry periodic motion and formation'
 
 $targetCheck='      [*] = ;                              if cavFront>0.70 then'
 $targetLog=@'
       [*] = ;                              if (progresstick mod 64=0) then
-      [*] = ;                              Log('OVDIAG CAV_ENEMY target='+TObjProp(cavProp).sid+' distance='+FloatToStr(cavDist)+' direction='+FloatToStr(cavFront)+' formed='+BoolToStr(cavFormed));
+      [*] = ;                              Log('OVDIAG CAV_ENEMY hnd='+IntToStr(myHnd)+' target='+TObjProp(cavProp).sid+' distance='+FloatToStr(cavDist)+' direction='+FloatToStr(cavFront)+' formed='+BoolToStr(cavFormed));
 '@
 $tick=ReplaceOnce $tick $targetCheck ((Lines $targetLog $nt)+$nt+$targetCheck) 'Cavalry target search'
 $blockAnchor='      [*] = ;                                 if (not cavIsPike) then'
 $pikeLog=@'
       [*] = ;                                 if cavIsPike and (cavDist<4) and (progresstick mod 32=0) then
-      [*] = ;                                 Log('OVDIAG CAV_BLOCK reason=PIKES target='+TObjProp(cavProp).sid+' distance='+FloatToStr(cavDist));
+      [*] = ;                                 Log('OVDIAG CAV_BLOCK reason=PIKES hnd='+IntToStr(myHnd)+' target='+TObjProp(cavProp).sid+' distance='+FloatToStr(cavDist));
       [*] = ;                                 if (not cavIsPike) and (cavDist<4) and (progresstick mod 32=0) then
-      [*] = ;                                 Log('OVDIAG CAV_CONTACT target='+TObjProp(cavProp).sid+' formed='+BoolToStr(cavEnemyFormed)+' distance='+FloatToStr(cavDist)+' speed='+FloatToStr(arg_obj.cavalrySpeedFraction)+' cooldownUntil='+FloatToStr(arg_obj.cavalryLastHitTime+5));
+      [*] = ;                                 Log('OVDIAG CAV_CONTACT hnd='+IntToStr(myHnd)+' target='+TObjProp(cavProp).sid+' formed='+BoolToStr(cavEnemyFormed)+' distance='+FloatToStr(cavDist)+' speed='+FloatToStr(arg_obj.cavalrySpeedFraction)+' cooldownUntil='+FloatToStr(arg_obj.cavalryLastHitTime+5));
 '@
 $tick=ReplaceOnce $tick $blockAnchor ((Lines $pikeLog $nt)+$nt+$blockAnchor) 'Pike and contact reasons'
 
@@ -151,15 +151,15 @@ $tick=ReplaceOnce $tick $chargeOld ($boostPre+$nt+$chargeOld) 'Speed boost prior
 $boostNew='      [*] = ;            SetGameObjectMyTrackPointMoveStep(0.03*arg_obj.cavalrySpeedFraction*arg_obj.cavalryChargeBoost);'
 $boostPost=@'
       [*] = ;            if (cavBoostWas<1.5) and (arg_obj.cavalryChargeBoost>=1.5) then
-      [*] = ;            Log('OVDIAG CAV_BOOST_START sid='+TObjProp(pobjprop).sid+' boost='+FloatToStr(arg_obj.cavalryChargeBoost));
+      [*] = ;            Log('OVDIAG CAV_BOOST_START hnd='+IntToStr(myHnd)+' sid='+TObjProp(pobjprop).sid+' boost='+FloatToStr(arg_obj.cavalryChargeBoost));
       [*] = ;            if (cavBoostWas<2.4) and (arg_obj.cavalryChargeBoost>=2.4) then
-      [*] = ;            Log('OVDIAG CAV_BOOST_MAX sid='+TObjProp(pobjprop).sid+' boost='+FloatToStr(arg_obj.cavalryChargeBoost));
+      [*] = ;            Log('OVDIAG CAV_BOOST_MAX hnd='+IntToStr(myHnd)+' sid='+TObjProp(pobjprop).sid+' boost='+FloatToStr(arg_obj.cavalryChargeBoost));
       [*] = ;            if (cavBoostWas>1.05) and (arg_obj.cavalryChargeBoost<=1.05) then
-      [*] = ;            Log('OVDIAG CAV_BOOST_END sid='+TObjProp(pobjprop).sid);
+      [*] = ;            Log('OVDIAG CAV_BOOST_END hnd='+IntToStr(myHnd)+' sid='+TObjProp(pobjprop).sid);
 '@
 $tick=ReplaceOnce $tick $boostNew ($boostNew+$nt+(Lines $boostPost $nt)) 'Cavalry boost transitions'
 $chargeTrigger="      [*] = ;                                       Log('CavalryCharge HIT damage='+IntToStr(cavHit)+' target='+TObjProp(cavProp).sid+' dist='+FloatToStr(cavDist));"
-$chargeExtra="      [*] = ;                                       Log('OVDIAG CAV_HIT_CHECK attacker='+TObjProp(pobjprop).sid+' target='+TObjProp(cavProp).sid+' targetHP='+IntToStr(TObj(cavObj).hp)+' formedTarget='+BoolToStr(cavEnemyFormed)+' facing='+FloatToStr(cavFront)+' boost='+FloatToStr(arg_obj.cavalryChargeBoost)+' raw='+IntToStr(cavHit));"
+$chargeExtra="      [*] = ;                                       Log('OVDIAG CAV_HIT_CHECK hnd='+IntToStr(myHnd)+' attacker='+TObjProp(pobjprop).sid+' target='+TObjProp(cavProp).sid+' targetHP='+IntToStr(TObj(cavObj).hp)+' formedTarget='+BoolToStr(cavEnemyFormed)+' facing='+FloatToStr(cavFront)+' boost='+FloatToStr(arg_obj.cavalryChargeBoost)+' raw='+IntToStr(cavHit));"
 $tick=ReplaceOnce $tick $chargeTrigger ($chargeExtra+$nt+$chargeTrigger) 'Cavalry impact detail'
 
 # E) Bot artillery production: trace actual orders and ownership-limit refusal.
