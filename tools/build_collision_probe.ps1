@@ -35,7 +35,9 @@ $probe = @'
          end;
 '@
 
-$nl = if ($original.Contains("\`r\`n")) { "\`r\`n" } else { "\`n" }
+$crlf = [string][char]13 + [string][char]10
+$lf = [string][char]10
+$nl = if ($original.Contains($crlf)) { $crlf } else { $lf }
 $normalizedProbe = ($probe -split '\r?\n') -join $nl
 $patched = $original.Replace($anchor, $anchor + $nl + $normalizedProbe)
 
