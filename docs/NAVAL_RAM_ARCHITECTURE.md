@@ -47,3 +47,15 @@ The build script preserves original bytes where possible, does not modify refere
 - tools/ : generators and diagnostics.
 - No modifications to cossacks.exe.
 - The repository was publicly visible during review. Consider switching visibility to Private before storing additional original assets.
+
+## Diagnostic v2 interpretation (2026-10-28)
+
+The generator now produces TWO derived files: `mod/data/scripts/lib/miscext.script` and `mod/data/scripts/units/unit.inc/initial.inc`. Deploy both into the enabled mod.
+
+- `NavalRamming INIT ship=galley`: the overridden initializer was loaded and a galley was created. If missing after spawning a new ship, first check enabled-mod priority and the deployed file path.
+- `NavalRamming CALLBACK ship=galley`: the engine called `_misc_Collided` on a water unit. This may be reported even when the other collider is not an enemy vessel.
+- `NavalRamming PROBE ship=galley target=galley`: the collision counterpart passed the existing playability checks, both were water units and they were on enemy teams according to the in-game mask.
+
+Absence of CALLBACK with INIT present means the event did not reach the callback during the test; it is not proof that the game has no native ship collision detection. Check the collision rules, order/pathing and how the ships were steered before changing the approach. Logs can be verbose; do not leave the diagnostic enabled in normal play.
+
+The user's latest log with the mod disabled still shows approximately 95 seconds in LoadFromStreamProject, so a mod-specific slowdown has not been demonstrated. Investigate loading time separately.
