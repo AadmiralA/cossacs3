@@ -34,3 +34,7 @@ After the game closes, upload `cos_*.log` or `overhaul_report.txt` from `%LOCALA
 ## Validation status
 
 This code has been edited in GitHub and is statically checked. **The actual physical movement in the game and the effect of disabling animation-cycle movement have not yet been verified.** Restore the backup from the latest run if horses stop moving or their animations become broken. The old max 0.03 and 4–6 second ramp can be restored from earlier commits.
+
+## Update: smaller charge
+
+The formed heavy cavalry charge cap is now 1.5x (previously 2.5x), and the enemy detection radius is 8.4 (previously 12; 30% smaller). The regular horse acceleration still takes 1 second and the normal top step stays 0.045. The expected maximum charge step is 0.0675. Full diagnostic logs and the analyzer now use the 1.5x cap.
