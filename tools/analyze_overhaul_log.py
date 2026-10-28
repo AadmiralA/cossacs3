@@ -16,18 +16,20 @@ GROUPS = {
     "Applied combat / reduced damage": ["OVDIAG DAMAGE_GLOBAL", "OVDIAG HP_APPLY", "OVDIAG RELOAD"],
     "Artillery / buildings configuration": ["OVDIAG CONFIG_SPAWN", "OVDIAG GUN_INIT", "OVDIAG MORTAR_MEMBER_DISABLED"],
     "AI artillery": ["OVDIAG AI_ORDER", "OVDIAG AI_ART_LIMIT"],
+    "Gold crisis and regiment defection": ["OVDIAG GOLD_SQUAD_REVOLT", "OVDIAG GOLD_CRISIS", "OVDIAG GOLD_RECOVERED"],
 }
+# User explicitly canceled these. Do not put them back into the active backlog.
+CANCELED = [
+    "Physical breakthrough of three musket lines",
+    "AoE2-style fortress construction",
+    "Depleting stone deposits",
+    "Automatic regiment retreat after 85% losses",
+]
 OUT_OF_SCOPE = [
-    "Physical knockback through three rows",
-    "Full pike-formation collision wall",
     "Two human crew required for cannon/howitzer",
     "Improved cannon/ship pathfinding and inertia on stop",
-    "Depleting stone resources",
-    "Fortress building with art/production",
     "Eight actual guns in an upgraded tower",
-    "Once-per-minute soldier gold upkeep and mass mutiny",
     "Faster starvation deaths",
-    "85% casualties automatic retreat",
 ]
 def report(text):
     lines=text.splitlines()
@@ -128,6 +130,8 @@ def report(text):
                 parts.append(f"  Measured charge/normal speed ratio: {boost/normal:.2f}x")
         parts.append("  Note: turning, collisions and congestion affect displacement; "
                      "use long straight paths for comparable speeds.")
+    parts.append("\nCANCELED BY USER (not a development target):")
+    parts.extend("  - "+s for s in CANCELED)
     parts.append("\nNOT IMPLEMENTED in phase 1 (no logs can validate these):")
     parts.extend("  - "+s for s in OUT_OF_SCOPE)
     parts.append("\nTip: on a small offline test map generate the diagnostic build "
