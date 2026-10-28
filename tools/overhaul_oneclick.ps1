@@ -142,6 +142,8 @@ if (-not $initial.Contains('SetGameObjectMyTrackPointUseAnimationCycles(false)')
 if (-not $initial.Contains('SetGameObjectMyTrackPointMoveStep(0.045*arg_obj.cavalrySpeedFraction)')) { throw 'PRECHECK cavalry base speed failed' }
 $motion = [System.IO.File]::ReadAllText((Join-Path $sourceDir 'scripts\units\unit.inc\nothing.inc'), $latin)
 if (-not $motion.Contains('cavStartTime : Float = 1;')) { throw 'PRECHECK cavalry 1-second acceleration failed' }
+if (-not $motion.Contains('cavDesiredBoost := 1.5;')) { throw 'PRECHECK mounted charge cap 1.5 missing' }
+if (-not $motion.Contains('_misc_MakeListObjectsInRadius(cavX, cavZ, 8.4,')) { throw 'PRECHECK cavalry charge detection radius 8.4 missing' }
 if (-not $motion.Contains('0.045*arg_obj.cavalrySpeedFraction*arg_obj.cavalryChargeBoost')) { throw 'PRECHECK mounted charge step failed' }
 if (-not $damage.Contains('pOverhaulNoFormation')) { throw 'PRECHECK formation damage failed' }
 if (-not $damage.Contains('OVDIAG HP_APPLY')) { throw 'PRECHECK HP logger failed' }
