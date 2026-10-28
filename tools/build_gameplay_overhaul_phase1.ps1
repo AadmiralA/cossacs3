@@ -64,8 +64,8 @@ $uPost = @'
 $u = ReplaceOnce $u '      // post processing' ((FormatLines $uPost $nlU) + $nlU + '      // post processing') 'Unit postprocessing'
 $pausePattern = '      TObj(pobj).attackdelay := attpause;'
 $pauseInsert = @'
-      // Units outside a real formation fire 35% slower (where base attack pause >0).
-      if (not TObjProp(pobjprop).bbuilding) and (attpause>0) then
+      // Only land combat units outside a formation fire 35% slower (ships and artillery cannot form squads).
+      if (not TObjProp(pobjprop).bbuilding) and (TObjProp(pobjprop).media<>gc_obj_media_water) and (not TObjProp(pobjprop).bArtillery) and (attpause>0) then
       begin
          var pActualFormation : Pointer = nil;
          if TObj(pobj).squad>=0 then
@@ -84,7 +84,7 @@ $d = LoadText (Join-Path $root 'reference\scripts\lib\miscext2.script')
 $nlD = GetNL $d
 $dInsert = @'
             // Gameplay Overhaul phase1: reduce damage from mobile attackers to 62.5%.
-            // Units without an actual formation additionally lose 35% of this damage.
+            // Land troops without an actual formation additionally lose 35%. Ships and artillery are exempt.
             // Healing and damage not attributed to a living attacker stay unchanged.
             if (pobj<>nil) and (weapkind<>gc_obj_weapon_kind_heal) then
             begin
@@ -95,10 +95,10 @@ $dInsert = @'
                   var pOverhaulSquad : Pointer = nil;
                   if TObj(pobj).squad>=0 then
                   pOverhaulSquad := gPlayer[TObj(pobj).pl].squads.Get(TObj(pobj).squad);
-                  if (pOverhaulSquad=nil) then
+                  if (pOverhaulSquad=nil) and (TObjProp(pOverhaulAttackerProp).media<>gc_obj_media_water) and (not TObjProp(pOverhaulAttackerProp).bArtillery) then
                   damage := Max(1, Round(damage*0.65))
                   else
-                  if TSquad(pOverhaulSquad).fFormation<0 then
+                  if (TSquad(pOverhaulSquad).fFormation<0) and (TObjProp(pOverhaulAttackerProp).media<>gc_obj_media_water) and (not TObjProp(pOverhaulAttackerProp).bArtillery) then
                   damage := Max(1, Round(damage*0.65));
                end;
             end;
