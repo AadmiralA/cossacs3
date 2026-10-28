@@ -84,6 +84,7 @@ class GeneratedModTests(unittest.TestCase):
         self.assertNotIn(
             "upgplace+'.24', 1, gc_upg_tooltiptype_none, gc_upg_type_effectstoneperc, 200,",
             country)
+        self.assertIn("OVDIAG STONE_CART_CFG upgrade=24 bonus=100", country)
 
     def test_cavalry_and_spawn_tracing(self):
         initial = self.read("scripts/units/unit.inc/initial.inc")
