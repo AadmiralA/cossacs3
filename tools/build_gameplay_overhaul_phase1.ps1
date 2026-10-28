@@ -216,7 +216,7 @@ $tickInsert = @'
       [*] = ;            if cavIsHeavy and cavFormed and cavMoving and (gametime<arg_obj.cavalryThreatUntil) then
       [*] = ;            cavDesiredBoost := 2.5;
       [*] = ;            if arg_obj.cavalryChargeBoost<cavDesiredBoost then
-      [*] = ;            arg_obj.cavalryChargeBoost := MinFloat(cavDesiredBoost, arg_obj.cavalryChargeBoost+MaxFloat(0, deltatime)*0.5)
+      [*] = ;            arg_obj.cavalryChargeBoost := Clamp(arg_obj.cavalryChargeBoost+MaxFloat(0, deltatime)*0.5, 1, cavDesiredBoost)
       [*] = ;            else
       [*] = ;            arg_obj.cavalryChargeBoost := MaxFloat(cavDesiredBoost, arg_obj.cavalryChargeBoost-MaxFloat(0, deltatime)*0.75);
       [*] = ;            SetGameObjectMyTrackPointMoveStep(0.03*arg_obj.cavalrySpeedFraction*arg_obj.cavalryChargeBoost);
