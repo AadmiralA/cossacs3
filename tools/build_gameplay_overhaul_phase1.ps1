@@ -133,18 +133,21 @@ $nlC = GetNL $c
 $c = ReplaceOnce $c "      _country_AddMember(country, 'mortar', ind, True, gc_country_editorplace_category_artillery, 30, gc_ai_unit_mortar);" '      // Gameplay Overhaul: no standalone mortar unit.' 'mortar country member'
 $c = ReplaceOnce $c "      _country_AddFixedProduceWithAccessControl(country, fixedproduceind, member, 'mortar', 3, 0, ind, csid+'bla'{, csid+'sta'}, '', '');" '      // Gameplay Overhaul: no mortar production.' 'mortar artillery depot'
 
-# Start cavalry movement with a slow walk, and artillery with lower maximum movement.
+# Start cavalry at 50% of a faster 0.045 movement step; artillery remains slowed.
 $init = LoadText $outInitial
 $nlI = GetNL $init
 $initInsert = @'
       [*] = ;// Gameplay Overhaul phase1: movement for horses and artillery.
       [*] = ;if (gObjProp[arg_obj.cid][arg_obj.id].usage=gc_obj_usage_hardhorse) or (gObjProp[arg_obj.cid][arg_obj.id].usage=gc_obj_usage_fasthorse) or (gObjProp[arg_obj.cid][arg_obj.id].usage=gc_obj_usage_horseshooter) then
       [*] = ;begin
-      [*] = ;   arg_obj.cavalrySpeedFraction := 0.35;
+      [*] = ;   arg_obj.cavalrySpeedFraction := 0.50;
       [*] = ;   arg_obj.cavalryChargeBoost := 1;
       [*] = ;   arg_obj.cavalryThreatUntil := -10000;
       [*] = ;   arg_obj.cavalryLastHitTime := -10000;
-      [*] = ;   SetGameObjectMyTrackPointMoveStep(0.03*arg_obj.cavalrySpeedFraction);
+      [*] = ;   // Cavalry speed in the game is otherwise tied to animation cycles.
+      [*] = ;   // Use positional movement so dynamic MoveStep affects real ground speed.
+      [*] = ;   SetGameObjectMyTrackPointUseAnimationCycles(false);
+      [*] = ;   SetGameObjectMyTrackPointMoveStep(0.045*arg_obj.cavalrySpeedFraction);
       [*] = ;end;
       [*] = ;if (basename='cannon') or (basename='howitzer') then
       [*] = ;SetGameObjectMyTrackPointMoveStep(0.006);
@@ -153,7 +156,7 @@ $init = ReplaceOnce $init '      [*] = ;SwitchTo(''Nothing'');' ((FormatLines $i
 
 # Charging: only formed mounted groups; heavy cavalry receives a 2.5x temporary
 # MOVEMENT multiplier around enemies, reached smoothly. Initial mount acceleration
-# is 4s light / 6s heavy. One first-impact hit per mount per cooldown.
+# is 1 game-time second for ALL cavalry. One first-impact hit per mount per cooldown.
 $tick = LoadText $outTick
 $nlT = GetNL $tick
 $tickInsert = @'
@@ -169,12 +172,11 @@ $tickInsert = @'
       [*] = ;            if cavSquad<>nil then
       [*] = ;            cavFormed := TSquad(cavSquad).fFormation>=0;
       [*] = ;            var cavIsHeavy : Boolean = TObjProp(pobjprop).usage=gc_obj_usage_hardhorse;
-      [*] = ;            var cavStartTime : Float = 4;
-      [*] = ;            if cavIsHeavy then cavStartTime := 6;
+      [*] = ;            var cavStartTime : Float = 1;
       [*] = ;            if cavMoving then
-      [*] = ;            arg_obj.cavalrySpeedFraction := Clamp(arg_obj.cavalrySpeedFraction+MaxFloat(0, deltatime)*0.65/cavStartTime, 0.35, 1.0)
+      [*] = ;            arg_obj.cavalrySpeedFraction := Clamp(arg_obj.cavalrySpeedFraction+MaxFloat(0, deltatime)*0.50/cavStartTime, 0.50, 1.0)
       [*] = ;            else
-      [*] = ;            arg_obj.cavalrySpeedFraction := 0.35;
+      [*] = ;            arg_obj.cavalrySpeedFraction := 0.50;
       [*] = ;
       [*] = ;            if cavMoving and cavFormed and (progresstick mod 4=0) then
       [*] = ;            begin
@@ -238,10 +240,10 @@ $tickInsert = @'
       [*] = ;            if cavIsHeavy and cavFormed and cavMoving and (gametime<arg_obj.cavalryThreatUntil) then
       [*] = ;            cavDesiredBoost := 2.5;
       [*] = ;            if arg_obj.cavalryChargeBoost<cavDesiredBoost then
-      [*] = ;            arg_obj.cavalryChargeBoost := Clamp(arg_obj.cavalryChargeBoost+MaxFloat(0, deltatime)*0.5, 1, cavDesiredBoost)
+      [*] = ;            arg_obj.cavalryChargeBoost := Clamp(arg_obj.cavalryChargeBoost+MaxFloat(0, deltatime)*1.5, 1, cavDesiredBoost)
       [*] = ;            else
-      [*] = ;            arg_obj.cavalryChargeBoost := MaxFloat(cavDesiredBoost, arg_obj.cavalryChargeBoost-MaxFloat(0, deltatime)*0.75);
-      [*] = ;            SetGameObjectMyTrackPointMoveStep(0.03*arg_obj.cavalrySpeedFraction*arg_obj.cavalryChargeBoost);
+      [*] = ;            arg_obj.cavalryChargeBoost := MaxFloat(cavDesiredBoost, arg_obj.cavalryChargeBoost-MaxFloat(0, deltatime)*1.5);
+      [*] = ;            SetGameObjectMyTrackPointMoveStep(0.045*arg_obj.cavalrySpeedFraction*arg_obj.cavalryChargeBoost);
       [*] = ;         end;
 '@
 $tick = ReplaceOnce $tick '      [*] = ;         _misc_DoProgressOrders(myHnd, bfindbestpos);' ((FormatLines $tickInsert $nlT) + $nlT + '      [*] = ;         _misc_DoProgressOrders(myHnd, bfindbestpos);') 'Cavalry progress hook'
