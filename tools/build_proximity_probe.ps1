@@ -1,4 +1,4 @@
-# NavalRamming proximity probe v4. Does not deal damage.
+# NavalRamming proximity probe v5. Does not deal damage.
 # Generates local mod files from reference/ without changing original files.
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -28,10 +28,10 @@ $unitNl = Source-Newline $unitOriginal
 $initialNl = Source-Newline $initialOriginal
 
 # Called on the authoritative offline game loop, not on the unreliable ship collision callback.
-# The probe scans galleys once per 32 ticks and only logs nearby ENEMY vessels.
+# The probe scans galleys once per 32 ticks, filters for enemy ships, and measures bow alignment using virtual direction.
 $unitAnchor = '      [*] = ;         _misc_DoProgressOrders(myHnd, bfindbestpos);'
 $unitProbe = @'
-      [*] = ;         // NavalRamming V4: enemy-only proximity and correct hull-forward direction.
+      [*] = ;         // NavalRamming V5: correct bow alignment based on observed movement (frontVirt).
       [*] = ;         if (_net_IsOffline) and (bplayable) and (not arg_obj.bdead) and (TObjProp(pobjprop).sid='galley') and (progresstick mod 32=0) then
       [*] = ;         begin
       [*] = ;            var ramX : Float = GetGameObjectMyPositionX;
@@ -62,14 +62,14 @@ $unitProbe = @'
       [*] = ;                        if ramDistance>0.001 then
       [*] = ;                        begin
       [*] = ;                           var ramContact : Float = TObjProp(pobjprop).radius+TObjProp(ramTargetProp).radius;
-      [*] = ;                           // Cossacks 3 stores hull heading in upX/upZ, not dirX/dirZ.
+      [*] = ;                           // Both heading vectors are logged; tests show virtual direction points toward the approaching target.
       [*] = ;                           var ramFront : Float = (ramUpX*ramDX+ramUpZ*ramDZ)/ramDistance;
       [*] = ;                           var ramFrontVirt : Float = (ramVirtX*ramDX+ramVirtZ*ramDZ)/ramDistance;
       [*] = ;                           var ramMove : Integer = GetGameObjectMyTrackPointMovementModeInt;
       [*] = ;                           Log('NavalRamming ENEMY_NEAR dist='+FloatToStr(ramDistance)+' contact='+FloatToStr(ramContact)+' frontUp='+FloatToStr(ramFront)+' frontVirt='+FloatToStr(ramFrontVirt)+' moving='+IntToStr(ramMove));
-      [*] = ;                           if (ramMove<>0) and (ramFront>0.65) and (ramDistance<=ramContact+3) then
+      [*] = ;                           if (ramMove<>0) and (ramFrontVirt>0.65) and (ramDistance<=ramContact+3) then
       [*] = ;                           Log('NavalRamming APPROACH dist='+FloatToStr(ramDistance)+' target='+TObjProp(ramTargetProp).sid);
-      [*] = ;                           if (ramMove<>0) and (ramFront>0.65) and (ramDistance<=ramContact+0.5) then
+      [*] = ;                           if (ramMove<>0) and (ramFrontVirt>0.65) and (ramDistance<=ramContact+0.5) then
       [*] = ;                           Log('NavalRamming RAM_CANDIDATE ship=galley target='+TObjProp(ramTargetProp).sid);
       [*] = ;                        end;
       [*] = ;                     end;
@@ -94,7 +94,7 @@ $outInitial = Join-Path $root 'mod\data\scripts\units\unit.inc\initial.inc'
 New-Item -ItemType Directory -Path (Split-Path -Parent $outUnit) -Force | Out-Null
 [System.IO.File]::WriteAllText($outUnit, $unitPatched, $enc)
 [System.IO.File]::WriteAllText($outInitial, $initialPatched, $enc)
-Write-Host 'NavalRamming proximity probe v4 generated (NO DAMAGE):'
+Write-Host 'NavalRamming proximity probe v5 generated (NO DAMAGE):'
 Write-Host $outUnit
 Write-Host $outInitial
 Write-Host 'Copy BOTH files to mods/NavalRamming/data/scripts/units/unit.inc/'
