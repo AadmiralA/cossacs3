@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarize game logs without mistaking missing diagnostics for failed mechanics.
+r"""Summarize game logs without mistaking missing diagnostics for failed mechanics.
 
 Usage: python tools/analyze_overhaul_log.py "C:\path\cos_....log"
 Python 3 standard library only. Also accepts older pre-OVDIAG logs.
@@ -100,13 +100,13 @@ def report(text):
             distance = ((new[1]-old[1])**2 + (new[2]-old[2])**2)**0.5
             factor_before, factor_after = old[3], new[3]
             # Transition intervals are NOT steady charge intervals: counting
-            # 1.0 -> 2.5 as full boost underestimates observed peak speed.
+            # 1.0 -> 1.5 as full boost underestimates observed peak speed.
             category = ("initial <0.75x"
                         if max(factor_before, factor_after) < 0.75 else
                         "normal ~1x"
                         if 0.95 <= min(factor_before, factor_after)
                         and max(factor_before, factor_after) <= 1.10 else
-                        "charge >1.7x"
+                        "charge >1.3x"
                         if min(factor_before, factor_after) > 1.7 else
                         "transition")
             motion[category].append(distance / dt)
@@ -114,16 +114,16 @@ def report(text):
         parts.append("\nREAL CAVALRY GROUND SPEED (coordinate distance / game-time unit):")
         parts.append("  Unique sampled cavalry objects: "+str(len(by_handle)))
         for category in ("initial <0.75x", "normal ~1x",
-                         "charge >1.7x", "transition"):
+                         "charge >1.3x", "transition"):
             speeds = motion[category]
             if speeds:
                 mean = sum(speeds)/len(speeds)
                 parts.append(f"  {category}: mean={mean:.4f}, max={max(speeds):.4f}, samples={len(speeds)}")
             else:
                 parts.append(f"  {category}: NOT MEASURED")
-        if motion["normal ~1x"] and motion["charge >1.7x"]:
+        if motion["normal ~1x"] and motion["charge >1.3x"]:
             normal = sum(motion["normal ~1x"])/len(motion["normal ~1x"])
-            boost = sum(motion["charge >1.7x"])/len(motion["charge >1.7x"])
+            boost = sum(motion["charge >1.3x"])/len(motion["charge >1.3x"])
             if normal > 0:
                 parts.append(f"  Measured charge/normal speed ratio: {boost/normal:.2f}x")
         parts.append("  Note: turning, collisions and congestion affect displacement; "
