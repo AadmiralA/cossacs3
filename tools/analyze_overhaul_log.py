@@ -62,15 +62,15 @@ def report(text):
             parts.append(f"  {sid}: {hp}")
     old_config_count=sum("OVDIAG CONFIG sid=" in line for line in lines)
     if old_config_count:
-        parts.append("\\nDIAGNOSTIC SPAM WARNING: "
+        parts.append("\nDIAGNOSTIC SPAM WARNING: "
                      +str(old_config_count)
                      +" old prototype CONFIG lines, not actual new units. "
                      +"Rebuild with the latest diagnostics generator to use CONFIG_SPAWN.")
     hp_events=[line for line in lines if "OVDIAG HP_APPLY" in line]
-    charge_events=[line for line in hp_events if "requested=500000" in line and "attacker=cuirassier" in line]
+    charge_events=[line for line in hp_events if "requested=500000" in line]
     ship_events=[line for line in hp_events if "requested=8000" in line and "attacker=galley" in line]
     if hp_events:
-        parts.append("\\nVERIFIED HP CHANGES (not merely attack triggers):")
+        parts.append("\nVERIFIED HP CHANGES (not merely attack triggers):")
         parts.append("  All logged HP_APPLY events: "+str(len(hp_events)))
         parts.append("  Raw 500,000 cavalry charges with HP changes: "+str(len(charge_events)))
         parts.append("  Raw 8,000 galley rams with HP changes: "+str(len(ship_events)))
