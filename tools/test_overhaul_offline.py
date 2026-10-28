@@ -92,6 +92,21 @@ class LogAnalyzerTests(unittest.TestCase):
         self.assertIn("Raw 500,000 cavalry charges with HP changes: 1", report)
         self.assertIn("OVDIAG AI_ART_LIMIT: NOT OBSERVED (unknown)", report)
 
+    def test_real_cavalry_ground_speed_measurements(self):
+        lines = []
+        for t, x, boost in ((0, 0, 1), (1, 2, 1), (2, 3, 2.5), (3, 8, 2.5)):
+            lines.append(
+                f"LOG| OVDIAG CAV_STATE hnd=123 sid=cuirassier "
+                f"moving=True baseSpeed=1 chargeSpeed={boost} "
+                f"effectiveFactor={boost} step={0.045*boost} "
+                f"x={x} z=0 t={t}"
+            )
+        result = analyze_overhaul_log.report("\\n".join(lines))
+        self.assertIn("REAL CAVALRY GROUND SPEED", result)
+        self.assertIn("normal ~1x: mean=2.0000", result)
+        self.assertIn("charge >1.7x: mean=5.0000", result)
+        self.assertIn("Measured charge/normal speed ratio: 2.50x", result)
+
 
 if __name__ == "__main__":
     unittest.main()
