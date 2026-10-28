@@ -59,6 +59,32 @@ class GeneratedModTests(unittest.TestCase):
         self.assertIn("OVDIAG HP_APPLY", damage)
         self.assertIn("bArtillery", unit)
 
+    def test_gold_maintenance_disabled_and_once_per_crisis_revolt(self):
+        units = self.read("scripts/lib/unit.script")
+        player = self.read("scripts/lib/player.script")
+        tick = self.read("scripts/units/unit.inc/nothing.inc")
+        self.assertIn("objprop.consume[gc_resource_type_gold] := 0;", units)
+        self.assertIn("ovrWasGoldCrisis", player)
+        self.assertIn("if RandomExt<0.25 then", player)
+        self.assertIn("OVDIAG GOLD_SQUAD_REVOLT", player)
+        self.assertIn("OVDIAG GOLD_CRISIS", player)
+        self.assertIn("OVDIAG GOLD_RECOVERED", player)
+        self.assertIn("gPlayer[plInd].brebellion := ovrNowGoldCrisis;", player)
+        self.assertIn("_misc_ChangePlayer(ovrUnitHnd, ovrMercHnd", player)
+        self.assertIn("if (not _net_IsOffline) and (gPlayer[plInd].brebellion)", tick)
+
+    def test_second_stone_cart_upgrade_reduced(self):
+        country = self.read("scripts/lib/country.script")
+        self.assertIn(
+            "upgplace+'.23', 1, gc_upg_tooltiptype_none, gc_upg_type_effectstoneperc, 100,",
+            country)
+        self.assertIn(
+            "upgplace+'.24', 1, gc_upg_tooltiptype_none, gc_upg_type_effectstoneperc, 100,",
+            country)
+        self.assertNotIn(
+            "upgplace+'.24', 1, gc_upg_tooltiptype_none, gc_upg_type_effectstoneperc, 200,",
+            country)
+
     def test_cavalry_and_spawn_tracing(self):
         initial = self.read("scripts/units/unit.inc/initial.inc")
         tick = self.read("scripts/units/unit.inc/nothing.inc")
