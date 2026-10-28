@@ -95,11 +95,14 @@ $dInsert = @'
                   var pOverhaulSquad : Pointer = nil;
                   if TObj(pobj).squad>=0 then
                   pOverhaulSquad := gPlayer[TObj(pobj).pl].squads.Get(TObj(pobj).squad);
-                  if (pOverhaulSquad=nil) and (TObjProp(pOverhaulAttackerProp).media<>gc_obj_media_water) and (not TObjProp(pOverhaulAttackerProp).bArtillery) then
-                  damage := Max(1, Round(damage*0.65))
-                  else
-                  if (TSquad(pOverhaulSquad).fFormation<0) and (TObjProp(pOverhaulAttackerProp).media<>gc_obj_media_water) and (not TObjProp(pOverhaulAttackerProp).bArtillery) then
-                  damage := Max(1, Round(damage*0.65));
+                  if (TObjProp(pOverhaulAttackerProp).media<>gc_obj_media_water) and (not TObjProp(pOverhaulAttackerProp).bArtillery) then
+                  begin
+                     if (pOverhaulSquad=nil) then
+                     damage := Max(1, Round(damage*0.65))
+                     else
+                     if TSquad(pOverhaulSquad).fFormation<0 then
+                     damage := Max(1, Round(damage*0.65));
+                  end;
                end;
             end;
 '@
