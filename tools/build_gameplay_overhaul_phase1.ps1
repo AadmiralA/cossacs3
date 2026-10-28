@@ -49,10 +49,7 @@ $g = ReplaceOnce $g '      navalLastRamTime = Float' ('      navalLastRamTime = 
 $u = LoadText (Join-Path $root 'reference\scripts\lib\unit.script')
 $nlU = GetNL $u
 $uPost = @'
-      // Gameplay Overhaul: no passive gold upkeep for soldiers/ships/cannons.
-      // Gold purchase prices and upgrade costs remain unchanged.
-      if (not objprop.bbuilding) then
-      objprop.consume[gc_resource_type_gold] := 0;
+      // Keep ORIGINAL gold upkeep (only vanilla unit types that paid it).
       // Gameplay Overhaul phase1: selected combat, movement and durability modifiers.
       if objprop.usage=gc_obj_usage_tower then
       objbase.maxhp := objbase.maxhp*3;
@@ -72,17 +69,17 @@ $uPost = @'
 $u = ReplaceOnce $u '      // post processing' ((FormatLines $uPost $nlU) + $nlU + '      // post processing') 'Unit postprocessing'
 $pausePattern = '      TObj(pobj).attackdelay := attpause;'
 $pauseInsert = @'
-      // Only land combat units outside a formation fire 35% slower (ships and artillery cannot form squads).
+      // Unformed land troops fire 15% slower; ships/artillery remain exempt.
       if (not TObjProp(pobjprop).bbuilding) and (TObjProp(pobjprop).media<>gc_obj_media_water) and (not TObjProp(pobjprop).bArtillery) and (attpause>0) then
       begin
          var pActualFormation : Pointer = nil;
          if TObj(pobj).squad>=0 then
          pActualFormation := gPlayer[TObj(pobj).pl].squads.Get(TObj(pobj).squad);
          if (pActualFormation=nil) then
-         attpause := attpause/0.65
+         attpause := attpause/0.85
          else
          if TSquad(pActualFormation).fFormation<0 then
-         attpause := attpause/0.65;
+         attpause := attpause/0.85;
       end;
 '@
 $u = ReplaceOnce $u $pausePattern ((FormatLines $pauseInsert $nlU) + $nlU + $pausePattern) 'Formation reload penalty'
@@ -91,16 +88,17 @@ $u = ReplaceOnce $u $pausePattern ((FormatLines $pauseInsert $nlU) + $nlU + $pau
 $d = LoadText (Join-Path $root 'reference\scripts\lib\miscext2.script')
 $nlD = GetNL $d
 $dInsert = @'
-            // Gameplay Overhaul phase1: reduce damage from mobile attackers to 62.5%.
-            // Mark unformed land troops; reduce final damage AFTER target protection (otherwise armor magnifies the penalty).
+            // Gameplay Overhaul: class/formation damage logic applies AFTER target armor.
+            // Record genuine formations for a 20% offensive/defensive bonus.
             // Healing and damage not attributed to a living attacker stay unchanged.
             var pOverhaulNoFormation : Boolean = False;
+            var pOverhaulFormed : Boolean = False;
             if (pobj<>nil) and (weapkind<>gc_obj_weapon_kind_heal) then
             begin
                var pOverhaulAttackerProp : Pointer = gObjProp[TObj(pobj).cid][TObj(pobj).id];
                if (not TObjProp(pOverhaulAttackerProp).bbuilding) then
                begin
-                  damage := Max(1, Round(damage*0.625));
+                  // Global reduction has moved after shield, formation defense, armor and headshot calculation.
                   var pOverhaulSquad : Pointer = nil;
                   if TObj(pobj).squad>=0 then
                   pOverhaulSquad := gPlayer[TObj(pobj).pl].squads.Get(TObj(pobj).squad);
@@ -110,7 +108,9 @@ $dInsert = @'
                      pOverhaulNoFormation := True
                      else
                      if TSquad(pOverhaulSquad).fFormation<0 then
-                     pOverhaulNoFormation := True;
+                     pOverhaulNoFormation := True
+                     else
+                     pOverhaulFormed := True;
                   end;
                end;
             end;
@@ -119,8 +119,38 @@ $d = ReplaceOnce $d '            var damage : Integer = indamage;' ('           
 # Additional 35% no-formation debuff belongs AFTER flat shield and armor;
 # applying it to raw damage made musketeer damage drop from 5 to 1 instead of 5 to ~3.
 $noFormationAfterDefense = @'
-                        if pOverhaulNoFormation then
-                        damage := Max(1, Round(damage*0.65));
+                        // Protect balance: always apply all multipliers to post-armor damage.
+                        // Preserve the original per-unit gold and healing behavior.
+                        if (pobj<>nil) and (not TObjProp(pOverhaulAttackerProp).bbuilding) then
+                        begin
+                           damage := Max(1, Round(damage*0.625)); // standard damage ÷1.6
+                           if pOverhaulNoFormation then
+                           damage := Max(1, Round(damage*0.80)); // unformed land troop: -20%
+                           if pOverhaulFormed then
+                           damage := Max(1, Round(damage*1.20)); // formed land troop: +20%
+                           var ovrHorseAttacker : Boolean = (TObjProp(pOverhaulAttackerProp).usage=gc_obj_usage_fasthorse) or
+                              (TObjProp(pOverhaulAttackerProp).usage=gc_obj_usage_hardhorse) or
+                              (TObjProp(pOverhaulAttackerProp).usage=gc_obj_usage_horseshooter);
+                           var ovrHorseDefender : Boolean = (TObjProp(pobjprop2).usage=gc_obj_usage_fasthorse) or
+                              (TObjProp(pobjprop2).usage=gc_obj_usage_hardhorse) or
+                              (TObjProp(pobjprop2).usage=gc_obj_usage_horseshooter);
+                           var ovrInfantryPikeAttacker : Boolean = (TObjProp(pOverhaulAttackerProp).usage=gc_obj_usage_lightinfantry) and
+                              (weapkind=gc_obj_weapon_kind_pike);
+                           var ovrInfantryPikeDefender : Boolean = (TObjProp(pobjprop2).usage=gc_obj_usage_lightinfantry) and
+                              (TObjProp(pobjprop2).weapon[0].kind=gc_obj_weapon_kind_pike);
+                           // Anti-cavalry role: pike infantry is dangerous to mounted units.
+                           if ovrInfantryPikeAttacker and ovrHorseDefender then
+                           damage := Max(1, Round(damage*1.50));
+                           if ovrHorseAttacker and ovrInfantryPikeDefender and (weapkind<>gc_obj_weapon_kind_bullet) then
+                           damage := Max(1, Round(damage*0.75));
+                        end;
+                        // A genuine formed LAND regiment survives 20% more damage.
+                        // Equivalent to +20% effective HP without modifying actual HP stats.
+                        if (pSquad2<>nil) and (not TObjProp(pobjprop2).bbuilding) and
+                           (TObjProp(pobjprop2).media<>gc_obj_media_water) and
+                           (not TObjProp(pobjprop2).bArtillery) then
+                        if TSquad(pSquad2).fFormation>=0 then
+                        damage := Max(1, Round(damage/1.20));
 '@
 $defenseProcAnchor = '                        if (bHeadShot) then'+$nlD+
                      '                        damage := damage+floor(TObj(pobj).uniqrnd*500);'
