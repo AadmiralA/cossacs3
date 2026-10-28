@@ -107,11 +107,11 @@ $initial=ReplaceOnce $initial $spawnAnchor ((Lines $spawnProbe $ni)+$ni+$spawnAn
 $initCav='      [*] = ;   SetGameObjectMyTrackPointMoveStep(0.03*arg_obj.cavalrySpeedFraction);'
 $initCavLog="      [*] = ;   Log('OVDIAG CAV_INIT hnd='+IntToStr(myHnd)+' sid='+basename+' time='+FloatToStr(GetGameTime)+' player='+IntToStr(arg_obj.pl)+' squad='+IntToStr(arg_obj.squad)+' step='+FloatToStr(0.03*arg_obj.cavalrySpeedFraction));"
 $initial=ReplaceOnce $initial $initCav ($initCav+$ni+$initCavLog) 'Cavalry initialization'
-$initGun="      [*] = ;SetGameObjectMyTrackPointMoveStep(0.018);"
+$initGun="      [*] = ;SetGameObjectMyTrackPointMoveStep(0.006);"
 $initGunReplacement=@'
       [*] = ;begin
-      [*] = ;   SetGameObjectMyTrackPointMoveStep(0.018);
-      [*] = ;   Log('OVDIAG GUN_INIT sid='+basename+' step=0.018');
+      [*] = ;   SetGameObjectMyTrackPointMoveStep(0.006);
+      [*] = ;   Log('OVDIAG GUN_INIT sid='+basename+' step=0.006');
       [*] = ;end;
 '@
 $initial=ReplaceOnce $initial $initGun (Lines $initGunReplacement $ni) 'Artillery movement init'
