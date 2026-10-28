@@ -108,15 +108,6 @@ $initial=ReplaceOnce $initial $initGun (Lines $initGunReplacement $ni) 'Artiller
 # pike detection, charge boost, trigger and resulting applied damage.
 $tick=ReadMod 'scripts\units\unit.inc\nothing.inc'
 $nt=Newline $tick
-$probes=@(
-    @('            if cavMoving then',
-      @'
-      [*] = ;            if (progresstick mod 64=0) then
-      [*] = ;            Log('OVDIAG CAV_STATE sid='+TObjProp(pobjprop).sid+' squad='+IntToStr(arg_obj.squad)+' formed='+BoolToStr(cavFormed)+' moving='+BoolToStr(cavMoving)+' baseSpeed='+FloatToStr(arg_obj.cavalrySpeedFraction)+' chargeSpeed='+FloatToStr(arg_obj.cavalryChargeBoost)+' t='+FloatToStr(gametime));
-'@,
-      'Cavalry periodic state'),
-    @('      [*] = ;            if cavMoving then', '', '')
-)
 # Unique anchors in stage-1 injected text.
 $movingAnchor='      [*] = ;            if cavMoving then'
 $stateLog=@'
@@ -163,9 +154,12 @@ $tick=ReplaceOnce $tick $chargeTrigger ($chargeExtra+$nt+$chargeTrigger) 'Cavalr
 $ai=ReadMod 'scripts\units\global.inc\progresseconomicai.inc'
 $na=Newline $ai
 foreach ($sid in @('cannon','howitzer')) {
-    $anchor="      [*] = ;      _ai_TryUnit(plind, cid, gc_ai_unit_$sid, ordercount, False);"
-    $log="      [*] = ;      if ordercount>0 then Log('OVDIAG AI_ORDER sid=$sid count='+IntToStr(ordercount)+' player='+IntToStr(plind));"
-    $ai=ReplaceOnce $ai $anchor ($log+$na+$anchor) "AI $sid order trace"
+    $anchor="      [*] = ;      if (curcount<" + "$" + "{sid}_count) then"
+    $call="      [*] = ;      _ai_TryUnit(plind, cid, gc_ai_unit_$sid, ordercount, False);"
+    $old=$anchor+$na+$call
+    $log="      [*] = ;         if ordercount>0 then Log('OVDIAG AI_ORDER sid=$sid count='+IntToStr(ordercount)+' player='+IntToStr(plind));"
+    $new=$anchor+$na+'      [*] = ;      begin'+$na+$log+$na+$call+$na+'      [*] = ;      end;'
+    $ai=ReplaceOnce $ai $old $new "AI $sid order trace"
 }
 
 $player=ReadMod 'scripts\lib\player.script'
