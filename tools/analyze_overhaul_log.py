@@ -98,10 +98,16 @@ def report(text):
             if dt < 0.15 or dt > 5 or not (old[4] and new[4]):
                 continue
             distance = ((new[1]-old[1])**2 + (new[2]-old[2])**2)**0.5
-            factor = (old[3]+new[3])/2
-            category = ("initial <0.75x" if factor < 0.75 else
-                        "normal ~1x" if 0.95 <= factor <= 1.10 else
-                        "charge >1.7x" if factor > 1.7 else
+            factor_before, factor_after = old[3], new[3]
+            # Transition intervals are NOT steady charge intervals: counting
+            # 1.0 -> 2.5 as full boost underestimates observed peak speed.
+            category = ("initial <0.75x"
+                        if max(factor_before, factor_after) < 0.75 else
+                        "normal ~1x"
+                        if 0.95 <= min(factor_before, factor_after)
+                        and max(factor_before, factor_after) <= 1.10 else
+                        "charge >1.7x"
+                        if min(factor_before, factor_after) > 1.7 else
                         "transition")
             motion[category].append(distance / dt)
     if by_handle:
