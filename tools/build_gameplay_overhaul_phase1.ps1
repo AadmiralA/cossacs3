@@ -224,9 +224,28 @@ $tickInsert = @'
 '@
 $tick = ReplaceOnce $tick '      [*] = ;         _misc_DoProgressOrders(myHnd, bfindbestpos);' ((FormatLines $tickInsert $nlT) + $nlT + '      [*] = ;         _misc_DoProgressOrders(myHnd, bfindbestpos);') 'Cavalry progress hook'
 
+# AI artillery cap: at most 10 artillery across cannon/howitzer/mortar/multi-barrel
+# in the normal AI economy production plan. Not a hard global ownership cap.
+$outAI = Join-Path $root 'mod\data\scripts\units\global.inc\progresseconomicai.inc'
+$ai = LoadText (Join-Path $root 'reference\scripts\units\global.inc\progresseconomicai.inc')
+$nlAI = GetNL $ai
+$ai = ReplaceOnce $ai '      [*] = ;   var cannon_count : integer = ClampInt(num_depo*6, 6, 30);' '      [*] = ;   var cannon_count : integer = 10;' 'AI artillery cannon quota'
+$ai = ReplaceOnce $ai '      [*] = ;      howitzer_count := ClampInt(num_depo*2, 2, 8);' '      [*] = ;      howitzer_count := 10;' 'AI howitzer quota'
+$aiMortar = @'
+      [*] = ;      var curcount : Integer = _ai_GetUnitCountAnyFaction(plind, gc_ai_unit_mortar);
+      [*] = ;      var ordercount : Integer = Min(num_depo_my_cid, mortar_count-curcount-ordered_mortar_count);
+      [*] = ;      ordercount := Max(ordercount, 0);
+      [*] = ;      ordered_mortar_count := ordered_mortar_count+ordercount;
+      [*] = ;      if (curcount<mortar_count) then
+      [*] = ;      _ai_TryUnit(plind, cid, gc_ai_unit_mortar, ordercount, False);
+'@
+$ai = ReplaceOnce $ai (FormatLines $aiMortar $nlAI) ('      [*] = ;      var curcount : Integer;' + $nlAI + '      [*] = ;      var ordercount : Integer;') 'AI mortar production'
+$ai = ReplaceOnce $ai '      [*] = ;      ordercount := Min(num_depo_my_cid*2, cannon_count-curcount-ordered_cannon_count);' '      [*] = ;      ordercount := Min(num_depo_my_cid*2, 10-_ai_GetUnitCountAnyFaction(plind, gc_ai_unit_cannon)-_ai_GetUnitCountAnyFaction(plind, gc_ai_unit_howitzer)-_ai_GetUnitCountAnyFaction(plind, gc_ai_unit_mortar)-_ai_GetUnitCountAnyFaction(plind, gc_ai_unit_mbarrel)-ordered_cannon_count-ordered_howitzer_count);' 'AI combined cannon quota'
+$ai = ReplaceOnce $ai '      [*] = ;      ordercount := Min(2, howitzer_count-curcount-ordered_howitzer_count);' '      [*] = ;      ordercount := Min(2, 10-_ai_GetUnitCountAnyFaction(plind, gc_ai_unit_cannon)-_ai_GetUnitCountAnyFaction(plind, gc_ai_unit_howitzer)-_ai_GetUnitCountAnyFaction(plind, gc_ai_unit_mortar)-_ai_GetUnitCountAnyFaction(plind, gc_ai_unit_mbarrel)-ordered_cannon_count-ordered_howitzer_count);' 'AI combined howitzer quota'
+
 # Commit outputs only after validating all anchors. A failed run can leave v7 outputs
 # from the underlying generator, but it never overwrites original source files.
-foreach ($target in @($outUnit, $outDamage, $outCountry)) {
+foreach ($target in @($outUnit, $outDamage, $outCountry, $outAI)) {
     New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
 }
 [System.IO.File]::WriteAllText($outGlobal, $g, $enc)
@@ -235,12 +254,14 @@ foreach ($target in @($outUnit, $outDamage, $outCountry)) {
 [System.IO.File]::WriteAllText($outUnit, $u, $enc)
 [System.IO.File]::WriteAllText($outDamage, $d, $enc)
 [System.IO.File]::WriteAllText($outCountry, $c, $enc)
+[System.IO.File]::WriteAllText($outAI, $ai, $enc)
 Write-Host 'Gameplay Overhaul phase 1 generated. UNTESTED IN GAME. OFFLINE ONLY.'
-Write-Host 'Copy these SIX files, preserving folders:'
+Write-Host 'Copy these SEVEN files, preserving folders:'
 Write-Host $outGlobal
 Write-Host $outInitial
 Write-Host $outTick
 Write-Host $outUnit
 Write-Host $outDamage
 Write-Host $outCountry
+Write-Host $outAI
 Write-Host 'Check logs for CavalryCharge HIT; test old NavalRamming HIT as regression.'
