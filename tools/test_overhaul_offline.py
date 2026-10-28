@@ -70,6 +70,12 @@ class GeneratedModTests(unittest.TestCase):
         self.assertIn("cavStartTime : Float = 1;", tick)
         self.assertIn("cavalrySpeedFraction+MaxFloat(0, deltatime)*0.50/cavStartTime", tick)
         self.assertIn("0.045*arg_obj.cavalrySpeedFraction*arg_obj.cavalryChargeBoost", tick)
+        self.assertIn("_misc_MakeListObjectsInRadius(cavX, cavZ, 8.4,", tick)
+        self.assertIn("cavDesiredBoost := 1.5;", tick)
+        self.assertNotIn("cavDesiredBoost := 2.5;", tick)
+        self.assertIn("arg_obj.cavalryChargeBoost+MaxFloat(0, deltatime)*0.5", tick)
+        self.assertIn("chargeCap=1.5 chargeRadius=8.4", initial)
+        self.assertIn("cavBoostWas<1.45", tick)
         self.assertIn("OVDIAG CAV_STATE", tick)
         self.assertIn("GetGameObjectMyPositionX", tick)
         for marker in ("OVDIAG CAV_STATE", "OVDIAG CAV_ENEMY",
@@ -83,7 +89,7 @@ class LogAnalyzerTests(unittest.TestCase):
         sample = "\n".join((
             "LOG| OV_DIAG old placeholder",
             "LOG| OVDIAG GUN_INIT sid=cannon step=0.006",
-            "LOG| OVDIAG CAV_BOOST_MAX hnd=111 sid=cuirassier boost=2.5",
+            "LOG| OVDIAG CAV_BOOST_MAX hnd=111 sid=cuirassier boost=1.5",
             "LOG| OVDIAG HP_APPLY attacker=cuirassier target=musketeerpol "
             "requested=500000 applied=312501 hpBefore=70 hpAfter=-312431",
         ))
@@ -94,7 +100,7 @@ class LogAnalyzerTests(unittest.TestCase):
 
     def test_real_cavalry_ground_speed_measurements(self):
         lines = []
-        for t, x, boost in ((0, 0, 1), (1, 2, 1), (2, 3, 2.5), (3, 8, 2.5)):
+        for t, x, boost in ((0, 0, 1), (1, 2, 1), (2, 3, 1.5), (3, 6, 1.5)):
             lines.append(
                 f"LOG| OVDIAG CAV_STATE hnd=123 sid=cuirassier "
                 f"moving=True baseSpeed=1 chargeSpeed={boost} "
@@ -104,8 +110,8 @@ class LogAnalyzerTests(unittest.TestCase):
         result = analyze_overhaul_log.report("\n".join(lines))
         self.assertIn("REAL CAVALRY GROUND SPEED", result)
         self.assertIn("normal ~1x: mean=2.0000", result)
-        self.assertIn("charge >1.7x: mean=5.0000", result)
-        self.assertIn("Measured charge/normal speed ratio: 2.50x", result)
+        self.assertIn("charge >1.3x: mean=3.0000", result)
+        self.assertIn("Measured charge/normal speed ratio: 1.50x", result)
 
 
 if __name__ == "__main__":
