@@ -13,7 +13,7 @@ GROUPS = {
     "Ship acceleration / galley ram": ["NavalRamming INIT", "NavalRamming ACCEL_START", "NavalRamming ACCEL_50", "NavalRamming ACCEL_75", "NavalRamming FULL_SPEED", "NavalRamming HIT"],
     "Cavalry formation / motion": ["OVDIAG CAV_INIT", "OVDIAG CAV_STATE", "OVDIAG CAV_BLOCK reason=NO_FORMATION", "OVDIAG CAV_BOOST_START", "OVDIAG CAV_BOOST_MAX", "OVDIAG CAV_BOOST_END"],
     "Cavalry contact / ram": ["OVDIAG CAV_ENEMY", "OVDIAG CAV_CONTACT", "OVDIAG CAV_BLOCK reason=PIKES", "OVDIAG CAV_HIT_CHECK", "CavalryCharge HIT"],
-    "Applied combat / reduced damage": ["OVDIAG DAMAGE_GLOBAL", "OVDIAG HP_APPLY", "OVDIAG RELOAD"],
+    "Applied combat (post-armor final HP changes)": ["OVDIAG HP_APPLY", "OVDIAG RELOAD"],
     "Artillery / buildings configuration": ["OVDIAG CONFIG_SPAWN", "OVDIAG GUN_INIT", "OVDIAG MORTAR_MEMBER_DISABLED"],
     "AI artillery": ["OVDIAG AI_ORDER", "OVDIAG AI_ART_LIMIT"],
     "Gold crisis and regiment defection": ["OVDIAG GOLD_SQUAD_REVOLT", "OVDIAG GOLD_CRISIS", "OVDIAG GOLD_RECOVERED"],
