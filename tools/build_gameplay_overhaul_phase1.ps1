@@ -118,7 +118,8 @@ $defenseProcAnchor = '                        if (bHeadShot) then'+$nlD+
                      '                        damage := damage+floor(TObj(pobj).uniqrnd*500);'
 $d = ReplaceOnce $d $defenseProcAnchor ($defenseProcAnchor+$nlD+(FormatLines $noFormationAfterDefense $nlD)) 'After-armor formation damage in gameplay'
 # Non-logic preview/fast path: keep same final-damage logic.
-$defenseFastAnchor = '                         damage := damage-TObjBase(pobjbase2).protection[weapkind];'
+$defenseFastAnchor = '                        damage := damage-TObjBase(pobjbase2).protection[weapkind];'+$nlD+
+                     '                        if (damage<1) then damage := 1;'
 $d = ReplaceOnce $d $defenseFastAnchor ($defenseFastAnchor+$nlD+(FormatLines $noFormationAfterDefense $nlD)) 'After-armor formation damage in non-logic path'
 
 
