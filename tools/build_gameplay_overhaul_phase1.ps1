@@ -177,6 +177,46 @@ $stoneLines = @($c -split '\r?\n' | Where-Object { $_.Contains("upgplace+'.24'")
 if ($stoneLines.Count -ne 1) { throw "Expected one second stone upgrade row; got $($stoneLines.Count)" }
 $c = ReplaceOnce $c $stoneLines[0] ($stoneLines[0] + $nlC + "      Log('OVDIAG STONE_CART_CFG upgrade=24 bonus=50');") 'Stone cart upgrade initialization logging'
 
+# Halve EVERY resource technology bonus (including mine workers added by a tech),
+# without halving base gathering or the native five mine worker slots.
+$economySetOld = @'
+   country.upgrade[upgind].itype := itype;
+   country.upgrade[upgind].value := value;
+'@
+$economySetNew = @'
+   country.upgrade[upgind].itype := itype;
+   var ovrEcoUpgradeValue : Integer = value;
+   case itype of
+      gc_upg_type_effectfood, gc_upg_type_effectfoodperc,
+      gc_upg_type_effectwood, gc_upg_type_effectwoodperc,
+      gc_upg_type_effectstone, gc_upg_type_effectstoneperc,
+      gc_upg_type_fishingperc, gc_upg_type_single_inside_mine :
+         ovrEcoUpgradeValue := Round(value*0.5);
+   end;
+   country.upgrade[upgind].value := ovrEcoUpgradeValue;
+'@
+$c = ReplaceOnce $c (FormatLines $economySetOld $nlC) (FormatLines $economySetNew $nlC) 'All resource bonuses halved when defined'
+$economyModOld = @'
+   if (value<>-1) then
+   country.upgrade[upgind].value := value;
+'@
+$economyModNew = @'
+   if (value<>-1) then
+   begin
+      var ovrAdjustedEcoValue : Integer = value;
+      case country.upgrade[upgind].itype of
+         gc_upg_type_effectfood, gc_upg_type_effectfoodperc,
+         gc_upg_type_effectwood, gc_upg_type_effectwoodperc,
+         gc_upg_type_effectstone, gc_upg_type_effectstoneperc,
+         gc_upg_type_fishingperc, gc_upg_type_single_inside_mine :
+            ovrAdjustedEcoValue := Round(value*0.5);
+      end;
+      country.upgrade[upgind].value := ovrAdjustedEcoValue;
+   end;
+'@
+$c = ReplaceOnce $c (FormatLines $economyModOld $nlC) (FormatLines $economyModNew $nlC) 'All country-specific gathering technology changes halved'
+
+
 
 
 # Start cavalry at 50% of a faster 0.045 movement step; artillery remains slowed.
