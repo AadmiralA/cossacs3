@@ -143,7 +143,7 @@ $initInsert = @'
       [*] = ;   SetGameObjectMyTrackPointMoveStep(0.03*arg_obj.cavalrySpeedFraction);
       [*] = ;end;
       [*] = ;if (basename='cannon') or (basename='howitzer') then
-      [*] = ;SetGameObjectMyTrackPointMoveStep(0.018);
+      [*] = ;SetGameObjectMyTrackPointMoveStep(0.006);
 '@
 $init = ReplaceOnce $init '      [*] = ;SwitchTo(''Nothing'');' ((FormatLines $initInsert $nlI) + $nlI + '      [*] = ;SwitchTo(''Nothing'');') 'Unit Initial anchor'
 
