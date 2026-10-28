@@ -26,20 +26,11 @@ function ReplaceOnce([string]$s,[string]$needle,[string]$replacement,[string]$la
 & (Join-Path $PSScriptRoot 'build_gameplay_overhaul_phase1.ps1')
 if (-not $?) { throw 'Base gameplay-overhaul generator failed' }
 
-# A) Startup flags and per-unit configuration. This shows whether changes to
-# walls, towers, mortars, galley, artillery and formation damage were loaded.
+# A) Do NOT trace base templates on every _unit_InitBase call: our previous
+# version generated >18,000 duplicate CONFIG entries per match. Instead, log
+# the effective configuration ONCE PER SPAWN for the relevant on-map object.
 $unit = ReadMod 'scripts\lib\unit.script'
 $nl = Newline $unit
-$cfg = @'
-      // OVERHAUL_DIAG: one line per relevant unit BASE variant (not per game tick).
-      if (objprop.usage=gc_obj_usage_tower) or (objprop.usage=gc_obj_usage_hardwall) or (objprop.usage=gc_obj_usage_weakwall) or
-         (objprop.bartillery) or (objprop.media=gc_obj_media_water) then
-      Log('OVDIAG CONFIG sid='+objprop.sid+' usage='+IntToStr(objprop.usage)+' hp='+IntToStr(objbase.maxhp)+
-         ' dmg0='+IntToStr(objbase.weapon[0].damage)+' reload0='+FloatToStr(objbase.weapon[0].pause)+
-         ' mortarEnabled='+BoolToStr(objprop.weapon[1].enabled)+' goldConsume='+IntToStr(objprop.consume[gc_resource_type_gold]));
-'@
-$unit=ReplaceOnce $unit '      // post processing' ((Lines $cfg $nl)+$nl+'      // post processing') 'Unit config diagnostic'
-
 $pauseTarget='      TObj(pobj).attackdelay := attpause;'
 $pauseProbe=@'
       // OV_DIAG: reload penalty is applied only if the attacker has NO active formation.
@@ -92,6 +83,24 @@ if ($LogMode -eq 'Full') {
 # C) Per-object live initialization for cavalry and artillery.
 $initial = ReadMod 'scripts\units\unit.inc\initial.inc'
 $ni=Newline $initial
+$spawnAnchor="      [*] = ;SwitchTo('Nothing');"
+$spawnProbe=@'
+      [*] = ;// OVDIAG: config only for spawned relevant objects, not repeated country prototypes.
+      [*] = ;var diagObjProp : Pointer = gObjProp[arg_obj.cid][arg_obj.id];
+      [*] = ;if (TObjProp(diagObjProp).bArtillery) or (TObjProp(diagObjProp).media=gc_obj_media_water) or
+      [*] = ;   (TObjProp(diagObjProp).usage=gc_obj_usage_tower) or (TObjProp(diagObjProp).usage=gc_obj_usage_hardwall) or
+      [*] = ;   (TObjProp(diagObjProp).usage=gc_obj_usage_weakwall) then
+      [*] = ;begin
+      [*] = ;   var diagObjBase : Pointer = gPlayer[arg_obj.pl].objbase[arg_obj.cid][arg_obj.id];
+      [*] = ;   Log('OVDIAG CONFIG_SPAWN sid='+basename+' player='+IntToStr(arg_obj.pl)+' hp='+IntToStr(TObjBase(diagObjBase).maxhp)+
+      [*] = ;       ' weapon0Damage='+IntToStr(TObjBase(diagObjBase).weapon[0].damage)+
+      [*] = ;       ' reload0='+FloatToStr(TObjBase(diagObjBase).weapon[0].pause)+
+      [*] = ;       ' weapon1Enabled='+BoolToStr(TObjProp(diagObjProp).weapon[1].enabled)+
+      [*] = ;       ' goldConsume='+IntToStr(TObjProp(diagObjProp).consume[gc_resource_type_gold]));
+      [*] = ;end;
+'@
+$initial=ReplaceOnce $initial $spawnAnchor ((Lines $spawnProbe $ni)+$ni+$spawnAnchor) 'Relevant unit spawn config'
+
 $initCav='      [*] = ;   SetGameObjectMyTrackPointMoveStep(0.03*arg_obj.cavalrySpeedFraction);'
 $initCavLog="      [*] = ;   Log('OVDIAG CAV_INIT sid='+basename+' player='+IntToStr(arg_obj.pl)+' squad='+IntToStr(arg_obj.squad)+' step='+FloatToStr(0.03*arg_obj.cavalrySpeedFraction));"
 $initial=ReplaceOnce $initial $initCav ($initCav+$ni+$initCavLog) 'Cavalry initialization'
@@ -197,5 +206,5 @@ foreach($entry in $out.GetEnumerator()) {
 }
 Write-Host ('Gameplay Overhaul DIAGNOSTICS generated, mode='+$LogMode+', files=' + $out.Count)
 Write-Host 'Deploy all EIGHT stage-1 files including scripts/dmscript.global.'
-Write-Host 'Only NEW offline test scenario. Watch for OVDIAG CONFIG, CAV_*, HP_APPLY, RELOAD, AI_*, GUN_INIT.'
+Write-Host 'Only NEW offline test scenario. Watch for OVDIAG CONFIG_SPAWN, CAV_*, HP_APPLY, RELOAD, AI_*, GUN_INIT.'
 Write-Host 'WARNING: Full mode logs almost every recorded combat hit. Use test maps with FEW units.'
