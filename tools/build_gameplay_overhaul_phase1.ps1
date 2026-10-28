@@ -93,9 +93,10 @@ $dInsert = @'
             // Healing and damage not attributed to a living attacker stay unchanged.
             var pOverhaulNoFormation : Boolean = False;
             var pOverhaulFormed : Boolean = False;
+            var pOverhaulAttackerProp : Pointer = nil;
             if (pobj<>nil) and (weapkind<>gc_obj_weapon_kind_heal) then
             begin
-               var pOverhaulAttackerProp : Pointer = gObjProp[TObj(pobj).cid][TObj(pobj).id];
+               pOverhaulAttackerProp := gObjProp[TObj(pobj).cid][TObj(pobj).id];
                if (not TObjProp(pOverhaulAttackerProp).bbuilding) then
                begin
                   // Global reduction has moved after shield, formation defense, armor and headshot calculation.
