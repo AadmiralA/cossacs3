@@ -67,23 +67,14 @@ $actual=@'
                             ' hpBefore='+IntToStr(TObj(pobj2).hp)+' hpAfter='+IntToStr(TObj(pobj2).hp-damage)+
                             ' atkSquad='+IntToStr(TObj(pobj).squad)+' tgtSquad='+IntToStr(TObj(pobj2).squad)+
                             ' atkPl='+IntToStr(TObj(pobj).pl)+' tgtPl='+IntToStr(TObj(pobj2).pl)+
-                            ' atkHnd='+IntToStr(goHnd)+' tgtHnd='+IntToStr(trgHnd));
+                            ' atkHnd='+IntToStr(goHnd)+' tgtHnd='+IntToStr(trgHnd)+
+                            ' noFormation='+BoolToStr(pOverhaulNoFormation)+' formedAttacker='+BoolToStr(pOverhaulFormed));
 '@
 $actual=$actual.Replace('__GATE__',$damageGate)
 $damage=ReplaceOnce $damage $damageNeedle ((Lines $actual $nd)+$nd+$damageNeedle) 'Final HP damage trace'
-# Mark initial reduction even where defenses later absorb it. Emits only in
-# Full mode; Compact mode logs final HP damage above.
-if ($LogMode -eq 'Full') {
-    $reduction='                  damage := Max(1, Round(damage*0.625));'
-    $add=@'
-                  Log('OVDIAG DAMAGE_GLOBAL attacker='+GetGameObjectBaseNameByHandle(goHnd)+' target='+GetGameObjectBaseNameByHandle(trgHnd)+' original='+IntToStr(indamage)+' reduced='+IntToStr(damage));
-'@
-    $damage=ReplaceOnce $damage $reduction ($reduction+$nd+(Lines $add $nd)) 'Global damage reduction trace'
-    $formationReduction='                  damage := Max(1, Round(damage*0.65))'
-    $add2="                  Log('OVDIAG DAMAGE_NO_FORMATION attacker='+GetGameObjectBaseNameByHandle(goHnd)+' reduced='+IntToStr(damage));"
-    # Do not append a statement between an IF consequent and ELSE. Patch the
-    # COMMON 'damage' result later in HP_APPLY instead.
-}
+# The final post-armor HP_APPLY event is authoritative for both modes.
+# The old pre-armor DAMAGE_GLOBAL trace was removed: the global multiplier
+# now occurs twice in the source (full and fast paths), and is after armor.
 
 # C) Per-object live initialization for cavalry and artillery.
 $initial = ReadMod 'scripts\units\unit.inc\initial.inc'
