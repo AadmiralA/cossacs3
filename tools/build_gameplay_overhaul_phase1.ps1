@@ -174,7 +174,7 @@ $c = ReplaceOnce $c $stoneUpgradeOld $stoneUpgradeNew 'Second stone-cart upgrade
 # One-time-per-country trace; avoids template-level per-unit log spam.
 $stoneLines = @($c -split '\r?\n' | Where-Object { $_.Contains("upgplace+'.24'") -and $_.Contains('gc_upg_type_effectstoneperc, 100,') })
 if ($stoneLines.Count -ne 1) { throw "Expected one second stone upgrade row; got $($stoneLines.Count)" }
-$c = ReplaceOnce $c $stoneLines[0] ($stoneLines[0] + $nlC + "      Log('OVDIAG STONE_CART_CFG upgrade=24 bonus=100');") 'Stone cart upgrade initialization logging'
+$c = ReplaceOnce $c $stoneLines[0] ($stoneLines[0] + $nlC + "      Log('OVDIAG STONE_CART_CFG upgrade=24 bonus=50');") 'Stone cart upgrade initialization logging'
 
 
 
