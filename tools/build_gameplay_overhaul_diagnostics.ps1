@@ -45,6 +45,9 @@ $pauseProbe=@'
          Log('OVDIAG RELOAD sid='+TObjProp(pobjprop).sid+' formed='+BoolToStr(diagForm)+' pause='+FloatToStr(attpause)+' squad='+IntToStr(TObj(pobj).squad));
       end;
 '@
+if ($LogMode -eq 'Full') {
+    $pauseProbe=$pauseProbe.Replace('(TObj(pobj).progresstick mod 32=0) and (attpause>0)', '(attpause>0)')
+}
 $unit=ReplaceOnce $unit $pauseTarget ((Lines $pauseProbe $nl)+$nl+$pauseTarget) 'Attack reload trace'
 
 # B) Damage after shields/protection/formation bonuses, immediately before the
