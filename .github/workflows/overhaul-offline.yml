@@ -1,0 +1,42 @@
+name: Gameplay Overhaul offline checks
+
+on:
+  push:
+    branches: [feature/gameplay-overhaul-phase1]
+    paths:
+      - 'tools/**'
+      - 'reference/**'
+      - '.github/workflows/overhaul-offline.yml'
+  pull_request:
+    paths:
+      - 'tools/**'
+      - 'reference/**'
+      - '.github/workflows/overhaul-offline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate-and-test:
+    name: PowerShell generators + Python smoke tests (no game)
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate compact diagnostics overrides
+        shell: powershell
+        run: |
+          & .\tools\build_gameplay_overhaul_diagnostics.ps1 -LogMode Compact
+          if (-not $?) { throw "Overhaul generator failed." }
+      - name: Validate all eight generated files and combat invariants
+        shell: pwsh
+        run: python -m unittest discover -s tools -p test_overhaul_offline.py -v
+      - name: Generate FULL diagnostics overrides (no game)
+        shell: powershell
+        run: |
+          & .\tools\build_gameplay_overhaul_diagnostics.ps1 -LogMode Full
+          if (-not $?) { throw "Full diagnostic generator failed." }
+      - name: Validate full debug outputs and combat invariants
+        shell: pwsh
+        run: python -m unittest discover -s tools -p test_overhaul_offline.py -v
