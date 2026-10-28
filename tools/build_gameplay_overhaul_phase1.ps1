@@ -84,8 +84,9 @@ $d = LoadText (Join-Path $root 'reference\scripts\lib\miscext2.script')
 $nlD = GetNL $d
 $dInsert = @'
             // Gameplay Overhaul phase1: reduce damage from mobile attackers to 62.5%.
-            // Land troops without an actual formation additionally lose 35%. Ships and artillery are exempt.
+            // Mark unformed land troops; reduce final damage AFTER target protection (otherwise armor magnifies the penalty).
             // Healing and damage not attributed to a living attacker stay unchanged.
+            var pOverhaulNoFormation : Boolean = False;
             if (pobj<>nil) and (weapkind<>gc_obj_weapon_kind_heal) then
             begin
                var pOverhaulAttackerProp : Pointer = gObjProp[TObj(pobj).cid][TObj(pobj).id];
@@ -98,15 +99,28 @@ $dInsert = @'
                   if (TObjProp(pOverhaulAttackerProp).media<>gc_obj_media_water) and (not TObjProp(pOverhaulAttackerProp).bArtillery) then
                   begin
                      if (pOverhaulSquad=nil) then
-                     damage := Max(1, Round(damage*0.65))
+                     pOverhaulNoFormation := True
                      else
                      if TSquad(pOverhaulSquad).fFormation<0 then
-                     damage := Max(1, Round(damage*0.65));
+                     pOverhaulNoFormation := True;
                   end;
                end;
             end;
 '@
 $d = ReplaceOnce $d '            var damage : Integer = indamage;' ('            var damage : Integer = indamage;' + $nlD + (FormatLines $dInsert $nlD)) 'Combat damage modifier'
+# Additional 35% no-formation debuff belongs AFTER flat shield and armor;
+# applying it to raw damage made musketeer damage drop from 5 to 1 instead of 5 to ~3.
+$noFormationAfterDefense = @'
+                        if pOverhaulNoFormation then
+                        damage := Max(1, Round(damage*0.65));
+'@
+$defenseProcAnchor = '                        if (bHeadShot) then'+$nlD+
+                     '                        damage := damage+floor(TObj(pobj).uniqrnd*500);'
+$d = ReplaceOnce $d $defenseProcAnchor ($defenseProcAnchor+$nlD+(FormatLines $noFormationAfterDefense $nlD)) 'After-armor formation damage in gameplay'
+# Non-logic preview/fast path: keep same final-damage logic.
+$defenseFastAnchor = '                         damage := damage-TObjBase(pobjbase2).protection[weapkind];'
+$d = ReplaceOnce $d $defenseFastAnchor ($defenseFastAnchor+$nlD+(FormatLines $noFormationAfterDefense $nlD)) 'After-armor formation damage in non-logic path'
+
 
 # Remove standard mortar from build and country-member lists without deleting original assets.
 $c = LoadText (Join-Path $root 'reference\scripts\lib\country.script')
