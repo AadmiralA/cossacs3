@@ -59,7 +59,11 @@ $uPost = @'
       if objprop.sid='galley' then
       objprop.weapon[1].enabled := False; // Remove the galley's mortar weapon
       if (objprop.sid='cannon') or (objprop.sid='howitzer') or (objprop.sid='mortar') or (objprop.sid='supermortar') then
-      objbase.weapon[0].pause := objbase.weapon[0].pause*1.5;
+      begin
+         objbase.weapon[0].pause := objbase.weapon[0].pause*1.5;
+         if objprop.weapon[1].enabled then
+         objbase.weapon[1].pause := objbase.weapon[1].pause*1.5;
+      end;
 '@
 $u = ReplaceOnce $u '      // post processing' ((FormatLines $uPost $nlU) + $nlU + '      // post processing') 'Unit postprocessing'
 $pausePattern = '      TObj(pobj).attackdelay := attpause;'
