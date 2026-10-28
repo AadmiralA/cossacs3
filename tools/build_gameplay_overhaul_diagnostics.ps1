@@ -107,8 +107,8 @@ $spawnProbe=@'
 '@
 $initial=ReplaceOnce $initial $spawnAnchor ((Lines $spawnProbe $ni)+$ni+$spawnAnchor) 'Relevant unit spawn config'
 
-$initCav='      [*] = ;   SetGameObjectMyTrackPointMoveStep(0.03*arg_obj.cavalrySpeedFraction);'
-$initCavLog="      [*] = ;   Log('OVDIAG CAV_INIT hnd='+IntToStr(myHnd)+' sid='+basename+' time='+FloatToStr(GetGameTime)+' player='+IntToStr(arg_obj.pl)+' squad='+IntToStr(arg_obj.squad)+' step='+FloatToStr(0.03*arg_obj.cavalrySpeedFraction));"
+$initCav='      [*] = ;   SetGameObjectMyTrackPointMoveStep(0.045*arg_obj.cavalrySpeedFraction);'
+$initCavLog="      [*] = ;   Log('OVDIAG CAV_INIT hnd='+IntToStr(myHnd)+' sid='+basename+' time='+FloatToStr(GetGameTime)+' player='+IntToStr(arg_obj.pl)+' squad='+IntToStr(arg_obj.squad)+' step='+FloatToStr(0.045*arg_obj.cavalrySpeedFraction)+' targetStep=0.045 accelTime=1 movementMode=position');"
 $initial=ReplaceOnce $initial $initCav ($initCav+$ni+$initCavLog) 'Cavalry initialization'
 $initGun="      [*] = ;SetGameObjectMyTrackPointMoveStep(0.006);"
 $initGunReplacement=@'
@@ -127,7 +127,7 @@ $nt=Newline $tick
 $movingAnchor='      [*] = ;            if cavMoving then'
 $stateLog=@'
       [*] = ;            if (progresstick mod 64=0) then
-      [*] = ;            Log('OVDIAG CAV_STATE hnd='+IntToStr(myHnd)+' sid='+TObjProp(pobjprop).sid+' squad='+IntToStr(arg_obj.squad)+' formed='+BoolToStr(cavFormed)+' moving='+BoolToStr(cavMoving)+' baseSpeed='+FloatToStr(arg_obj.cavalrySpeedFraction)+' chargeSpeed='+FloatToStr(arg_obj.cavalryChargeBoost)+' effectiveFactor='+FloatToStr(arg_obj.cavalrySpeedFraction*arg_obj.cavalryChargeBoost)+' t='+FloatToStr(gametime));
+      [*] = ;            Log('OVDIAG CAV_STATE hnd='+IntToStr(myHnd)+' sid='+TObjProp(pobjprop).sid+' squad='+IntToStr(arg_obj.squad)+' formed='+BoolToStr(cavFormed)+' moving='+BoolToStr(cavMoving)+' baseSpeed='+FloatToStr(arg_obj.cavalrySpeedFraction)+' chargeSpeed='+FloatToStr(arg_obj.cavalryChargeBoost)+' effectiveFactor='+FloatToStr(arg_obj.cavalrySpeedFraction*arg_obj.cavalryChargeBoost)+' step='+FloatToStr(0.045*arg_obj.cavalrySpeedFraction*arg_obj.cavalryChargeBoost)+' x='+FloatToStr(GetGameObjectMyPositionX)+' z='+FloatToStr(GetGameObjectMyPositionZ)+' t='+FloatToStr(gametime));
       [*] = ;            if cavMoving and (not cavFormed) and (progresstick mod 64=0) then
       [*] = ;            Log('OVDIAG CAV_BLOCK reason=NO_FORMATION hnd='+IntToStr(myHnd)+' sid='+TObjProp(pobjprop).sid+' squad='+IntToStr(arg_obj.squad));
 '@
@@ -151,7 +151,7 @@ $tick=ReplaceOnce $tick $blockAnchor ((Lines $pikeLog $nt)+$nt+$blockAnchor) 'Pi
 $chargeOld='      [*] = ;            if arg_obj.cavalryChargeBoost<cavDesiredBoost then'
 $boostPre='      [*] = ;            var cavBoostWas : Float = arg_obj.cavalryChargeBoost;'
 $tick=ReplaceOnce $tick $chargeOld ($boostPre+$nt+$chargeOld) 'Speed boost prior'
-$boostNew='      [*] = ;            SetGameObjectMyTrackPointMoveStep(0.03*arg_obj.cavalrySpeedFraction*arg_obj.cavalryChargeBoost);'
+$boostNew='      [*] = ;            SetGameObjectMyTrackPointMoveStep(0.045*arg_obj.cavalrySpeedFraction*arg_obj.cavalryChargeBoost);'
 $boostPost=@'
       [*] = ;            if (cavBoostWas<1.5) and (arg_obj.cavalryChargeBoost>=1.5) then
       [*] = ;            Log('OVDIAG CAV_BOOST_START hnd='+IntToStr(myHnd)+' sid='+TObjProp(pobjprop).sid+' boost='+FloatToStr(arg_obj.cavalryChargeBoost));
