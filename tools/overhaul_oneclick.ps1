@@ -138,6 +138,11 @@ $unit = [System.IO.File]::ReadAllText((Join-Path $sourceDir 'scripts\lib\unit.sc
 $damage = [System.IO.File]::ReadAllText((Join-Path $sourceDir 'scripts\lib\miscext2.script'), $latin)
 if (-not $initial.Contains('SetGameObjectMyTrackPointMoveStep(0.006)')) { throw 'PRECHECK gun movement failed' }
 if (-not $unit.Contains('objbase.weapon[1].pause := objbase.weapon[1].pause*1.5')) { throw 'PRECHECK secondary reload failed' }
+if (-not $initial.Contains('SetGameObjectMyTrackPointUseAnimationCycles(false)')) { throw 'PRECHECK cavalry movement mode failed' }
+if (-not $initial.Contains('SetGameObjectMyTrackPointMoveStep(0.045*arg_obj.cavalrySpeedFraction)')) { throw 'PRECHECK cavalry base speed failed' }
+$motion = [System.IO.File]::ReadAllText((Join-Path $sourceDir 'scripts\units\unit.inc\nothing.inc'), $latin)
+if (-not $motion.Contains('cavStartTime : Float = 1;')) { throw 'PRECHECK cavalry 1-second acceleration failed' }
+if (-not $motion.Contains('0.045*arg_obj.cavalrySpeedFraction*arg_obj.cavalryChargeBoost')) { throw 'PRECHECK mounted charge step failed' }
 if (-not $damage.Contains('pOverhaulNoFormation')) { throw 'PRECHECK formation damage failed' }
 if (-not $damage.Contains('OVDIAG HP_APPLY')) { throw 'PRECHECK HP logger failed' }
 Write-Host 'All eight files and key invariants checked (not a game-engine compile).'
