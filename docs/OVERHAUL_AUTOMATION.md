@@ -9,6 +9,7 @@
 ~~~bash
 cd /d/Work/Cossacs3-mod/cossacs3
 git switch feature/gameplay-overhaul-phase1
+git pull --ff-only origin feature/gameplay-overhaul-phase1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./tools/overhaul_oneclick.ps1 -GameRoot "D:\SteamLibrary\steamapps\common\Cossacks 3" -Update
 ~~~
 
@@ -82,3 +83,12 @@ LogFileRoot = true
 - Если Git Bash закрыт до выхода игры: повторить с \`-CollectOnly\`.
 
 Скрипт подготовлен и проверен на уровне исходного текста; **реальный запуск под Windows PowerShell и внутри Cossacks 3 ещё не подтверждён**. При первой ошибке сообщи текст ошибки консоли.
+## Автопроверки на GitHub
+
+В ветку добавлены `.github/workflows/overhaul-offline.yml` и `tools/test_overhaul_offline.py`. При изменениях генераторов или исходных reference-файлов GitHub Actions должен запустить Windows-генератор и проверить результат Python-тестами. Открыть вкладку [Actions](https://github.com/AadmiralA/cossacs3/actions) и посмотреть результат workflow **Gameplay Overhaul offline checks**. Это позволяет обнаруживать ошибки сборки до запуска игры, но не заменяет проверку физики в движке. Workflow может не запускаться, если Actions отключены настройками репозитория; бесплатные минуты также зависят от условий GitHub.
+
+Локальный аналог тестов после генерации:
+
+~~~bash
+python -m unittest discover -s tools -p test_overhaul_offline.py -v
+~~~
