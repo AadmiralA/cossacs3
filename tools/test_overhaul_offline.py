@@ -64,6 +64,14 @@ class GeneratedModTests(unittest.TestCase):
         tick = self.read("scripts/units/unit.inc/nothing.inc")
         self.assertIn("OVDIAG CONFIG_SPAWN", initial)
         self.assertIn("OVDIAG CAV_INIT", initial)
+        self.assertIn("SetGameObjectMyTrackPointUseAnimationCycles(false)", initial)
+        self.assertIn("SetGameObjectMyTrackPointMoveStep(0.045*arg_obj.cavalrySpeedFraction)", initial)
+        self.assertIn("accelTime=1 movementMode=position", initial)
+        self.assertIn("cavStartTime : Float = 1;", tick)
+        self.assertIn("cavalrySpeedFraction+MaxFloat(0, deltatime)*0.50/cavStartTime", tick)
+        self.assertIn("0.045*arg_obj.cavalrySpeedFraction*arg_obj.cavalryChargeBoost", tick)
+        self.assertIn("OVDIAG CAV_STATE", tick)
+        self.assertIn("GetGameObjectMyPositionX", tick)
         for marker in ("OVDIAG CAV_STATE", "OVDIAG CAV_ENEMY",
                        "OVDIAG CAV_BOOST_START", "OVDIAG CAV_HIT_CHECK"):
             self.assertIn(marker, tick)
