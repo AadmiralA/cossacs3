@@ -81,7 +81,9 @@ $unitPatched = Patch-Once $unitOriginal $unitAnchor ($unitInsert + $unitNl) 'uni
 # Independent proof that our modified initializer was loaded.
 $initialAnchor = "      [*] = ;   if (_unit_IsWaterUnit(myHnd)) then" + $initialNl + "      [*] = ;   begin"
 $initialProbe = "      [*] = ;      Log('NavalRamming INIT ship='+basename);"
-$initialPatched = Patch-Once $initialOriginal $initialAnchor ($initialNl + $initialProbe + $initialNl) 'initial-state'
+$initialCount = [regex]::Matches($initialOriginal, [regex]::Escape($initialAnchor)).Count
+if ($initialCount -ne 1) { throw "initial-state expected one anchor; got $initialCount. Nothing was written." }
+$initialPatched = $initialOriginal.Replace($initialAnchor, $initialAnchor + $initialNl + $initialProbe)
 
 # Only write after validating both patch anchors.
 $outUnit = Join-Path $root 'mod\data\scripts\units\unit.inc\nothing.inc'
