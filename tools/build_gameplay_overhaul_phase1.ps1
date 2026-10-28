@@ -154,7 +154,7 @@ $initInsert = @'
 '@
 $init = ReplaceOnce $init '      [*] = ;SwitchTo(''Nothing'');' ((FormatLines $initInsert $nlI) + $nlI + '      [*] = ;SwitchTo(''Nothing'');') 'Unit Initial anchor'
 
-# Charging: only formed mounted groups; heavy cavalry receives a 2.5x temporary
+# Charging: only formed mounted groups; heavy cavalry receives a 1.5x temporary
 # MOVEMENT multiplier around enemies, reached smoothly. Initial mount acceleration
 # is 1 game-time second for ALL cavalry. One first-impact hit per mount per cooldown.
 $tick = LoadText $outTick
@@ -184,7 +184,7 @@ $tickInsert = @'
       [*] = ;               var cavZ : Float = GetGameObjectMyPositionZ;
       [*] = ;               var cavFX : Float = GetGameObjectTransformedVirtualDirectionXByHandle(myHnd);
       [*] = ;               var cavFZ : Float = GetGameObjectTransformedVirtualDirectionZByHandle(myHnd);
-      [*] = ;               _misc_MakeListObjectsInRadius(cavX, cavZ, 12, True, 0, 0, True, gTmpIntList);
+      [*] = ;               _misc_MakeListObjectsInRadius(cavX, cavZ, 8.4, True, 0, 0, True, gTmpIntList);
       [*] = ;               var cavI : Integer;
       [*] = ;               for cavI:=gTmpIntList.GetCount-1 downto 0 do
       [*] = ;               begin
@@ -235,14 +235,14 @@ $tickInsert = @'
       [*] = ;                  end;
       [*] = ;               end;
       [*] = ;            end;
-      [*] = ;            // Heavy formed cavalry increases speed to 2.5x near a hostile infantry target.
+      [*] = ;            // Heavy formed cavalry increases speed to 1.5x near a hostile non-pike target (8.4 search radius).
       [*] = ;            var cavDesiredBoost : Float = 1;
       [*] = ;            if cavIsHeavy and cavFormed and cavMoving and (gametime<arg_obj.cavalryThreatUntil) then
-      [*] = ;            cavDesiredBoost := 2.5;
+      [*] = ;            cavDesiredBoost := 1.5;
       [*] = ;            if arg_obj.cavalryChargeBoost<cavDesiredBoost then
-      [*] = ;            arg_obj.cavalryChargeBoost := Clamp(arg_obj.cavalryChargeBoost+MaxFloat(0, deltatime)*1.5, 1, cavDesiredBoost)
+      [*] = ;            arg_obj.cavalryChargeBoost := Clamp(arg_obj.cavalryChargeBoost+MaxFloat(0, deltatime)*0.5, 1, cavDesiredBoost)
       [*] = ;            else
-      [*] = ;            arg_obj.cavalryChargeBoost := MaxFloat(cavDesiredBoost, arg_obj.cavalryChargeBoost-MaxFloat(0, deltatime)*1.5);
+      [*] = ;            arg_obj.cavalryChargeBoost := MaxFloat(cavDesiredBoost, arg_obj.cavalryChargeBoost-MaxFloat(0, deltatime)*0.5);
       [*] = ;            SetGameObjectMyTrackPointMoveStep(0.045*arg_obj.cavalrySpeedFraction*arg_obj.cavalryChargeBoost);
       [*] = ;         end;
 '@
