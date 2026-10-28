@@ -108,7 +108,7 @@ $spawnProbe=@'
 $initial=ReplaceOnce $initial $spawnAnchor ((Lines $spawnProbe $ni)+$ni+$spawnAnchor) 'Relevant unit spawn config'
 
 $initCav='      [*] = ;   SetGameObjectMyTrackPointMoveStep(0.045*arg_obj.cavalrySpeedFraction);'
-$initCavLog="      [*] = ;   Log('OVDIAG CAV_INIT hnd='+IntToStr(myHnd)+' sid='+basename+' time='+FloatToStr(GetGameTime)+' player='+IntToStr(arg_obj.pl)+' squad='+IntToStr(arg_obj.squad)+' step='+FloatToStr(0.045*arg_obj.cavalrySpeedFraction)+' targetStep=0.045 accelTime=1 movementMode=position');"
+$initCavLog="      [*] = ;   Log('OVDIAG CAV_INIT hnd='+IntToStr(myHnd)+' sid='+basename+' time='+FloatToStr(GetGameTime)+' player='+IntToStr(arg_obj.pl)+' squad='+IntToStr(arg_obj.squad)+' step='+FloatToStr(0.045*arg_obj.cavalrySpeedFraction)+' targetStep=0.045 accelTime=1 movementMode=position chargeCap=1.5 chargeRadius=8.4');"
 $initial=ReplaceOnce $initial $initCav ($initCav+$ni+$initCavLog) 'Cavalry initialization'
 $initGun="      [*] = ;SetGameObjectMyTrackPointMoveStep(0.006);"
 $initGunReplacement=@'
@@ -158,9 +158,9 @@ $boostPre='      [*] = ;            var cavBoostWas : Float = arg_obj.cavalryCha
 $tick=ReplaceOnce $tick $chargeOld ($boostPre+$nt+$chargeOld) 'Speed boost prior'
 $boostNew='      [*] = ;            SetGameObjectMyTrackPointMoveStep(0.045*arg_obj.cavalrySpeedFraction*arg_obj.cavalryChargeBoost);'
 $boostPost=@'
-      [*] = ;            if (cavBoostWas<1.5) and (arg_obj.cavalryChargeBoost>=1.5) then
+      [*] = ;            if (cavBoostWas<1.15) and (arg_obj.cavalryChargeBoost>=1.15) then
       [*] = ;            Log('OVDIAG CAV_BOOST_START hnd='+IntToStr(myHnd)+' sid='+TObjProp(pobjprop).sid+' boost='+FloatToStr(arg_obj.cavalryChargeBoost));
-      [*] = ;            if (cavBoostWas<2.4) and (arg_obj.cavalryChargeBoost>=2.4) then
+      [*] = ;            if (cavBoostWas<1.45) and (arg_obj.cavalryChargeBoost>=1.45) then
       [*] = ;            Log('OVDIAG CAV_BOOST_MAX hnd='+IntToStr(myHnd)+' sid='+TObjProp(pobjprop).sid+' boost='+FloatToStr(arg_obj.cavalryChargeBoost));
       [*] = ;            if (cavBoostWas>1.05) and (arg_obj.cavalryChargeBoost<=1.05) then
       [*] = ;            Log('OVDIAG CAV_BOOST_END hnd='+IntToStr(myHnd)+' sid='+TObjProp(pobjprop).sid);
