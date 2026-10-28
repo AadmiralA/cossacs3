@@ -53,17 +53,29 @@ class GeneratedModTests(unittest.TestCase):
         damage = self.read("scripts/lib/miscext2.script")
         unit = self.read("scripts/lib/unit.script")
         self.assertIn("var pOverhaulNoFormation : Boolean = False;", damage)
+        self.assertIn("var pOverhaulFormed : Boolean = False;", damage)
+        self.assertIn("var pOverhaulAttackerProp : Pointer = nil;", damage)
+        self.assertIn("attpause := attpause/0.85", unit)
+        self.assertEqual(damage.count("damage := Max(1, Round(damage*0.625));"), 2)
+        self.assertEqual(damage.count("damage := Max(1, Round(damage*0.80));"), 2)
+        self.assertEqual(damage.count("damage := Max(1, Round(damage*1.20));"), 2)
+        self.assertEqual(damage.count("damage := Max(1, Round(damage/1.20));"), 2)
+        self.assertEqual(damage.count("damage := Max(1, Round(damage*1.50));"), 2)
+        self.assertEqual(damage.count("damage := Max(1, Round(damage*0.75));"), 2)
+        self.assertIn("ovrInfantryPikeAttacker and ovrHorseDefender", damage)
+
         self.assertIn("damage := Max(1, Round(damage*0.625));", damage)
         self.assertEqual(damage.count("if pOverhaulNoFormation then"), 2,
                          "Expected protection-after-armor penalty in both paths")
         self.assertIn("OVDIAG HP_APPLY", damage)
         self.assertIn("bArtillery", unit)
 
-    def test_gold_maintenance_disabled_and_once_per_crisis_revolt(self):
+    def test_original_gold_maintenance_and_once_per_crisis_revolt(self):
         units = self.read("scripts/lib/unit.script")
         player = self.read("scripts/lib/player.script")
         tick = self.read("scripts/units/unit.inc/nothing.inc")
-        self.assertIn("objprop.consume[gc_resource_type_gold] := 0;", units)
+        self.assertIn("objprop.consume[gc_resource_type_gold] := 150;", units)
+        self.assertNotIn("// Gameplay Overhaul: no passive gold upkeep", units)
         self.assertIn("ovrWasGoldCrisis", player)
         self.assertIn("if RandomExt<0.25 then", player)
         self.assertIn("OVDIAG GOLD_SQUAD_REVOLT", player)
@@ -84,7 +96,11 @@ class GeneratedModTests(unittest.TestCase):
         self.assertNotIn(
             "upgplace+'.24', 1, gc_upg_tooltiptype_none, gc_upg_type_effectstoneperc, 200,",
             country)
-        self.assertIn("OVDIAG STONE_CART_CFG upgrade=24 bonus=100", country)
+        self.assertIn("OVDIAG STONE_CART_CFG upgrade=24 bonus=50", country)
+        self.assertIn("country.upgrade[upgind].value := ovrEcoUpgradeValue;", country)
+        self.assertIn("country.upgrade[upgind].value := ovrAdjustedEcoValue;", country)
+        self.assertEqual(country.count("gc_upg_type_single_inside_mine :"), 2)
+        self.assertIn("gc_upg_type_fishingperc, gc_upg_type_single_inside_mine", country)
 
     def test_cavalry_and_spawn_tracing(self):
         initial = self.read("scripts/units/unit.inc/initial.inc")
