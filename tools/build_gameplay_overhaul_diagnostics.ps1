@@ -131,6 +131,11 @@ $stateLog=@'
       [*] = ;            if cavMoving and (not cavFormed) and (progresstick mod 64=0) then
       [*] = ;            Log('OVDIAG CAV_BLOCK reason=NO_FORMATION hnd='+IntToStr(myHnd)+' sid='+TObjProp(pobjprop).sid+' squad='+IntToStr(arg_obj.squad));
 '@
+if ($LogMode -eq 'Full') {
+    # Measure physical displacement frequently enough to see a 1-second ramp.
+    # Compact keeps the original 64-tick period to avoid flooding big battles.
+    $stateLog = $stateLog.Replace('if (progresstick mod 64=0) then', 'if (progresstick mod 8=0) then')
+}
 $tick=ReplaceOnce $tick $movingAnchor ((Lines $stateLog $nt)+$nt+$movingAnchor) 'Cavalry periodic motion and formation'
 
 $targetCheck='      [*] = ;                              if cavFront>0.70 then'
