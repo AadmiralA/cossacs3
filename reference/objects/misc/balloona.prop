@@ -1,0 +1,26 @@
+{refurl=.\data\objects\ref\refunitattach.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=mainproperty}
+   CustomName = balloona
+   BaseName = balloona
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=actorproperty}
+   LODActorName = balloona
+   DefaultMeshName = balloona.mesh
+   UseableMeshes : struct.begin
+      [0] = True
+   struct.end
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = balloon
+   Mesh[0].UseableMaterials[0] = balloon
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=frameanimationproperty}
+   ClassName = FrameAnimationProperty
+   DefaultFrameAnimationMode = aamNone
+   RandomOffsetFrameAnimationCycles = True
+   RandomOffsetFrameAnimation = True
+section.end

@@ -1,0 +1,120 @@
+{refurl=.\data\objects\ref\refunit.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=mainproperty}
+   CustomName = ferry
+   BaseName = ferry
+   Priority = 600
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=actorproperty}
+   LODActorName = ferry
+   DefaultMeshName = ferry.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = ferry
+   Mesh[0].UseableMaterials[0] = ferry
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = ferry
+      UseableMaterials[0] = ferry
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = ferry
+      UseableMaterials[0] = ferry
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = ferry
+      UseableMaterials[0] = ferry
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = ferry
+      UseableMaterials[0] = ferry
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = ferry
+      UseableMaterials[0] = ferry
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = ferry
+      UseableMaterials[0] = ferry
+   struct.end
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=statemachineproperty}
+   StateMachineInterval = 60
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=collisionmeshproperty}
+   Static = False
+   RayCastIntersect = True
+   UseCustTransformed = True
+   //CustomBoundingAABBMin.X = -1
+   //CustomBoundingAABBMin.Y = -0.2
+   //CustomBoundingAABBMin.Z = -3.5
+   //CustomBoundingAABBMax.X = 1
+   //CustomBoundingAABBMax.Y = 1
+   //CustomBoundingAABBMax.Z = 3.5
+   CustomBoundingAABBMin.X = -4.25
+   CustomBoundingAABBMin.Y = 0
+   CustomBoundingAABBMin.Z = -4.25
+   CustomBoundingAABBMax.X = 4.25
+   CustomBoundingAABBMax.Y = 1
+   CustomBoundingAABBMax.Z = 4.25
+section.end
+
+autochildrenproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = AutoChildrenProperty
+   Custom = False
+   Mesh[0] : struct.begin
+      Enabled = True
+      Static = True
+      ClassName = MeshChildrenProperty
+      Children : struct.begin
+         [0] : struct.begin
+            Enabled = True
+            Static = True
+            ClassName = ChildProperty
+            BaseName = ferrya
+            RaceName = units
+            DefaultMeshName = ferrya.mesh
+            RandomMeshName = False
+            Mesh[0] = ferrya
+            Mesh[1] = ferry1a
+            Mesh[2] = ferry2a
+            Mesh[3] = ferry3a
+            Mesh[4] = ferry4a
+            Mesh[5] = ferry_death1a
+            Mesh[6] = ferry_death2a
+            DefaultMaterialName = ferry
+            RandomMaterialName = False
+            Materials[0] = ferry
+            Materials[1] = ferry
+            Materials[2] = ferry
+            Materials[3] = ferry
+            Materials[4] = ferry
+            Materials[5] = ferry
+            Materials[6] = ferry
+            Option = achildRequered
+            StartStateName = 
+            Useable = True
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=frameanimationproperty}
+   FrameAnimationCyclesLibName = ferry
+   FrameAnimationSwitchChildren = false
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.63
+   DefaultScale.Y = 0.575
+   DefaultScale.Z = 0.69
+section.end
+
+offsetproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=offsetproperty}
+   OffsetCollideOption = ocoTerrainWater
+section.end

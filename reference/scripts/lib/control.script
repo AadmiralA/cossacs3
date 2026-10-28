@@ -1,0 +1,764 @@
+//
+// control.script
+//
+
+// _control_DeselectAllUnits
+//
+procedure _control_DeselectAllUnits(bUpdateSelection : Boolean);
+begin
+   var i : Integer;
+   for i:=0 to GetCountGameManagerPickedObjects-1 do
+   begin
+      var tmpHnd : Integer = GetHandleGameManagerPickedObjects(i);
+      if (not IsGroupByHandle(tmpHnd)) then
+      gGuiUpdateHighlights.Add(tmpHnd);
+   end;
+   ClearGameManagerPickedObjects;
+   gSelectedObjects.Clear;
+   var plInd : Integer = GetPlayerIndexByHandle(GetPlayerHandleInterfaceIO);
+   _misc_SetSquadsSelection(plInd, false);
+   if (bUpdateSelection) then
+   _misc_UpdateSelection;
+end;
+
+// _control_SelectAllUnits
+//
+procedure _control_SelectAllUnits(bBuildings, bExcludePeasants : Boolean);
+begin
+   GameManagerBeginSelection;
+   GameManagerStartSelection('spmRunTime');
+   var bNeedCancelDoneOnce : Boolean; // editor bug. optimization. selected units wont move if we dont execute GameManagerCancelSelection once after any unit become picked=true. If done after all picked. function lags too much on 10000 units
+   var bCancelDoneOnce : Boolean;
+   if (GameManagerIsSelectionMode) then
+   begin
+      var myPlHnd : Integer = GetPlayerHandleInterfaceIO;
+      var myPlInd : Integer = GetPlayerIndexByHandle(myPlHnd);
+      gSelectedObjects.Clear;
+      var i : Integer;
+      for i:=GetPlayerGameObjectsCountByHandle(myPlHnd)-1 downto 0 do
+      begin
+         var goHnd : Integer = GetGameObjectHandleByIndex(i, myPlHnd);
+         if (GetGameObjectPlayableObjectByHandle(goHnd)) and (GetGameObjectVisibleByHandle(goHnd)) then
+         begin
+            var pobj : Pointer = _unit_GetTObj(goHnd);
+            var objbbuilding : Boolean = gObjProp[TObj(pobj).cid][TObj(pobj).id].bbuilding;
+            if ((not bBuildings) and (not objbbuilding))
+            or ((bBuildings) and (objbbuilding)) then
+            begin
+               if (not bExcludePeasants) or (gObjProp[TObj(pobj).cid][TObj(pobj).id].usage<>gc_obj_usage_peasant) then
+               begin
+                  SetGameObjectPickedByHandle(goHnd, True);
+                  if (TObj(pObj).squad<0) then
+                  gSelectedObjects.Add(goHnd);
+                  bNeedCancelDoneOnce := True;
+               end
+               else
+               SetGameObjectPickedByHandle(goHnd, False);
+            end
+            else
+            SetGameObjectPickedByHandle(goHnd, False);
+            gGuiUpdateHighlights.Add(goHnd);
+            if (not bCancelDoneOnce) and (bNeedCancelDoneOnce) then
+            begin
+               GameManagerCancelSelection;
+               bCancelDoneOnce := True;
+            end;
+         end;
+      end;
+      _misc_SetSquadsSelection(myPlInd, not bBuildings);
+      
+      if (not bCancelDoneOnce) then
+      GameManagerCancelSelection;
+      _misc_UpdateSelection;
+   end;
+end;
+
+// _control_SelectAllShips
+//
+procedure _control_SelectAllShips();
+begin
+   var plind : Integer = GetPlayerIndexInterfaceIO;
+   if plInd>=0 then
+   begin
+      _control_DeselectAllUnits(False);
+      gIntegerList.Clear;
+      var i : Integer;
+      for i := gPlayer[plInd].squads.GetCount-1 downto 0 do
+      begin
+         var psquad : Pointer = gPlayer[plInd].squads.Get(i);
+         if (pSquad <> nil) and (TSquad(pSquad).GetCount > 0) then
+         begin
+            var goHnd : Integer = TSquad(pSquad).Get(0);
+            if _unit_IsWaterUnit(goHnd) then
+            gIntegerList.Add(goHnd);
+         end;
+         //TSquad(psquad).fSelected := _squad_IsWaterSquad(psquad);
+      end;
+      _misc_SetUnitsToSelection(plInd, gIntegerList);
+      //_misc_UpdateSelection;
+   end;
+end;
+
+// _control_SelectAllPeasants
+//
+procedure _control_SelectAllPeasants();
+begin
+   _control_DeselectAllUnits(False);
+   
+   GameManagerBeginSelection;
+   GameManagerStartSelection('spmRunTime');
+   var bNeedCancelDoneOnce : Boolean; // editor bug. optimization. selected units wont move if we dont execute GameManagerCancelSelection once after any unit become picked=true. If done after all picked. function lags too much on 10000 units
+   var bCancelDoneOnce : Boolean;
+   if (GameManagerIsSelectionMode) then
+   begin
+      var myPlHnd : Integer = GetPlayerHandleInterfaceIO;
+      var myPlInd : Integer = GetPlayerIndexByHandle(myPlHnd);
+      gSelectedObjects.Clear;
+      
+      var psind : Integer = GetPlayerProgressSectionIndexByInterval(myPlHnd, gc_statemachine_interval_peasants);
+      if (psind>=0) then
+      begin
+         var i : Integer;
+         for i:=GetPlayerProgressSectionCountGOByIndex(myPlHnd, psind)-1 downto 0 do
+         begin
+            var goHnd : Integer = GetPlayerProgressSectionGOHandleByIndex(myPlHnd, psind, i);
+            if (goHnd<>0) then
+            begin
+               var pobj : Pointer = _unit_GetTObj(goHnd);
+               if (pobj<>nil) then
+               begin
+                  if (GetGameObjectPlayableObjectByHandle(goHnd)) and ((GetGameObjectStatesTagByHandle(goHnd) and gc_statetag_visual_none)<>0) then
+                  begin
+                     SetGameObjectPickedByHandle(goHnd, True);
+                     if (TObj(pObj).squad<0) then
+                     gSelectedObjects.Add(goHnd);
+                     bNeedCancelDoneOnce := True;
+                     gGuiUpdateHighlights.Add(goHnd);
+                     if (not bCancelDoneOnce) and (bNeedCancelDoneOnce) then
+                     begin
+                        GameManagerCancelSelection;
+                        bCancelDoneOnce := True;
+                     end;
+                  end;
+               end;
+            end;
+         end;
+      end;
+      _misc_SetSquadsSelection(myPlInd, False);
+      if (not bCancelDoneOnce) then
+      GameManagerCancelSelection;
+      _misc_UpdateSelection;
+   end;
+end;
+
+// _control_GetUnitUnderCursor
+//
+function _control_GetUnitUnderCursor(bMyPlayerOnly : Boolean) : Integer;
+begin
+   // функция, возвращает хендл юнита под курсором
+   Result := 0;
+   
+   if (GetGUIMinimapUnderMouse) then
+   exit;
+   
+   GameObjectRayCastMouseRay;
+   GameObjectSortRayCastList;
+   var i : Integer;
+   var myPlHnd : Integer = GetPlayerHandleInterfaceIO;
+   var plIO : Integer = GetPlayerIndexByHandle(myPlHnd);
+   var mpos : TPos3f;
+   GetCurrentMouseWorldCoord(mpos.x, mpos.y, mpos.z);
+   var cPos : TPos3f;
+   GetCameraAbsolutePosition(cPos.x, cPos.y, cPos.z);
+   var nearestHnd : Integer;
+   var nearestDst : Float;
+   var relativeDst : Float;
+   for i:=0 to GetGameObjectRayCastCount-1 do
+   begin
+      var benemy, bmy, bunit, bbuilding, bres, bcanbetarget : Boolean;
+      var goHnd : Integer = GetGameObjectRayCastByIndex(i);
+      var prio : Float = 0.5;
+      if (GetGameObjectPlayableObjectByHandle(goHnd)) and (GetGameObjectVisibleByHandle(goHnd)) and (GetGameObjectCollisionDetectionByHandle(goHnd)) then
+      begin
+         if ((not bMyPlayerOnly) or (GetGameObjectPlayerHandleByHandle(goHnd)=myPlHnd)) and
+         GetGameObjectRayCastAABBByHandle(goHnd, cPos.x, cPos.y, cPos.z, mPos.x, mPos.y, mPos.z) then
+         begin
+            var pos : TPos3f;
+            _unit_GetGameObjectPos(goHnd, pos);
+            var dist : Float = _misc_GetDistancePos(mpos, pos, false);
+            
+            case _misc_GetBaseObjID(goHnd) of
+               gc_baseid_obj : begin
+                  if (_unit_IsBuilding(goHnd)) then
+                  bbuilding := True
+                  else
+                  bunit := True;
+               end;
+               gc_baseid_res : bres := True;
+            end;
+            if (bres) then
+            begin
+               var pres : Pointer = _res_GetTRes(goHnd);
+               if (pres<>nil) then
+               begin
+                  if (GetMapCollisionTag(GetGameObjectPositionXByHandle(goHnd), GetGameObjectPositionZByHandle(goHnd), True)=0) then
+                  case TRes(pres).itype of
+                     gc_resource_type_food : begin
+                        if (TRes(pres).brised) then
+                        prio := gc_gui_cursorprio_food
+                        else
+                        prio := 0;
+                     end;
+                     gc_resource_type_wood : prio := gc_gui_cursorprio_wood;
+                     gc_resource_type_stone : prio := gc_gui_cursorprio_stone;
+                     else
+                     prio := 0;
+                  end;
+               end;
+            end
+            else
+            if (bunit) or (bbuilding) then
+            begin
+               var pobj : Pointer = _unit_GetTObj(goHnd);
+               if (pobj<>nil) then
+               begin
+                  benemy := (gPlayer[plIO].enemyplmask and gPlayer[TObj(pobj).pl].myplmask)<>0;
+                  if (benemy) and (_unit_SelectedUnitsCanAttack(plIO, goHnd, gSelectedObjects)) then
+                  bcanbetarget := True;
+                  bmy := not benemy;
+                  
+                  if (benemy) and bcanbetarget then
+                  prio := gc_gui_cursorprio_enemy
+                  else
+                  if (bmy) then
+                  prio := gc_gui_cursorprio_my;
+                  
+                  if (gObjProp[TObj(pobj).cid][TObj(pobj).id].bbuilding) then
+                  begin
+                     if (not TObj(pobj).bbuilt) then
+                     begin
+                        if (_unit_UnitsCanBuild(goHnd, gSelectedObjects)) then
+                        prio := gc_gui_cursorprio_build;
+                     end
+                     else
+                     if (_unit_IsUnitCanAbsorbInside(goHnd)) then
+                     begin
+                        if (gObjProp[TObj(pobj).cid][TObj(pobj).id].usage=gc_obj_usage_mine) then
+                        begin
+                           if (gbool_gui_peasantselected) then
+                           prio := gc_gui_cursorprio_goinside
+                        end
+                        else
+                        prio := gc_gui_cursorprio_goinside;
+                     end;
+                  end;
+               end;
+            end;
+            
+            if (prio>0) then
+            begin
+               relativeDst := (1+dist)/prio;
+               if (nearestHnd=0) or (relativeDst<nearestDst) then
+               begin
+                  nearestHnd := goHnd;
+                  nearestDst := relativeDst;
+               end;
+            end;
+         end;
+      end;
+   end;
+   var bVisible : Boolean = (not GetFOWEnable) or (GetFOWLOSData(GetGameObjectPositionXByHandle(nearestHnd), GetGameObjectPositionZByHandle(nearestHnd))>0);
+   if (not bVisible) then
+   nearestHnd := 0;
+   Result := nearestHnd;
+end;
+
+// _control_PrepareUnitUnderCursorList
+//
+procedure _control_PrepareUnitUnderCursorList(var list : TIntegerList);
+begin
+   list.Clear;
+   
+   if (GetGUIMinimapUnderMouse) then
+   exit;
+   
+   GameObjectRayCastMouseRay;
+   GameObjectSortRayCastList;
+   var mpos : TPos3f;
+   GetCurrentMouseWorldCoord(mpos.x, mpos.y, mpos.z);
+   var cPos : TPos3f;
+   GetCameraAbsolutePosition(cPos.x, cPos.y, cPos.z);
+   var nearestHnd : Integer;
+   var nearestDst : Float;
+   var relativeDst : Float;
+   var i : Integer;
+   for i:=0 to GetGameObjectRayCastCount-1 do
+   begin
+      var goHnd : Integer = GetGameObjectRayCastByIndex(i);
+      if GetGameObjectCollisionDetectionByHandle(goHnd) then
+      begin
+         if (GetGameObjectRayCastAABBByHandle(goHnd, cPos.x, cPos.y, cPos.z, mPos.x, mPos.y, mPos.z)) then
+         list.Add(goHnd);
+      end;
+   end;
+end;
+
+// _control_IsNonGuardExistsInSelection
+//
+function _control_IsNonGuardExistsInSelection() : Boolean;
+begin
+   Result := False;
+   var i, j : Integer;
+   for i:=GetCountGameManagerPickedObjects-1 downto 0 do
+   begin
+      var goHnd : Integer = GetHandleGameManagerPickedObjects(i);
+      if (not IsGroupByHandle(goHnd)) and (_unit_IsUnit(goHnd)) then
+      begin
+         if (not _unit_IsGuard(goHnd)) then
+         begin
+            Result := True;
+            exit;
+         end;
+      end;
+   end;
+end;
+
+// _control_IsBuildingExistsInSelection
+//
+function _control_IsBuildingExistsInSelection() : Boolean;
+begin
+   Result := False;
+   var i : Integer;
+   for i:=GetCountGameManagerPickedObjects-1 downto 0 do
+   begin
+      var goHnd : Integer = GetHandleGameManagerPickedObjects(i);
+      if (not IsGroupByHandle(goHnd)) and (_unit_IsBuilding(goHnd)) then
+      begin
+         Result := True;
+         exit;
+      end;
+   end;
+end;
+
+// _control_IsUnitExistsInSelection
+//
+function _control_IsUnitExistsInSelection() : Boolean;
+begin
+   // Функция временная. Когда селекшон будет работать по-юнитно, то эту функцию придется переписать.
+   Result := False;
+   var i : Integer;
+   for i:=GetCountGameManagerPickedObjects-1 downto 0 do
+   begin
+      var goHnd : Integer = GetHandleGameManagerPickedObjects(i);
+      if (not IsGroupByHandle(goHnd)) and (_unit_IsUnit(goHnd)) then
+      begin
+         Result := True;
+         exit;
+      end;
+   end;
+end;
+
+// _control_GetSelectionInfo
+//
+procedure _control_GetSelectionInfo(var build, lUnit, wUnit, nonGuard : Boolean; bDoRationalCheck : Boolean);
+begin
+   build := false;
+   lUnit := false;
+   wUnit := false;
+   nonGuard := false;
+   
+   // rational optimization
+   if (bDoRationalCheck) then
+   begin
+      if (GetCountGameManagerPickedObjects>1000) then // no chance to select 1000 buildings or ships or guard units.
+      begin
+         lUnit := True;
+         nonGuard := True;
+         exit;
+      end;
+   end;
+   
+   var i : Integer;
+   for i := GetCountGameManagerPickedObjects-1 downto 0 do
+   begin
+      var goHnd : Integer = GetHandleGameManagerPickedObjects(i);
+      if not IsGroupByHandle(goHnd) then
+      begin
+         var pObjProp : Pointer = _unit_GetObjProp(goHnd);
+         if pObjProp <> nil then
+         begin
+            if TObjProp(pObjProp).bBuilding then
+            build := true
+            else
+            if TObjProp(pObjProp).media = gc_obj_media_water then
+            wUnit := true
+            else
+            begin
+               lUnit := true;
+               if not _unit_IsGuard(goHnd) then
+               nonGuard := true;
+            end;
+            
+            if build and lUnit and wUnit and nonGuard then
+            exit;
+         end;
+      end;
+   end;
+end;
+
+// _control_CreateMoveArrow
+//
+function _control_CreateMoveArrow(x, z : Float) : Integer;
+begin
+   var y : Float;
+   if (not RayCastWater(x, z, y)) then // is water, then y is water height
+   y := RayCastHeight(x, z);
+   var arHnd : Integer = CreatePoolGameObjectHandle(gc_racename_misc, gc_basename_movearrow, x, y, z);
+   GameObjectExecuteStateByHandle(arHnd, 'Initial');
+end;
+
+// _control_SelectIdlePeasants
+//
+procedure _control_SelectIdlePeasants();
+begin
+   // Выбирает всех крестьян, не имеющих приказа
+   _control_DeselectAllUnits(False);
+   GameManagerBeginSelection;
+   GameManagerStartSelection('spmRunTime');
+   var bNeedCancelDoneOnce, bCancelDoneOnce : Boolean;
+   var myPlHnd : Integer = GetPlayerHandleInterfaceIO;
+   var i : Integer;
+   gSelectedObjects.Clear;
+   for i:=GetPlayerGameObjectsCountByHandle(myPlHnd)-1 downto 0 do
+   begin
+      var goHnd : Integer = GetGameObjectHandleByIndex(i, myPlHnd);
+      if (GetGameObjectPlayableObjectByHandle(goHnd)) and (GetGameObjectVisibleByHandle(goHnd)) then
+      begin
+         var pobj : Pointer = _unit_GetTObj(goHnd);
+         if (pobj<>nil) then
+         begin
+            if (gObjProp[TObj(pobj).cid][TObj(pobj).id].usage=gc_obj_usage_peasant) then
+            begin
+               if (_net_IsClient) or (_net_IsReplay) then
+               begin
+                  var bIdle : Boolean = (GetGameObjectTrackPointMovementModeIntByHandle(goHnd)=0);
+                  if (bIdle) and (TObj(pobj).orders[0].itype<>gc_obj_order_type_gainres) then
+                  begin
+                     var statetag : Integer = GetGameObjectStatesTagByHandle(goHnd);
+                     if ((statetag and gc_statetag_action_none)<>0) and ((statetag and gc_statetag_move_idle)<>0) and ((statetag and gc_statetag_visual_none)<>0) then
+                     begin
+                        SetGameObjectPickedByHandle(goHnd, True);
+                        bNeedCancelDoneOnce := True;
+                        gGuiUpdateHighlights.Add(goHnd);
+                        if TObj(pObj).squad < 0 then
+                        gSelectedObjects.Add(goHnd);
+                     end;
+                  end;
+               end
+               else
+               begin
+                  if (TObj(pobj).orders[0].itype=gc_obj_order_type_none) then
+                  begin
+                     var statetag : Integer = GetGameObjectStatesTagByHandle(goHnd);
+                     if ((statetag and gc_statetag_action_none)<>0) and ((statetag and gc_statetag_move_idle)<>0) and ((statetag and gc_statetag_visual_none)<>0) then
+                     begin
+                        SetGameObjectPickedByHandle(goHnd, True);
+                        bNeedCancelDoneOnce := True;
+                        gGuiUpdateHighlights.Add(goHnd);
+                        if TObj(pObj).squad < 0 then
+                        gSelectedObjects.Add(goHnd);
+                     end;
+                  end;
+               end;
+               if (not bCancelDoneOnce) and (bNeedCancelDoneOnce) then
+               begin
+                  GameManagerCancelSelection;
+                  bCancelDoneOnce := True;
+               end;
+            end;
+         end;
+      end;
+   end;
+   if (not bCancelDoneOnce) then
+   GameManagerCancelSelection;
+   _misc_UpdateSelection;
+end;
+
+// _control_SelectIdleMines
+//
+procedure _control_SelectIdleMines();
+begin
+   _control_DeselectAllUnits(False);
+   GameManagerBeginSelection;
+   GameManagerStartSelection('spmRunTime');
+   var bNeedCancelDoneOnce, bCancelDoneOnce : Boolean;
+   var myPlHnd : Integer = GetPlayerHandleInterfaceIO;
+   var i : Integer;
+   for i:=GetPlayerGameObjectsCountByHandle(myPlHnd)-1 downto 0 do
+   begin
+      var goHnd : Integer = GetGameObjectHandleByIndex(i, myPlHnd);
+      if (GetGameObjectPlayableObjectByHandle(goHnd)) and (GetGameObjectVisibleByHandle(goHnd)) then
+      begin
+         var pobj : Pointer = _unit_GetTObj(goHnd);
+         if (pobj<>nil) and (TObj(pobj).bbuilt) then
+         begin
+            var usage : Integer = gObjProp[TObj(pobj).cid][TObj(pobj).id].usage;
+            var peasantabsorber : Integer = gObjProp[TObj(pobj).cid][TObj(pobj).id].peasantabsorber;
+            
+            var pObjInside : Pointer = _misc_GetObjectArgData(goHnd, gc_argunit_inside);
+            var inCount : Integer;
+            if pObjInside <> nil then
+            inCount := TIntegerList(pObjInside).GetCount;
+            
+            if (usage=gc_obj_usage_mine) and ((inCount+TObj(pobj).insidereserved)<(peasantabsorber+TObj(pobj).individual.addpeasantabsorber)) then
+            begin
+               SetGameObjectPickedByHandle(goHnd, True);
+               gSelectedObjects.Add(goHnd);
+               bNeedCancelDoneOnce := True;
+               gGuiUpdateHighlights.Add(goHnd);
+            end;
+            if (not bCancelDoneOnce) and (bNeedCancelDoneOnce) then
+            begin
+               GameManagerCancelSelection;
+               bCancelDoneOnce := True;
+            end;
+         end;
+      end;
+   end;
+   if (not bCancelDoneOnce) then
+   GameManagerCancelSelection;
+   _misc_UpdateSelection;
+end;
+
+// _control_GetGameSpeedMode
+//
+function _control_GetGameSpeedMode() : Integer;
+begin
+   Result := -1;
+   var speedfactor : Float = GetTimeSpeedFactor;
+   case speedfactor of
+      gc_settings_gamespeed_0 : Result := 0;
+      gc_settings_gamespeed_1 : Result := 1;
+      gc_settings_gamespeed_2 : Result := 2;
+      //gc_settings_gamespeed_3 : Result := 3;
+      else
+      ErrorLog('_control_GetGameSpeedMode : unknown mode index');
+   end;
+end;
+
+// _control_SetGameSpeedByMode
+//
+procedure _control_SetGameSpeedByMode(mode : Integer; bLan : Boolean);
+begin
+   // Переключатель между режимами скорости игры (Медленный, Нормальный, Быстрый, #Очень быстрый#) Четвертого режима больше нет с нами.
+   var speedfactor : Float = gc_settings_gamespeed_1;
+   case mode of
+      0 : speedfactor := gc_settings_gamespeed_0;
+      1 : speedfactor := gc_settings_gamespeed_1;
+      2 : speedfactor := gc_settings_gamespeed_2;
+      //3 : speedfactor := gc_settings_gamespeed_3;
+      else
+      ErrorLog('_control_SetGameSpeedByMode : unknown mode index');
+   end;
+   //SetTimeSpeedFactor(speedfactor);
+   //if (bLan) then
+   //begin
+      FloatRegister0 := speedfactor;
+      IntRegister0 := mode;
+      GUIExecuteState('WriteTimeSpeed');
+   //end;
+end;
+
+// _control_GetMoveCameraToPositionOffset
+//
+procedure _control_GetMoveCameraToPositionOffset(dstX, dstZ : Float; var newX, newZ : Float);
+begin
+   const cCameraName = '@movecamera';
+   if (not GetCameraExist(cCameraName)) then
+   AddCameraInfo(cCameraName);
+   
+   var pCamera : Integer = _parser_ParserTemporary(True);
+   ParserLoadFromFileByHandle(pCamera, '.\data\cameras\camera.cfg');
+   var pCameraRestrictInfo : Integer = ParserSelectByHandleByKey(pCamera, 'RestrictInfo');
+   var pCameraFreeRotationInfo : Integer = ParserSelectByHandleByKey(pCamera, 'FreeRotationInfo');
+   var minHeight : Float = ParserGetFloatValueByKeyByHandle(pCameraRestrictInfo, 'SphereLengthMin');
+   var maxHeight : Float = ParserGetFloatValueByKeyByHandle(pCameraRestrictInfo, 'SphereLength');
+   var minHeightMinAngle : Float = ParserGetFloatValueByKeyByHandle(pCameraFreeRotationInfo, 'MinHeightMinAngle');
+   var minHeightMaxAngle : Float = ParserGetFloatValueByKeyByHandle(pCameraFreeRotationInfo, 'MinHeightMaxAngle');
+   var maxHeightMinAngle : Float = ParserGetFloatValueByKeyByHandle(pCameraFreeRotationInfo, 'MaxHeightMinAngle');
+   var maxHeightMaxAngle : Float = ParserGetFloatValueByKeyByHandle(pCameraFreeRotationInfo, 'MaxHeightMaxAngle');
+   
+   var tx, height, tz, cx, cy, cz : Float;
+   CameraInfoSaveFromCurrentView(cCameraName);
+   CameraInfoReadProperties(cCameraName, tx, height, tz, cx, cy, cz);
+   
+   var angleZ : Float = -Lerp(minHeightMaxAngle, maxHeightMaxAngle, Clamp((height-minHeight)/(maxHeight-minHeight), 0, 1));
+   var dx : Float = cx-tx; // vector rotate doesnt change this value, cause of RotateX
+   var dy : Float;
+   var dz : Float = 0.1;
+   VectorRotateX(dx, dy, dz, angleZ);
+   
+   var offX : Float;
+   var offZ : Float = ArcTan(angleZ)*height;
+   
+   // direction support
+   var angleX : Float = VectorAngle(0, 0, 1, dx, 0, dz);
+   if (dx<0) then
+   angleX := -angleX;
+   var tmp : Float;
+   VectorRotateY(offX, tmp, offZ, angleX);
+   
+   newX := dstX+offX+dx;
+   newZ := dstZ+offZ+dz;
+end;
+
+
+// _control_MoveCameraToPosition
+//
+procedure _control_MoveCameraToPosition(dstX, dstZ, time : Float; bSetMaxHeight : Boolean);
+begin
+   const cCameraName = '@movecamera';
+   if (not GetCameraExist(cCameraName)) then
+   AddCameraInfo(cCameraName);
+   
+   var dov : Float = GetCameraDepthOfView;
+   SetCameraInfoSmoothingTime(time);
+   SetCameraInfoSmoothingChange((time>0));
+   
+   var pCamera : Integer = _parser_ParserTemporary(True);
+   ParserLoadFromFileByHandle(pCamera, '.\data\cameras\camera.cfg');
+   var pCameraRestrictInfo : Integer = ParserSelectByHandleByKey(pCamera, 'RestrictInfo');
+   var pCameraFreeRotationInfo : Integer = ParserSelectByHandleByKey(pCamera, 'FreeRotationInfo');
+   var minHeight : Float = ParserGetFloatValueByKeyByHandle(pCameraRestrictInfo, 'SphereLengthMin');
+   var maxHeight : Float = ParserGetFloatValueByKeyByHandle(pCameraRestrictInfo, 'SphereLength');
+   var minHeightMinAngle : Float = ParserGetFloatValueByKeyByHandle(pCameraFreeRotationInfo, 'MinHeightMinAngle');
+   var minHeightMaxAngle : Float = ParserGetFloatValueByKeyByHandle(pCameraFreeRotationInfo, 'MinHeightMaxAngle');
+   var maxHeightMinAngle : Float = ParserGetFloatValueByKeyByHandle(pCameraFreeRotationInfo, 'MaxHeightMinAngle');
+   var maxHeightMaxAngle : Float = ParserGetFloatValueByKeyByHandle(pCameraFreeRotationInfo, 'MaxHeightMaxAngle');
+   
+   var tx, height, tz, cx, cy, cz : Float;
+   CameraInfoSaveFromCurrentView(cCameraName);
+   CameraInfoReadProperties(cCameraName, tx, height, tz, cx, cy, cz);
+   
+   if (bSetMaxHeight) and (not gProfile.bDbgCamera) then
+   height := maxHeight;
+   
+   var angleZ : Float = -Lerp(minHeightMaxAngle, maxHeightMaxAngle, Clamp((height-minHeight)/(maxHeight-minHeight), 0, 1));
+   var dx : Float = cx-tx; // vector rotate doesnt change this value, cause of RotateX
+   var dy : Float;
+   var dz : Float = 0.1;
+   VectorRotateX(dx, dy, dz, angleZ);
+   
+   var offX : Float;
+   var offZ : Float = ArcTan(angleZ)*height;
+   
+   // direction support
+   var angleX : Float = VectorAngle(0, 0, 1, dx, 0, dz);
+   if (dx<0) then
+   angleX := -angleX;
+   var tmp : Float;
+   VectorRotateY(offX, tmp, offZ, angleX);
+   
+   CameraInfoSaveWithProperties(cCameraName, dstX+offX, height, dstZ+offZ, dstX+offX+dx, height+dy, dstZ+offZ+dz);
+   CameraInfoLoadToCurrentView(cCameraName);
+   SetCameraDepthOfView(dov);
+end;
+
+// _control_MoveCameraToUnitsListCenter
+//
+procedure _control_MoveCameraToUnitsListCenter(var list : TIntegerList);
+begin
+   var posX, posZ : Float;
+   var count : Integer = list.GetCount;
+   if (count>0) then
+   begin
+      var i : Integer;
+      for i:=count-1 downto 0 do
+      begin
+         var goHnd : Integer = list.Get(i);
+         posX := posX+GetGameObjectPositionXByHandle(goHnd);
+         posZ := posZ+GetGameObjectPositionZByHandle(goHnd);
+      end;
+      posX := posX/count;
+      posZ := posZ/count;
+      _control_MoveCameraToPosition(posX, posZ, 0, False);
+   end;
+end;
+
+procedure _control_MoveCameraToSelectedUnits();
+begin
+   gIntegerList.Clear;
+   gIntegerList := gSelectedObjects;
+   var i, j : Integer;
+   for i:=0 to gSelectedSquads.GetCount-1 do
+   begin
+      var psquad : Pointer = gSelectedSquads.GetPointer(i);
+      if (psquad<>nil) then
+      begin
+         for j:=0 to TSquad(psquad).GetCount-1 do
+         begin
+            var hnd : Integer = TSquad(psquad).Get(j);
+            if (hnd<>0) then
+            gIntegerList.Add(hnd);
+         end;
+      end;
+   end;
+   if (gIntegerList.GetCount>0) then
+   _control_MoveCameraToUnitsListCenter(gIntegerList);
+end;
+
+// _control_SetPlayer
+//
+procedure _control_SetPlayer(plInd : Integer);
+begin
+   GUIMiniMapPrimitivesClear();
+   SetPlayerHandleInterfaceIO(GetPlayerHandleByIndex(plInd));
+   _player_UpdateFOW(plInd);
+   _control_DeselectAllUnits(False);
+   GUIExecuteState('DoUpdateSelection');
+   GUIExecuteState('InitMinimap');
+   gbool_gui_update_editorinfo := True;
+   {if (gbool_editor_placeunits) then
+   begin
+      gstring_editor_selectedunitsid := '';
+      gint_editor_selectedunitid := 0;
+   end;}
+end;
+
+// _control_SelectOnlySquad
+//
+procedure _control_SelectOnlySquad(pSquad : Pointer);
+begin
+   if (pSquad<>nil) then
+   begin
+      //_control_DeselectAllUnits(True);
+      _control_DeselectAllUnits(False);
+      TSquad(psquad).fSelected := (TSquad(pSquad).GetCount>0);
+      if (TSquad(pSquad).GetCount>0) then
+      gSelectedSquads.AddPointer(psquad);
+      var csideng : String = 'eng';
+      var cideng : Integer = _country_GetIDBySID(csideng);
+      var csidsco : String = 'sco';
+      var cidsco : Integer = _country_GetIDBySID(csidsco);
+      var i : Integer;
+      for i:=TSquad(pSquad).GetCount-1 downto 0 do
+      begin
+         var goHnd : Integer = TSquad(pSquad).Get(i);
+         if not GetGameObjectPickedByHandle(goHnd) then
+         SetGameObjectPickedByHandle(goHnd, True);
+         gGuiUpdateHighlights.Add(goHnd);
+         var pobj : Pointer = _unit_GetTObj(goHnd);
+         if (pobj<>nil) then
+         begin
+            if (not gbool_gui_drummerselected) and (gObjProp[TObj(pobj).cid][TObj(pobj).id].bdrummer) and (((TObj(pObj).cid<>cidsco) and (TObj(pObj).cid<>cideng)) or (gObjProp[TObj(pObj).cid][TObj(pObj).id].sid<>'bagpiper')) then
+            gbool_gui_drummerselected := True;
+            if (not gbool_gui_bagpiperselected) and (gObjProp[TObj(pobj).cid][TObj(pobj).id].bdrummer) and ((TObj(pObj).cid=cideng) or (TObj(pObj).cid=cidsco)) and (gObjProp[TObj(pObj).cid][TObj(pObj).id].sid='bagpiper') then
+            gbool_gui_bagpiperselected := True;
+            if (not gbool_gui_officerselected) and (gObjProp[TObj(pobj).cid][TObj(pobj).id].bofficer) then
+            gbool_gui_officerselected := True;
+         end;
+      end;
+      
+      gbool_gui_update_unitcontrol := True;
+   end;
+end;

@@ -1,0 +1,79 @@
+{refurl=.\data\objects\ref\refbuilding.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=mainproperty}
+   CustomName = misbridge1
+   BaseName = misbridge1
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=actorproperty}
+   LODActorName = misbridge1
+   DefaultMeshName = misbridge1.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = misbridge
+   Mesh[0].UseableMaterials[0] = misbridge
+   Mesh[0].UseSeasonMaterial = True
+   Mesh[0].UseableSummerMaterials[0] = misbridge
+   Mesh[0].UseableWinterMaterials[0] = misbridgew
+   Mesh[1] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = misbridge
+      UseableMaterials[0] = misbridge
+   struct.end
+   Mesh[2] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = misbridge
+      UseableMaterials[0] = misbridge
+   struct.end
+   Mesh[3] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = misbridge
+      UseableMaterials[0] = misbridge
+   struct.end
+   Mesh[4] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = misbridge
+      UseableMaterials[0] = misbridge
+   struct.end
+   Mesh[5] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = misbridge
+      UseableMaterials[0] = misbridge
+   struct.end
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=statemachineproperty}
+   Enabled = False
+   Static = False
+   Active = False
+section.end
+
+collisionmaskproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmaskproperty}
+   Enabled = False
+   Priority = 101
+   Mask : struct.begin
+      [*] = 11
+      [*] = 11
+   struct.end
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmeshproperty}
+   RayCastIntersect = True
+   BVRayCastIntersect = True
+   CustomBoundingAABBMin.X = -2.75
+   CustomBoundingAABBMin.Y = -2
+   CustomBoundingAABBMin.Z = -2.75
+   CustomBoundingAABBMax.X = 2.75
+   CustomBoundingAABBMax.Y = 1
+   CustomBoundingAABBMax.Z = 2.75
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.6334
+   DefaultScale.Y = 0.6334
+   DefaultScale.Z = 0.6334
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=directionupproperty}
+   DefaultRollAngle = 45
+section.end
+
+offsetproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=offsetproperty}
+   AutoOffset = False
+section.end

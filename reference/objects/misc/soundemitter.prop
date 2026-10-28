@@ -1,0 +1,46 @@
+{refurl=.\data\objects\ref\refmisc.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=mainproperty}
+   CustomName = soundemitter
+   BaseName = soundemitter
+section.end
+
+stringproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=stringproperty}
+   StringTag = 108
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=collisionmeshproperty}
+   Static = False
+   Detection = False
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=actorproperty}
+   Enabled = False
+   LODActorName = point
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = box
+   Mesh[0].UseableMaterials[0] = box
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=statemachineproperty}
+   Enabled = True
+   Static = False
+   ClassName = StateMachineProperty
+   Active = True
+   StateMachine.LoadFromFile = .\data\scripts\misc\soundemitter.aix
+   DefaultInitStateName = Initial
+   DestroyStateName = OnDestroy
+   AfterLoadStateName = OnAfterLoad
+   BeforeSaveStateName = OnBeforeSave
+   InLoadStateName = 
+   TagStatesChangedStateName = 
+   StateMachineInterval = 100
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.0001
+   DefaultScale.Y = 0.0001
+   DefaultScale.Z = 0.0001
+section.end

@@ -1,0 +1,27 @@
+{refurl=.\data\objects\ref\refmisc.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=mainproperty}
+   CustomName = sphere
+   BaseName = sphere
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=actorproperty}
+   LODActorName = sphere
+   DefaultMeshName = sphere.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = white
+   Mesh[0].UseableMaterials[0] = white
+   Mesh[0].UseableMaterials[1] = grey
+   Mesh[0].UseableMaterials[2] = black
+   Mesh[0].UseableMaterials[3] = gradient
+   Mesh[0].UseableMaterials[4] = white_specnull
+   Mesh[0].UseableMaterials[5] = grey_specnull
+   Mesh[0].UseableMaterials[6] = black_specnull
+   Mesh[0].UseableMaterials[7] = gradient_specnull
+   Mesh[0].UseableMaterials[4] = white_specfull
+   Mesh[0].UseableMaterials[5] = grey_specfull
+   Mesh[0].UseableMaterials[6] = black_specfull
+   Mesh[0].UseableMaterials[7] = gradient_specfull
+section.end

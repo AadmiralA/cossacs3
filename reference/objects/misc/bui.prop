@@ -1,0 +1,48 @@
+{refurl=.\data\objects\ref\refmisc.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=mainproperty}
+   CustomName = bui
+   BaseName = bui
+section.end
+
+stringproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=stringproperty}
+   StringTag = 110
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=actorproperty}
+   LODActorName = bui
+   DefaultMeshName = bui.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = bui
+   Mesh[0].UseableMaterials[0] = bui
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=frameanimationproperty}
+   Enabled = True
+   Static = True
+   ClassName = FrameAnimationProperty
+   DefaultFrameAnimationName = idle
+   DefaultFrameAnimationMode = aamLoop
+   FrameAnimationSynchronizeOption = fasoNone
+   FrameAnimationSwitchChildren = False
+   DefaultFrameAnimationCycles = 
+   FrameAnimationCyclesLibName = bui
+   RandomOffsetFrameAnimationCycles = acsaDefault
+   RandomOffsetFrameAnimation = acsaDefault
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.5
+   DefaultScale.Y = 0.5
+   DefaultScale.Z = 0.5
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=directionupproperty}
+   DefaultRollAngle = 45
+section.end
+
+offsetproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=offsetproperty}
+   OffsetCollideOption = ocoTerrainWater
+section.end

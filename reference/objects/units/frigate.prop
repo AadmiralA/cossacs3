@@ -1,0 +1,104 @@
+{refurl=.\data\objects\ref\refunit.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=mainproperty}
+   CustomName = frigate
+   BaseName = frigate
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=actorproperty}
+   LODActorName = frigate
+   DefaultMeshName = frigate.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = frigate
+   Mesh[0].UseableMaterials[0] = frigate
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = frigate
+      UseableMaterials[0] = frigate
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = frigate
+      UseableMaterials[0] = frigate
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = frigate
+      UseableMaterials[0] = frigate
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = frigate
+      UseableMaterials[0] = frigate
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = frigate
+      UseableMaterials[0] = frigate
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = frigate
+      UseableMaterials[0] = frigate
+   struct.end
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=statemachineproperty}
+   StateMachineInterval = 60
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=collisionmeshproperty}
+   UseCustTransformed = True
+   CustomBoundingAABBMin.X = -0.7
+   CustomBoundingAABBMin.Y = -0.4
+   CustomBoundingAABBMin.Z = -2.0
+   CustomBoundingAABBMax.X = 0.7
+   CustomBoundingAABBMax.Y = 0.9
+   CustomBoundingAABBMax.Z = 3.2
+section.end
+
+autochildrenproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = AutoChildrenProperty
+   Custom = False
+   Mesh[0] : struct.begin
+      Enabled = True
+      Static = True
+      ClassName = MeshChildrenProperty
+      Children : struct.begin
+         [0] : struct.begin
+            Enabled = True
+            Static = True
+            ClassName = ChildProperty
+            BaseName = frigatea
+            RaceName = units
+            DefaultMeshName = frigatea.mesh
+            RandomMeshName = False
+            Mesh[0] = frigatea
+            Mesh[1] = frigate1a
+            Mesh[2] = frigate2a
+            Mesh[3] = frigate3a
+            Mesh[4] = frigate4a
+            Mesh[5] = frigate_death1a
+            Mesh[6] = frigate_death2a
+            DefaultMaterialName = frigate
+            RandomMaterialName = False
+            Materials[0] = frigate
+            Materials[1] = frigate
+            Materials[2] = frigate
+            Materials[3] = frigate
+            Materials[4] = frigate
+            Materials[5] = frigate
+            Materials[6] = frigate
+            Option = achildRequered
+            StartStateName = 
+            Useable = True
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=frameanimationproperty}
+   FrameAnimationCyclesLibName = frigate
+section.end
+
+offsetproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=offsetproperty}
+   OffsetCollideOption = ocoTerrainWater
+section.end

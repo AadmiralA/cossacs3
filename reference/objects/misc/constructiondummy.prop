@@ -1,0 +1,16 @@
+{refurl=.\data\objects\ref\refmisc.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=mainproperty}
+   CustomName = constructiondummy
+   BaseName = constructiondummy
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=actorproperty}
+   LODActorName = box
+   DefaultMeshName = box.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = box
+   Mesh[0].UseableMaterials[0] = box
+section.end

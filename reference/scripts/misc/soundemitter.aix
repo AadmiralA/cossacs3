@@ -1,0 +1,63 @@
+section.begin
+   Name = Initial
+   LanClientExecute = True
+   UsedFileName = 
+   Code : struct.begin
+      [*] = ;if gSoundManager.emitterhnd=0 then
+      [*] = ;gSoundManager.emitterhnd := GetGameObjectMyHandle;
+      [*] = ;
+      [*] = ;SwitchTo('Nothing');
+   struct.end
+section.end
+
+section.begin
+   Name = Nothing
+   LanClientExecute = True
+   UsedFileName = 
+section.end
+
+section.begin
+   Name = OnAfterLoad
+   LanClientExecute = True
+   UsedFileName = 
+   Code[*] = ;SwitchTo('Nothing');
+section.end
+
+section.begin
+   Name = OnBeforeSave
+   LanClientExecute = True
+   UsedFileName = 
+   Code : struct.begin
+      [*] = ;GameObjectRequestToDestroyByHandle(GetGameObjectMyHandle);
+      [*] = ;
+      [*] = ;SwitchTo('Nothing');
+   struct.end
+section.end
+
+section.begin
+   Name = OnDestroy
+   LanClientExecute = True
+   UsedFileName = 
+   Code : struct.begin
+      [*] = ;gSoundManager.emitterhnd := 0;
+      [*] = ;
+      [*] = ;SwitchTo('Nothing');
+   struct.end
+section.end
+
+section.begin
+   Name = FreeToPool
+   LanClientExecute = True
+   UsedFileName = 
+   Code : struct.begin
+      [*] = ;FreeToPoolGameObjectHandle(GetGameObjectMyHandle);
+      [*] = ;
+      [*] = ;SwitchTo('Nothing');
+   struct.end
+section.end
+
+section.begin
+   CurrentState = 
+   SaveVariables = False
+section.end
+

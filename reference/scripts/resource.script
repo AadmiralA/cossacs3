@@ -1,0 +1,75 @@
+const cresourcefilename='resource.lib';
+const clanguagefilename='.\data\locale\lang.loc';
+var resourcehnd: integer=intregister0;
+var steamerror: integer;
+if(resourcehnd<>0) and (ParserGetCountByHandle(resourcehnd)>0) and (IsFileExists(clanguagefilename)) then begin
+   var languageage: integer=FileAge(clanguagefilename);
+   var resourceage: Integer;
+   if IsFileExists(GetAppSaveDirectoryPath+cresourcefilename) then
+      resourceage:=FileAge(GetAppSaveDirectoryPath+cresourcefilename);
+   if languageage>resourceage then begin
+      var userlang: string='default';
+      if IsFileExists('steam_api.dll') then
+      begin
+         if not SteamwrapIsLoaded() and IsFileExists('steam_api.dll') then
+            SteamwrapInitSafe('steamwrap.dll', steamerror);
+         if SteamwrapIsSteamRunning then
+            userlang:=SteamwrapGetSteamUILanguage();
+      end
+      else
+      userlang:='english';
+      var languagehnd: integer=ParserCreate('language');
+      if ParserLoadFromFile(clanguagefilename) then begin
+         var userlanghnd: integer=ParserSelectByHandleByKey(languagehnd, userlang);
+         var i: integer;
+         for i:=0 to ParserGetCountByHandle(userlanghnd)-1 do begin
+            var p: integer=ParserSelectByHandleByIndex(userlanghnd, i);
+            var k: string=ParserGetKeyName(p);
+            var v: string=ParserGetValueByIndexByHandle(userlanghnd, i);
+            ParserSetValueByKeyByHandle(resourcehnd, k, v);
+         end;
+         ParserSaveToFileByHandle(resourcehnd, GetAppSaveDirectoryPath+cresourcefilename);
+      end;
+   end;
+end;
+if not SteamwrapIsLoaded() and IsFileExists('steam_api.dll') then
+   SteamwrapInitSafe('steamwrap.dll', steamerror);
+if SteamwrapIsSteamRunning then begin
+   var res: boolean=SteamPrepareWorkshop(true, false);
+   if res then
+      log(' :: STEAM LOG :: SteamPrepareWorkshop(true, false) return true')
+   else log(' :: STEAM LOG :: SteamPrepareWorkshop(true, false) return false');
+end;
+
+// mods restore part start
+var restorefile : String = GetAppSaveDirectoryPath+'mods.restore';
+var brestoreexists : Boolean = IsFileExists(restorefile);
+if (brestoreexists) then
+begin
+   if (IsEngine or IsEditor) then
+   begin
+      var pMods : Integer = ParserSelectByKey('mods');
+      if pMods=0 then
+      pMods := ParserCreate('mods')
+      else
+      ParserClearByHandle(pMods);
+      ParserLoadFromFileByHandle(pmods, restorefile);
+      var pModsTemp : Integer = ParserSelectByHandleByKey(pMods, 'tmp');
+      if pModsTemp<>0 then
+      begin
+         StringRegister7 := ParserGetValueByKeyByHandle(pModsTemp, 'checksum');
+         ParserFreeByHandle(pModsTemp);
+         ParserSaveToFileByHandle(pmods, restorefile);
+      end
+      else
+      begin
+         SteamSyncWorkshopItems(pmods);
+         Log('SteamSyncWorkshopItems mods from profile struct');
+         ParserFreeByHandle(pMods);
+         DeleteFileStream(restorefile);
+      end;
+   end
+   else
+   DeleteFileStream(restorefile);
+end;
+// mods restore part finish

@@ -1,0 +1,139 @@
+{refurl=.\data\objects\ref\refbuilding.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=mainproperty}
+   CustomName = eurpor
+   BaseName = eurpor
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=actorproperty}
+   LODActorName = eurpor
+   DefaultMeshName = eurpor.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = eurpor
+   Mesh[0].UseableMaterials[0] = eurpor
+   Mesh[0].UseSeasonMaterial = True
+   Mesh[0].UseableSummerMaterials[0] = eurpor
+   Mesh[0].UseableWinterMaterials[0] = eurporw
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = eurpor
+      UseableMaterials[0] = eurpor
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = eurpor
+      UseableMaterials[0] = eurpor
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = eurpor
+      UseableMaterials[0] = eurpor
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = eurpor
+      UseableMaterials[0] = eurpor
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = eurpor
+      UseableMaterials[0] = eurpor
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = eurpor
+      UseableMaterials[0] = eurpor
+   struct.end
+section.end
+
+collisionmaskproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmaskproperty}
+   Mask : struct.begin
+      [*] = 000000000000000000
+      [*] = 000000000111100000
+      [*] = 000000001111110000
+      [*] = 000000011111110000
+      [*] = 000000111111111000
+      [*] = 000000111111111110
+      [*] = 000000111111111111
+      [*] = 000001111111111111
+      [*] = 000011111111111110
+      [*] = 000011111111111100
+      [*] = 000011111111111000
+      [*] = 000001111111110000
+      [*] = 000000011111100000
+      [*] = 000000001111100000
+      [*] = 000000001111100000
+      [*] = 000000000111100000
+      [*] = 000000000011000000
+   struct.end
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmeshproperty}
+   CustomBoundingAABBMin.X = -2.15
+   CustomBoundingAABBMin.Y = -0.25
+   CustomBoundingAABBMin.Z = -1.80
+   CustomBoundingAABBMax.X = 3.55
+   CustomBoundingAABBMax.Y = 1.35
+   CustomBoundingAABBMax.Z = 1.70
+section.end
+
+autochildrenproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = AutoChildrenProperty
+   Custom = False
+   Mesh[0] : struct.begin
+      Enabled = True
+      Static = True
+      ClassName = MeshChildrenProperty
+      Children : struct.begin
+         [0] : struct.begin
+            Enabled = True
+            Static = True
+            ClassName = ChildProperty
+            BaseName = eurpora
+            RaceName = buildings
+            DefaultMeshName = eurpora.mesh
+            RandomMeshName = False
+            Mesh[0] = eurpora
+            Mesh[1] = eurpor1a
+            Mesh[2] = eurpor2a
+            Mesh[3] = eurpor3a
+            Mesh[4] = eurpor4a
+            Mesh[5] = eurpor_death1a
+            Mesh[6] = eurpor_death2a
+            DefaultMaterialName = scaffold
+            RandomMaterialName = False
+            Materials[0] = scaffold
+            Materials[1] = scaffold
+            Materials[2] = scaffold
+            Materials[3] = scaffold
+            Materials[4] = scaffold
+            Materials[5] = debris
+            Materials[6] = debris
+            Option = achildRequered
+            StartStateName = 
+            Useable = True
+         struct.end
+         [1] : struct.begin
+            Enabled = True
+            Static = True
+            ClassName = ChildProperty
+            BaseName = eurporb
+            RaceName = buildings
+            DefaultMeshName = fishnet.mesh
+            RandomMeshName = False
+            Mesh[0] = fishnet
+            DefaultMaterialName = fishnet
+            RandomMaterialName = False
+            Materials[0] = fishnet
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.4623
+   DefaultScale.Y = 0.4623
+   DefaultScale.Z = 0.4623
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=directionupproperty}
+   DefaultRollAngle = 135
+section.end

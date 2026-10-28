@@ -1,0 +1,33 @@
+{refurl=.\data\objects\ref\refproj.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refproj.prop; refkey=mainproperty}
+   CustomName = projgrenade
+   BaseName = projgrenade
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refproj.prop; refkey=actorproperty}
+   LODActorName = projgrenade
+   DefaultMeshName = projgrenade.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refproj.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = projgrenade
+   Mesh[0].UseableMaterials[0] = projgrenade
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=statemachineproperty}
+   Enabled = True
+   Active = True
+   StateMachine.LoadFromFile = .\data\scripts\misc\projectile.aix
+   DefaultInitStateName = InitialEmpty
+   AfterLoadStateName = OnAfterLoad
+   BeforeSaveStateName = 
+   TagStatesChangedStateName = OnTagStates
+   StateMachineInterval = 19
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refproj.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.09
+   DefaultScale.Y = 0.09
+   DefaultScale.Z = 0.09
+section.end

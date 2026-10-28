@@ -1,0 +1,26 @@
+{refurl=.\data\objects\ref\refunit.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=mainproperty}
+   CustomName = mortar_death
+   BaseName = mortar_death
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=actorproperty}
+   LODActorName = mortar_death
+   DefaultMeshName = mortar_death.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = mortar
+   Mesh[0].UseableMaterials[0] = mortar
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=frameanimationproperty}
+   FrameAnimationCyclesLibName = mortar_death
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.38
+   DefaultScale.Y = 0.38
+   DefaultScale.Z = 0.38
+section.end

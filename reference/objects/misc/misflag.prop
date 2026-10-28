@@ -1,0 +1,50 @@
+{refurl=.\data\objects\ref\refmisc.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=mainproperty}
+   CustomName = misflag
+   BaseName = misflag
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=actorproperty}
+   LODActorName = misflag
+   DefaultMeshName = misflag.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=materialproperty}
+   Mesh : struct.begin      
+      [0] : struct.begin
+         Enabled = False
+         Static = False
+         ClassName = MeshMaterialProperty
+         DefaultMaterialName = red
+         RandomMaterialName = False
+         UseableMaterials : struct.begin
+            [0] = red
+            [1] = yellow
+         struct.end
+         UseSeasonMaterial = True
+         UseableSummerMaterials : struct.begin
+            [0] = red
+            [1] = yellow
+         struct.end
+         UseableWinterMaterials : struct.begin
+            [0] = red
+            [1] = yellow
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.084
+   DefaultScale.Y = 0.084
+   DefaultScale.Z = 0.084
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=directionupproperty}
+   DefaultRollAngle = 90
+section.end
+
+offsetproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=offsetproperty}
+   OffsetCollideOption = ocoTerrainWater
+section.end

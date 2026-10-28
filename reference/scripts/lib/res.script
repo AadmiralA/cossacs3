@@ -1,0 +1,360 @@
+//
+// res.script
+//
+
+// _res_GetTRes
+//
+function _res_GetTRes(const hnd: Integer): Pointer;
+begin
+   result:=_misc_GetObjectArgData(hnd, gc_argenv_res);
+   if result=nil then
+   begin
+      if (gProfile.bDbgLogPointerNil) then
+      _init_DebugPointerNil(result);
+   end
+   else
+   if TBaseObj(result).baseid<>gc_baseid_res then
+   begin
+      result:=nil;
+      if (not _net_IsClient) then // for client this is common thing
+      ErrorLog('_res_GetTRes try to get wrong baseid : state='+GetCurrentStateName+' filename='+GetStateMachineFileName(GetCurrentStateMachineHandle));
+   end;
+end;
+
+// _res_Init
+//
+procedure _res_Init(var res : TRes; itype : Integer);
+begin
+   res.baseid := gc_baseid_res;
+   res.hp := 0;
+   res.itype := itype;
+   res.timetransormlast := 0;
+   res.worktransorm := 0;
+   res.resgrid := -1;
+   res.brised := True;
+end;
+
+// _res_AddResToPlayerByIndex
+//
+procedure _res_AddResToPlayerByIndex(const plInd, restype, amount : Integer);
+begin
+   if (amount<>0) then
+   begin
+      gPlayer[plInd].setres[restype] := not (not gPlayer[plInd].setres[restype]+amount);
+      if (amount<0) then
+      gPlayer[plInd].res[restype] := not (not gPlayer[plInd].res[restype]+amount);
+      
+      if (GetProgressingPauseMode) then
+      begin
+         var progressPlHnd : Integer = GetPlayerHandleByIndex(gc_playerind_progress);
+         if (progressPlHnd<>0) then
+         begin
+            var smHnd : Integer = GetPlayerStateMachineHandle(progressPlHnd);
+            StateMachineExecuteState(smHnd, 'WriteRes', 0);
+            //PlayerExecuteStateByHandle(progressPlHnd, 'WriteRes'); // uncomment if got net error on _record creation
+         end;
+      end;
+   end;
+end;
+
+// _res_SetResToPlayerByIndex
+//
+procedure _res_SetResToPlayerByIndex(const plInd, restype, amount : Integer);
+begin
+   gPlayer[plInd].setres[restype] := not amount;
+   
+   if (GetProgressingPauseMode) then
+   begin
+      var progressPlHnd : Integer = GetPlayerHandleByIndex(gc_playerind_progress);
+      if (progressPlHnd<>0) then
+      begin
+         var smHnd : Integer = GetPlayerStateMachineHandle(progressPlHnd);
+         StateMachineExecuteState(smHnd, 'WriteRes', 0);
+         //PlayerExecuteStateByHandle(progressPlHnd, 'WriteRes'); // uncomment if got net error on _record creation
+      end;
+   end;
+end;
+
+// _res_ResGridAdd
+//
+procedure _res_ResGridAdd(const goHnd : Integer);
+begin
+   var pres : Pointer = _res_GetTRes(goHnd);
+   if (pres<>nil) and (TRes(pres).itype<>gc_resource_type_none) then
+   begin
+      var posX : Float = GetGameObjectPositionXByHandle(goHnd);
+      var posZ : Float = GetGameObjectPositionZByHandle(goHnd);
+      if (GetMapCollisionTag(posX, posZ, False)=0) then
+      begin
+         var gridX, gridY : Integer;
+         if (_misc_PosToResGridIndices(posX, posZ, gridX, gridY)) then
+         begin
+            gResGrid[gridX,gridY].Add(goHnd, TRes(pres).itype);
+            TRes(pres).resgrid := gridX+gridY*gc_resgrid_countx;
+         end
+         else
+         begin
+            //ErrorLog('_res_ResGridAdd : position out of range');
+            TRes(pres).resgrid := -1;
+         end;
+      end
+      else
+      TRes(pres).resgrid := -1;
+   end;
+end;
+
+// _res_ResGridRemove
+//
+procedure _res_ResGridRemove(const goHnd : Integer);
+begin
+   var pres : Pointer = _res_GetTRes(goHnd);
+   if (pres<>nil) and (TRes(pres).itype<>gc_resource_type_none) and (TRes(pres).resgrid>-1) then
+   begin
+      var gridX : Integer = TRes(pres).resgrid mod gc_resgrid_countx;
+      var gridY : Integer = TRes(pres).resgrid div gc_resgrid_countx;
+      gResGrid[gridX,gridY].Remove(goHnd, TRes(pres).itype);
+   end;
+end;
+
+// _res_ResGridClear
+//
+procedure _res_ResGridClear();
+begin
+   var i, j, k, l: Integer;
+   for i:=0 to gc_resgrid_countx-1 do
+   for j:=0 to gc_resgrid_county-1 do begin
+      gResGrid[i,j].Clear;
+      for k:=0 to gc_ResCount-1 do begin
+         gResGrid[i,j].fResCount[k]:=0;
+         for l:=0 to gc_MaxPlayerCount-1 do
+         gResGrid[i,j].fWorkerCount[l][k]:=0;
+      end;
+   end;
+end;
+
+// _res_ResGridResetEnvironment
+//
+procedure _res_ResGridResetEnvironment();
+begin
+   if GetCountOfPlayers>gc_playerind_env then begin
+      var goind: Integer;
+      var plhnd: Integer = GetPlayerHandleByIndex(gc_playerind_env);
+      for goind:=GetPlayerGameObjectsCountByHandle(plhnd)-1 downto 0 do begin
+         var gohnd: Integer=GetGameObjectHandleByIndex(goind, plhnd);
+         if (_misc_GetBaseObjID(gohnd)=gc_baseid_res) then
+         begin
+            var pres : Pointer = _res_GetTRes(gohnd);
+            if (pres<>nil) and (TRes(pres).itype<>gc_resource_type_none) then
+            _res_ResGridAdd(gohnd);
+            var pordlist : Pointer = _misc_GetObjectArgData(gohnd, gc_argenv_ordlist);
+            if (pordlist<>nil) then
+            TIntegerList(pordlist).Clear;
+         end;
+      end;
+      var i, j : Integer;
+      for i:=0 to gc_MaxPlayerCount-1 do
+      begin
+         var plhnd: Integer = GetPlayerHandleByIndex(i);
+         for goind:=GetPlayerGameObjectsCountByHandle(plhnd)-1 downto 0 do
+         begin
+            var gohnd: Integer=GetGameObjectHandleByIndex(goind, plhnd);
+            if (_misc_GetBaseObjID(gohnd)=gc_baseid_obj) then
+            begin
+               var pobj : Pointer = _misc_GetObjectArgData(gohnd, gc_argunit_obj);
+               if (pobj<>nil) and (gObjProp[TObj(pobj).cid][TObj(pobj).id].usage=gc_obj_usage_peasant) then
+               begin
+                  for j:=0 to gc_obj_MaxOrderCount-1 do
+                  begin
+                     if (TObj(pobj).orders[j].itype=gc_obj_order_type_gainres) and  (TObj(pobj).orders[j].info.trg<>0) then
+                     _misc_IncreaseResGridWorkerCount(gohnd, TObj(pobj).orders[j].info.trg);
+                  end;
+               end;
+            end;
+         end;
+      end;
+   end;
+end;
+
+procedure _res_InitEconomy();
+begin
+   // инициализация рыночных цен
+   var i : Integer;
+   for i:=0 to gc_ResCount-1 do
+   begin
+      garr_res_dlt[i]:=0; garr_res_trg[i]:=0;
+      case i of
+         gc_resource_type_food : begin
+            gEconomy[i].buycostmin := 20;
+            gEconomy[i].buycostdef := 25;
+            gEconomy[i].buycostmax := 40;
+            {gEconomy[i].sellcostmin := 5;
+            gEconomy[i].sellcostdef := 15;
+            gEconomy[i].sellcostmax := 20;}
+            gEconomy[i].sellcostdef := 18.24095;
+            // patch ideas
+            gEconomy[i].sellcostdef := 18.24095*0.8333;
+            gEconomy[i].sellcostmin := gEconomy[i].sellcostdef*0.7;
+            gEconomy[i].sellcostmax := gEconomy[i].sellcostdef*1.3;
+         end;
+         gc_resource_type_wood : begin
+            gEconomy[i].buycostmin := 40;
+            gEconomy[i].buycostdef := 50;
+            gEconomy[i].buycostmax := 60;
+            gEconomy[i].sellcostmin := 20;
+            gEconomy[i].sellcostdef := 30;
+            gEconomy[i].sellcostmax := 40;
+         end;
+         gc_resource_type_stone : begin
+            gEconomy[i].buycostmin := 40;
+            gEconomy[i].buycostdef := 50;
+            gEconomy[i].buycostmax := 60;
+            gEconomy[i].sellcostdef := 19.29725;//14.0235;
+            // patch ideas
+            gEconomy[i].sellcostdef := 19.29725*1.08306;//14.0235;
+            gEconomy[i].sellcostmin := gEconomy[i].sellcostdef*0.75;
+            gEconomy[i].sellcostmax := gEconomy[i].sellcostdef*1.25;
+         end;
+         gc_resource_type_gold : begin
+            gEconomy[i].buycostmin := 140;
+            gEconomy[i].buycostdef := 190;
+            gEconomy[i].buycostmax := 240;
+            gEconomy[i].sellcostmin := 80;
+            gEconomy[i].sellcostdef := 110;
+            gEconomy[i].sellcostmax := 140;
+         end;
+         gc_resource_type_iron, gc_resource_type_coal : begin
+            gEconomy[i].buycostmin := 80+20;
+            gEconomy[i].buycostdef := 100+40;
+            gEconomy[i].buycostmax := 120+60;
+            gEconomy[i].sellcostmin := 40;
+            gEconomy[i].sellcostdef := 60;
+            gEconomy[i].sellcostmax := 80;
+         end;
+         else
+         begin
+            gEconomy[i].buycostmin := 40;
+            gEconomy[i].buycostdef := 50;
+            gEconomy[i].buycostmax := 60;
+            gEconomy[i].sellcostmin := 20;
+            gEconomy[i].sellcostdef := 30;
+            gEconomy[i].sellcostmax := 40;
+         end;
+      end;
+      gEconomy[i].buyexp := gc_economy_exp;
+      gEconomy[i].buytime := gc_economy_time;
+      gEconomy[i].sellexp := gc_economy_exp;
+      gEconomy[i].selltime := gc_economy_time;
+      gEconomy[i].buycost := gEconomy[i].buycostdef;
+      gEconomy[i].sellcost := gEconomy[i].sellcostdef;
+   end;
+end;
+
+procedure _res_CalcDeltaResources(deltatime: Float);
+begin
+   if GetProjectModeInt=2 then begin
+      gflt_res_dlt:=gflt_res_dlt+deltatime;
+      if gflt_res_dlt>0{1} then begin
+         gflt_res_dlt:=0;
+         var i, j: integer;
+         for i:=0 to gc_ResCount-1 do begin
+            var r: integer=0;
+            for j:=0 to gc_MaxPlayerCount-1 do r:=r+not gPlayer[j].res[i];
+            garr_res_dlt[i]:=round(Lerp(garr_res_dlt[i], ClampInt(r-garr_res_trg[i], 1, 1000), deltatime));
+            garr_res_trg[i]:=r;
+            //log('garr_res_dlt['+inttostr(i)+']='+inttostr(garr_res_dlt[i]));
+         end;
+      end;
+   end;
+end;
+
+// _res_ProcessEconomy
+//
+procedure _res_ProcessEconomy(deltatime: Float);
+begin
+   _res_CalcDeltaResources(deltatime);
+   // нормализация рыночных цен с течением времени
+   var i: Integer;
+   for i:=0 to gc_ResCount-1 do
+   begin
+      {if (gEconomy[i].buycost>gEconomy[i].buycostdef) then
+      gEconomy[i].buycost := gEconomy[i].buycost-gEconomy[i].buytime*deltatime;
+      if (gEconomy[i].sellcost>gEconomy[i].sellcostdef) then
+      gEconomy[i].sellcost := gEconomy[i].sellcost-gEconomy[i].selltime*deltatime;
+      if (gEconomy[i].buycost<gEconomy[i].buycostdef) then
+      gEconomy[i].buycost := gEconomy[i].buycost+gEconomy[i].buytime*deltatime;
+      if (gEconomy[i].sellcost<gEconomy[i].sellcostdef) then
+      gEconomy[i].sellcost := gEconomy[i].sellcost+gEconomy[i].selltime*deltatime;}
+      var bc: Float=gEconomy[i].buycost;
+      var bcd: Float=gEconomy[i].buycostdef;
+      var sc: Float=gEconomy[i].sellcost;
+      var scd: Float=gEconomy[i].sellcostdef;
+      var dt: Float=deltatime*0.025*MaxFloat(1, garr_res_dlt[i]*0.01);
+      if gEconomy[i].buycost>gEconomy[i].buycostdef then begin
+         bc:=bc-(bc-bcd)*dt;
+         gEconomy[i].buycost:=Clamp(bc, gEconomy[i].buycostmin, gEconomy[i].buycostmax);
+      end;
+      if gEconomy[i].sellcost>gEconomy[i].sellcostdef then begin
+         sc:=sc-(sc-scd)*dt;
+         gEconomy[i].sellcost:=Clamp(sc, gEconomy[i].sellcostmin, gEconomy[i].sellcostmax);
+      end;
+      if gEconomy[i].buycost<gEconomy[i].buycostdef then begin
+         bc:=bc+(bcd-bc)*dt;
+         gEconomy[i].buycost:=Clamp(bc, gEconomy[i].buycostmin, gEconomy[i].buycostmax);
+      end;
+      if gEconomy[i].sellcost<gEconomy[i].sellcostdef then begin
+         sc:=sc+(scd-sc)*dt;
+         gEconomy[i].sellcost:=Clamp(sc, gEconomy[i].sellcostmin, gEconomy[i].sellcostmax);
+      end;
+   end;
+end;
+
+// _res_MarketCalculateBuyAmount
+//
+function _res_MarketCalculateBuyAmount(const sellres, buyres, amount : Integer) : Integer;
+begin
+   Result := floor(amount*gEconomy[sellres].sellcost/gEconomy[buyres].buycost);
+end;
+
+// _res_MarketTradeResources
+//
+function _res_MarketTradeResources(const plHnd, sellres, buyres, amount : Integer) : Integer;
+begin
+   // покупка/продажа ресурсов
+   var sellamount : Integer = amount;
+   var plInd : Integer = GetPlayerIndexByHandle(plHnd);
+   if (sellamount>not gPlayer[plInd].res[sellres]) then
+   sellamount := not gPlayer[plInd].res[sellres];
+   var buyamount : Integer = _res_MarketCalculateBuyAmount(sellres, buyres, sellamount);
+   
+   if (_net_IsOffline) or ((_net_IsOnline) and (_net_IsServer)) then
+   begin
+      _res_AddResToPlayerByIndex(plInd, buyres, buyamount);
+      _res_AddResToPlayerByIndex(plInd, sellres, -sellamount);
+      _misc_LanForceSyncRes;
+   end;
+   gPlayer[plInd].stat.resbuy[buyres] := gPlayer[plInd].stat.resbuy[buyres]+buyamount;
+   gPlayer[plInd].stat.ressell[sellres] := gPlayer[plInd].stat.ressell[sellres]+sellamount;
+   var weight : Float = buyamount*gEconomy[buyres].buyexp;
+   gEconomy[buyres].buycost := (gEconomy[buyres].buycost+gEconomy[buyres].buycostmax*weight)/(1+weight);
+   gEconomy[buyres].sellcost := (gEconomy[buyres].sellcost+gEconomy[buyres].sellcostmax*weight)/(1+weight);
+   weight := sellamount*gEconomy[buyres].sellexp;
+   gEconomy[sellres].sellcost := (gEconomy[sellres].sellcost+gEconomy[sellres].sellcostmin*weight)/(1+weight);
+   gEconomy[sellres].buycost := (gEconomy[sellres].buycost+gEconomy[sellres].buycostmin*weight)/(1+weight);
+   Result := buyamount;
+end;
+
+// _res_GetHitsNeeded
+//
+function _res_GetHitsNeeded(const itype : Integer) : Integer;
+begin
+   // сколько нужно ударов (топором/киркой/сапкой), чтобы собрать ресурс и пойти на склад.
+   case itype of
+      gc_resource_type_food : Result := gc_resource_hitsneeded_food;
+      gc_resource_type_wood : Result := gc_resource_hitsneeded_wood;
+      gc_resource_type_stone : Result := gc_resource_hitsneeded_stone;
+      else
+      Result := 10;
+   end;
+end;
+
+_res_InitEconomy;

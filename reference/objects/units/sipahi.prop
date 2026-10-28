@@ -1,0 +1,35 @@
+{refurl=.\data\objects\ref\refunithorse.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=mainproperty}
+   CustomName = sipahi
+   BaseName = sipahi
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=actorproperty}
+   LODActorName = sipahi
+   DefaultMeshName = sipahi.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = sipahi
+   Mesh[0].UseableMaterials[0] = sipahi
+section.end
+
+autochildrenproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=autochildrenproperty}
+   Enabled = True
+   Mesh[0] : struct.begin
+      Children : struct.begin
+         [0] : struct.begin
+            BaseName = sipahi_horse
+            DefaultMeshName = sipahi_horse.mesh
+            Mesh[*] = sipahi_horse.mesh
+            DefaultMaterialName = sipahihorse
+            Materials[*] = sipahihorse
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=frameanimationproperty}
+   FrameAnimationCyclesLibName = sipahi
+section.end

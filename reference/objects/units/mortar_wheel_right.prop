@@ -1,0 +1,49 @@
+{refurl=.\data\objects\ref\refunitattach.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=mainproperty}
+   CustomName = mortar_wheel_right
+   BaseName = mortar_wheel_right
+   StaticObject = False
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=actorproperty}
+   LODActorName = mortar
+   DefaultMeshName = mortar_wheel_right.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = mortar
+   Mesh[0].UseableMaterials[0] = mortar
+   Mesh[1].DefaultMaterialName = mortar
+   Mesh[1].UseableMaterials[0] = mortar
+   Mesh[2].DefaultMaterialName = mortar
+   Mesh[2].UseableMaterials[0] = mortar
+section.end
+
+pfxproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=pfxproperty}
+   Enabled = True
+   Static = True
+   ClassName = PFXProperty
+   BehavioursStored = True
+   EffectsStored = True
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=frameanimationproperty}
+   Enabled = True
+   Static = True
+   ClassName = FrameAnimationProperty
+   DefaultFrameAnimationName = 
+   DefaultFrameAnimationMode = aamNone
+   FrameAnimationSynchronizeOption = fasoInherited
+   FrameAnimationSwitchChildren = False
+   DefaultFrameAnimationCycles = 
+   FrameAnimationCyclesLibName = 
+   RandomOffsetFrameAnimationCycles = False
+   RandomOffsetFrameAnimation = False
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.38
+   DefaultScale.Y = 0.38
+   DefaultScale.Z = 0.38
+section.end

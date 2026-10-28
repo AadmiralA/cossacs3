@@ -1,0 +1,125 @@
+{refurl=.\data\objects\ref\refbuilding.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=mainproperty}
+   CustomName = piesta
+   BaseName = piesta
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=actorproperty}
+   LODActorName = piesta
+   DefaultMeshName = piesta.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = piesta
+   Mesh[0].UseableMaterials[0] = piesta
+   Mesh[0].UseSeasonMaterial = True
+   Mesh[0].UseableSummerMaterials[0] = piesta
+   Mesh[0].UseableWinterMaterials[0] = piestaw
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = piesta
+      UseableMaterials[0] = piesta
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = piesta
+      UseableMaterials[0] = piesta
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = piesta
+      UseableMaterials[0] = piesta
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = piesta
+      UseableMaterials[0] = piesta
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = piesta
+      UseableMaterials[0] = piesta
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = piesta
+      UseableMaterials[0] = piesta
+   struct.end
+section.end
+
+collisionmaskproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmaskproperty}
+   Mask : struct.begin
+      [*] = 000000000000
+      [*] = 000000000000
+      [*] = 000000000000
+      [*] = 000000000000
+      [*] = 000001100000
+      [*] = 000011110000
+      [*] = 000111111000
+      [*] = 001111111100
+      [*] = 011111111110
+      [*] = 111111111111
+      [*] = 111111111110
+      [*] = 011111111100
+      [*] = 001111111000
+      [*] = 000111110000
+      [*] = 000011100000
+      [*] = 000001000000
+   struct.end
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmeshproperty}
+   CustomBoundingAABBMin.X = -1.45
+   CustomBoundingAABBMin.Y = 0.00
+   CustomBoundingAABBMin.Z = -1.65
+   CustomBoundingAABBMax.X = 1.25
+   CustomBoundingAABBMax.Y = 1.85
+   CustomBoundingAABBMax.Z = 1.50
+section.end
+
+autochildrenproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = AutoChildrenProperty
+   Custom = False
+   Mesh[0] : struct.begin
+      Enabled = True
+      Static = True
+      ClassName = MeshChildrenProperty
+      Children : struct.begin
+         [0] : struct.begin
+            Enabled = True
+            Static = True
+            ClassName = ChildProperty
+            BaseName = piestaa
+            RaceName = buildings
+            DefaultMeshName = piestaa.mesh
+            RandomMeshName = False
+            Mesh[0] = piestaa
+            Mesh[1] = piesta1a
+            Mesh[2] = piesta2a
+            Mesh[3] = piesta3a
+            Mesh[4] = piesta4a
+            Mesh[5] = piesta_death1a
+            Mesh[6] = piesta_death2a
+            DefaultMaterialName = scaffold
+            RandomMaterialName = False
+            Materials[0] = scaffold
+            Materials[1] = scaffold
+            Materials[2] = scaffold
+            Materials[3] = scaffold
+            Materials[4] = scaffold
+            Materials[5] = debris
+            Materials[6] = debris
+            Option = achildRequered
+            StartStateName = 
+            Useable = True
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.525
+   DefaultScale.Y = 0.525
+   DefaultScale.Z = 0.525
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=directionupproperty}
+   DefaultRollAngle = 135
+section.end

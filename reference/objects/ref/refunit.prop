@@ -1,0 +1,383 @@
+mainproperty : section.begin
+   Enabled = True
+   Static = False
+   ClassName = MainProperty
+   CustomName = 
+   RaceName = units
+   BaseName = 
+   PlayerName = 
+   PlayerID = 0
+   Priority = 0
+   PlayableObject = True
+   StaticObject = False
+   TargetObject = True
+section.end
+
+debugproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = DebugProperty
+   DebugShowAxes = False
+   DebugShowBoundingBox = False
+section.end
+
+designproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = DesignProperty
+   VisibleAtDesignTime = True
+   DesignPriority = 100
+section.end
+
+stringproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = StringProperty
+   CategorieName = units
+section.end
+
+collisionmaskproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = CollisionMaskProperty
+   Priority = 0
+   Rotate = 0
+   ScaleFactor = 1
+   TransformMaskOptions : struct.begin
+      tmoScale = False
+      tmoRotate = True
+   struct.end
+   TransformChildrenMaskOptions : struct.begin
+      tmoScale = False
+      tmoRotate = False
+   struct.end
+   LayerOptions : struct.begin
+      cloTerrain = False
+      cloWater = False
+      cloSky = False
+   struct.end
+   Options : struct.begin
+      coTest = True
+      coWrite = True
+   struct.end
+   ChildrenOptions : struct.begin
+      coTest = False
+      coWrite = False
+   struct.end
+   TestTypeOption = cttoNone
+   TestPriorityOption = ctpoNever
+   TestClassificationUnitOption = ctuoAlways
+   TestBaseNameUnitOption = ctuoNever
+section.end
+
+collisionmeshproperty : section.begin
+   Enabled = True
+   Static = False
+   ClassName = CollisionMeshProperty
+   Detection = True
+   RayCastIntersect = False
+   Priority = 0
+   BoundingMode = cbmAABB
+   BoundingData = cbdCustom
+   BoundingSpace = cbsProj
+   CustomBoundingAABBMin : struct.begin
+      X = -0.25
+      Y = -0.1
+      Z = -0.25
+   struct.end
+   CustomBoundingAABBMax : struct.begin
+      X = 0.25
+      Y = 0.90
+      Z = 0.25
+   struct.end
+   CustomBoundingSphere = 0.32
+   CollidedStateName = 
+   UncollidedStateName = 
+   UseCustAABBinSP = True
+   UseCustTransformed = False
+   UseCameraCollision = False
+   UseNoSPCull = False
+   UncollideDelta = 0.05
+   RayCastUsingTLF = False
+   RayCastNotifyState = 
+   CIEnabled = True
+   CIMovable = True
+   CIMass = 1
+   CIIntersectRadius = 0.16
+   CIMaxDistKoef = 2
+   CIDeltaStep = 0.005
+   CIRotationSpeed = 5
+   CIStuckAngle = 5
+   CIEpsilonAngle = 4
+   CIEpsilonShift = 0.001
+   CIEpsilonMove = 0.02
+   CIDistExtPointEpsilon = 0.005
+   CIAvoidPointMaxAngle = 60
+   CIMaxCollideCounter = 7
+   BVTestEnabled = False
+   BVTestShpereRadius = 0
+   BVRayCastIntersect = False
+   BVUseTrackNode = False
+section.end
+
+actorproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = ActorProperty
+   LODActorName = 
+   RandomMeshName = False
+   DefaultMeshName = 
+   UseParentTLFToPosition = False
+   UseableMeshes : struct.begin
+      [0] = True
+   struct.end
+section.end
+
+materialproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = MaterialProperty
+   Mesh[0] : struct.begin
+      Enabled = False
+      Static = False
+      ClassName = MeshMaterialProperty
+      DefaultMaterialName = 
+      RandomMaterialName = False
+      UseableMaterials[0] = 
+      UseSeasonMaterial = False
+   struct.end
+section.end
+
+statemachineproperty : section.begin
+   Enabled = True
+   Static = False
+   ClassName = StateMachineProperty
+   Active = True
+   StateMachine.LoadFromFile = .\data\scripts\units\unit.aix
+   DefaultInitStateName = Initial
+   DestroyStateName = 
+   DefaultRunStateName = 
+   DesignTimeInitStateName = 
+   DesignTimeRunStateName = 
+   AfterLoadStateName = OnAfterLoad
+   BeforeSaveStateName = OnBeforeSave
+   InLoadStateName = 
+   TagStatesChangedStateName = OnTagStates
+   StateMachineProgressOption = smpoAlways
+   StateMachineProgressChildrenOption = smpcoNever
+   StateMachinePriority = 0
+   StateMachineInterval = 100
+section.end
+
+moveproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = MoveProperty
+   MoveStep = 0.03
+   MoveStepInterval = 25
+   EpsilonDistance = 0.25
+   VirtualDirection : struct.begin
+      X = 0
+      Y = -1
+      Z = 0
+   struct.end
+section.end
+
+rotateproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = RotateProperty
+   TurnStep = 10
+   TurnStepInterval = 50
+   EpsilonAngle = 10
+   VirtualUp : struct.begin
+      X = 1
+      Y = 0
+      Z = 0
+   struct.end
+section.end
+
+soundproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = SoundProperty
+   SoundLibraryName = 
+   SoundSourceName = 
+   SoundRadius = 1
+   SoundVolume = 1
+section.end
+
+pfxproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = PFXProperty
+   BehavioursStored = True
+   EffectsStored = True
+section.end
+
+frameanimationproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = FrameAnimationProperty
+   DefaultFrameAnimationName = 
+   DefaultFrameAnimationMode = aamLoop
+   FrameAnimationSynchronizeOption = fasoInherited
+   FrameAnimationSwitchChildren = True
+   DefaultFrameAnimationCycles = idle
+   FrameAnimationCyclesLibName = unit
+   RandomOffsetFrameAnimationCycles = acsaDefault
+   RandomOffsetFrameAnimation = acsaDefault
+section.end
+
+scaleproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = ScaleProperty
+   DefaultScale : struct.begin
+      X = 0.5
+      Y = 0.5
+      Z = 0.5
+   struct.end
+   RandomScale = False
+   MinScaleFactor = 1
+   MaxScaleFactor = 1
+   DefaultScaleFactor = 1
+section.end
+
+directionupproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = DirectionUpProperty
+   DefaultDirection : struct.begin
+      X = 0
+      Y = 1
+      Z = 0
+   struct.end
+   DefaultUp : struct.begin
+      X = 1
+      Y = 0
+      Z = 0
+   struct.end
+   RandomPitchAngle = False
+   DefaultPitchAngle = 0
+   DeltaPitchAngle = 0
+   RandomRollAngle = False
+   DefaultRollAngle = 0
+   DeltaRollAngle = 0
+   RandomTurnAngle = False
+   DefaultTurnAngle = 0
+   DeltaTurnAngle = 0
+section.end
+
+dispersitionproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = DispersitionProperty
+   RandomDispersition = False
+   DefaultDispersition = 0
+   MaxDispersition = 0
+section.end
+
+offsetproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = OffsetProperty
+   Offset : struct.begin
+      X = 0
+      Y = 0
+      Z = 0
+   struct.end
+   AutoOffset = True
+   OffsetCollideOption = ocoTerrain
+   AutoPlateauTerrain = False
+   AutoPlateauTerrainRadius = 0
+section.end
+
+autochildrenproperty : section.begin
+   Enabled = False
+   Static = True
+   ClassName = AutoChildrenProperty
+   Custom = False
+   Mesh[0] : struct.begin
+      Enabled = True
+      Static = True
+      ClassName = MeshChildrenProperty
+      Children : struct.begin
+         [0] : struct.begin
+            Enabled = True
+            Static = True
+            ClassName = ChildProperty
+            BaseName = 
+            RaceName = units
+            DefaultMeshName = 
+            RandomMeshName = False
+            Mesh[0] = 
+            DefaultMaterialName = 
+            RandomMaterialName = False
+            Materials[0] = 
+            Option = achildRequered
+            StartStateName = 
+            Useable = True
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+selectionproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = SelectionProperty
+   SelectionOption = stoCircle
+   SelectionSize = 0.5
+   SelectionOffsetY = 0
+   SelectionAutoScale = True
+   SelectionTerrainCollide = True
+   SelectionWidth = 0.1
+   SelectionColor : struct.begin
+      Red = 1
+      Green = 1
+      Blue = 1
+      Alpha = 1
+   struct.end
+section.end
+
+decalproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = DecalProperty
+   RandomDecal = False
+   DefaultDecalName = 
+   AutoDestroyDecal = False
+section.end
+
+cmdsproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = CmdsProperty
+   DefaultCmd = 0
+   Cmd : struct.begin
+      // required to make group brush work. without this dummy cmd, units won't go to brush position
+      [0] : struct.begin
+         Name = move.position
+         ID = 0
+         ButtonName = 
+         Enable = True
+         Visible = False
+         NeedTargetArrowLine = False
+         NeedTargetStretchLine = True
+         NeedTargetUnit = True
+         NeedTargetPlayableUnit = True
+         NeedTargetFriendUnit = False
+         NeedTargetEnemyUnit = False
+         NeedTargetTerrain = True
+         NeedTargetWater = False
+         NeedTargetSky = False
+         ParentIndex = 0
+         Priority = 1
+         HasChildren = False
+         HotKey = 
+         StateName = 
+         StateRun = False
+      struct.end
+   struct.end
+section.end

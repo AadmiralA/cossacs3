@@ -1,0 +1,159 @@
+section.begin
+   Name = OnTagStates
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\ontagstates.inc
+section.end
+
+section.begin
+   Name = SetTagStates
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\settagstates.inc
+section.end
+
+section.begin
+   Name = Nothing
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\nothing.inc
+section.end
+
+section.begin
+   Name = DoProgressOrders
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\doprogressorders.inc
+section.end
+
+section.begin
+   Name = Initial
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\initial.inc
+section.end
+
+section.begin
+   Name = ---------------------
+   UsedFileName = 
+section.end
+
+section.begin
+   Name = OnEndPointReached
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\onendpointreached.inc
+section.end
+
+section.begin
+   Name = OnDirectionReached
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\ondirectionreached.inc
+section.end
+
+section.begin
+   Name = OnDestroy
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\ondestroy.inc
+section.end
+
+section.begin
+   Name = OnDeath
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\ondeath.inc
+section.end
+
+section.begin
+   Name = OnBeforeSave
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\onbeforesave.inc
+section.end
+
+section.begin
+   Name = OnAfterLoad
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\onafterload.inc
+section.end
+
+section.begin
+   Name = ---------------------
+   UsedFileName = 
+section.end
+
+section.begin
+   Name = Position
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\position.inc
+section.end
+
+section.begin
+   Name = SetRallyPoint
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\setrallypoint.inc
+section.end
+
+section.begin
+   Name = SailToDestroy
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\sailtodestroy.inc
+section.end
+
+section.begin
+   Name = DeathStage1
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\deathstage1.inc
+section.end
+
+section.begin
+   Name = DeathStage2
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\deathstage2.inc
+section.end
+
+section.begin
+   Name = DeathStage3
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\deathstage3.inc
+section.end
+
+section.begin
+   Name = DeathStage4
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\deathstage4.inc
+section.end
+
+section.begin
+   Name = OnAclAnimationReachedAttack
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\onaclanimationreachedattack.inc
+section.end
+
+section.begin
+   Name = OnAclAnimationReachedWork
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\onaclanimationreachedwork.inc
+section.end
+
+section.begin
+   Name = OnAclAnimationReachedConstruct
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\onaclanimationreachedconstruct.inc
+section.end
+
+section.begin
+   Name = OnAclAnimationReachedAttackEnd
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\unit.inc\onaclanimationreachedattackend.inc
+section.end
+
+section.begin
+   CurrentState = Nothing
+   SaveVariables = False
+section.end
+

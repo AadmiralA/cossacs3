@@ -1,0 +1,258 @@
+//
+// init.script
+//
+
+// _init_InitializeFormations
+//
+procedure _init_InitializeFormations();
+begin
+   var pFormations : Integer = _parser_ParserTemporary(True);
+   ParserLoadFromFileByHandle(pFormations, gc_filepath_formations);
+   if (ParserGetCountByHandle(pFormations)>gc_formation_maxcount) then
+   begin
+      ErrorLog('pFormations count is greater then gc_formation_maxcount');
+   end
+   else
+   begin
+      var i, j, k : Integer;
+      for i:=0 to gc_formation_maxcount-1 do
+      begin
+         gFormation[i].id := 0;
+         gFormation[i].sid := '';
+         gFormation[i].symmetry := 0;
+         gFormation[i].bonusdamage := 0;
+         gFormation[i].bonusshield := 0;
+         gFormation[i].bonusdamagehold := 0;
+         gFormation[i].bonusshieldhold := 0;
+         gFormation[i].width := 0;
+         gFormation[i].height := 0;
+         gFormation[i].countunits := 0;
+         gFormation[i].countofficers := 0;
+         for j:=0 to gc_formation_maskmaxheight-1 do
+         for k:=0 to gc_formation_maskmaxwidth-1 do
+         begin
+            gFormation[i].mask[j][k] := False;
+            gFormation[i].maskofficers[j][k] := False;
+         end;
+      end;
+      for i:=0 to ParserGetCountByHandle(pFormations)-1 do
+      begin
+         var pFormation : Integer = ParserSelectByHandleByIndex(pFormations, i);
+         gFormation[i].id := i;
+         gFormation[i].sid := ParserGetValueByKeyByHandle(pFormation, 'id');
+         gFormation[i].symmetry := ParserGetIntValueByKeyByHandle(pFormation, 'symmetry');
+         gFormation[i].bonusdamage := ParserGetIntValueByKeyByHandle(pFormation, 'bonusdamage');
+         gFormation[i].bonusshield := ParserGetIntValueByKeyByHandle(pFormation, 'bonusshield');
+         gFormation[i].bonusdamagehold := ParserGetIntValueByKeyByHandle(pFormation, 'bonusdamagehold');
+         gFormation[i].bonusshieldhold := ParserGetIntValueByKeyByHandle(pFormation, 'bonusshieldhold');
+         var pMask : Integer = ParserSelectByHandleByKey(pFormation, 'mask');
+         var maxw : Integer;
+         for j:=0 to ParserGetCountByHandle(pMask)-1 do
+         begin
+            var str : String = ParserGetValueByIndexByHandle(pMask, j);
+            var length : Integer = StrLength(str);
+            if (length>maxw) then
+            maxw := length;
+            for k:=0 to length-1 do
+            begin
+               var pos : Integer = StrPosEx('*', str, k+1);
+               if (pos=0) then
+               break
+               else
+               k := pos-1;
+               gFormation[i].countunits := gFormation[i].countunits+1;
+               gFormation[i].mask[j][pos-1] := True;
+            end;
+            for k:=0 to length-1 do
+            begin
+               var pos : Integer = StrPosEx('O', str, k+1);
+               if (pos=0) then
+               break
+               else
+               k := pos-1;
+               gFormation[i].countofficers := gFormation[i].countofficers+1;
+               gFormation[i].maskofficers[j][pos-1] := True;
+            end;
+         end;
+         gFormation[i].width := maxw;
+         gFormation[i].height := ParserGetCountByHandle(pMask);
+      end;
+   end;
+end;
+
+// _init_InitializeTopology
+//
+procedure _init_InitializeTopology();
+begin
+   TopologyCreate;
+   TopologySetTopologyPriority(gc_top_TopologyPriority);
+   TopologySetPathPriority(gc_top_PathPriority);
+   TopologySetPosSearchRadius(7);
+   TopologySetBufferSize(SizeOf(TTopZone));
+   TopologySetConnectionRadius(gc_top_EffectDist);
+end;
+
+// _init_InitializeGameSettings
+//
+procedure _init_InitializeGameSettings();
+begin
+   SetDateTimeManagerEnabled(false);
+   SetTimeSpeedFactor(10);
+   SetTerrainRayCastPrecison(0.0000001);
+end;
+
+// _init_InitializeHighlightRender
+//
+procedure _init_InitializeHighlightRender();
+begin
+   var size, dirx, diry, dirz: Float; var texs: Integer;
+   var scaling, visible: Boolean;
+   GetHighlightRenderSettings(size, dirx, diry, dirz, texs, scaling, visible);
+   size:=0.7;
+   SetHighlightRenderSettings(size, dirx, diry, dirz, texs, scaling, visible);
+end;
+
+// _init_ServerList
+//
+procedure _init_ServerList;
+begin
+   var p: integer=ParserCreate('servers');
+   ParserLoadFromFile('.\data\resources\servers.dat');
+   gConnectIPCount:=ParserGetCountByHandle(p);
+   if gConnectIPCount>gc_ConnectIPListMax then
+   gConnectIPCount:=gc_ConnectIPListMax;
+   var i: Integer;
+   for i:=0 to gConnectIPCount-1 do
+   gConnectIPList[i]:=ParserGetValueByIndex(i);
+   gConnectIPIndex:=0;
+   ParserFree('servers');
+end;
+
+// _init_DebugPointerNil
+//
+procedure _init_DebugPointerNil(var p : Pointer);
+begin
+   if p=nil then
+   ErrorLog('pointer=nil : state='+GetCurrentStateName+' filename='+GetStateMachineFileName(GetCurrentStateMachineHandle));
+end;
+
+// _init_ReloadQueryMachine
+//
+procedure _init_ReloadQueryMachine;
+begin
+   QueryMachineDestroy;
+   QueryMachineQueriesClear(QueryMachineGetQueriesHandle);
+   QueryMachineCustomQueriesClear;
+end;
+
+// _init_SoundListener
+//
+procedure _init_SoundListener();
+begin
+   SetUseSoundManagerListenerAsObject(False);
+   SetUseSoundManagerListenerAsCamera(False);
+   SetAbsSoundManagerListenerAsObject(True);
+end;
+
+// _init_CalcCheckSum
+//
+procedure _init_CalcCheckSum();
+begin
+   gstring_checksumlong := StateMachineLibraryCodeMD5Checksum;
+   gstring_checksum := SubStr(gstring_checksumlong, 1, 2)+SubStr(gstring_checksumlong, StrLength(gstring_checksumlong)-1, 2);
+   gbool_modsactive := False;
+   gbool_modsscript := False;
+   var modscount : Integer = ModLibraryGetCount;
+   var tag, dir, last, tit, ownid, desc, tags, url, note: string;
+   var numf, vis: integer;
+   var dis, acc, ban, root: boolean;
+   var libind : Integer;
+   for libind:=0 to modscount-1 do
+   begin
+      ModLibraryGetData(libind, tag, dir, last, tit, ownid, desc, tags, url, note, numf, vis, dis, acc, ban, root);
+      if (not dis) then
+      begin
+         gbool_modsactive := True;
+
+         var proot : Integer = _parser_ParserTemporary(True);
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\gui\*.aix'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\gui\common.inc\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\gui\menu.inc\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\common.inc\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\env\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\env\env.inc\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\lib\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\misc\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\misc\ballon.inc\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\misc\movearrow.inc\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\misc\projectile.inc\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\progress\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\progress\progress.inc\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\units\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\units\building.inc\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\units\global.inc\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\units\group.inc\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\units\unit.inc\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\user\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+         if (not gbool_modsscript) then begin ParserGetFilesInRoot(dir+'\data\scripts\user\user.inc\*.*'); gbool_modsscript := (ParserGetCountByHandle(proot)>0); end else break;
+
+         if (gbool_modsscript) then
+         break;
+      end;
+   end;
+end;
+
+// hfcmNone, hfcmEmission, hfcmAmbient, hfcmDiffuse, hfcmAmbientAndDiffuse
+SetTerrainColorMode(0{3});
+SetTerrainBordersEnabled(False);
+
+if IsEngine then
+NewMap(128, 128, 0);
+
+_init_SoundListener;
+_init_InitializeFormations;
+_init_InitializeTopology;
+_init_InitializeGameSettings;
+_init_InitializeHighlightRender;
+
+//SetGameManagerSelectionRebuildGUICommands(False);
+SetGameManagerSelectionSettings(false, true, true, true);
+SetStretchBrushUseGrid(true);
+
+_init_ServerList;
+SetRecordGroupEnabled(false);
+LanSetNoDelayOption(true);
+LanSetSendDataThreadEnabled(true);
+SetMapUseUniqNullIndex(false);
+
+_init_ReloadQueryMachine;
+
+SetPatternPlayerName(gc_racename_env);
+
+GUIMiniMapIncludePlayersClear;
+GUIMiniMapExcludePlayersClear;
+GUIMiniMapIncludePlayersAdd('env');
+
+SetUseZLib(False);
+SetTrackPointAddTraceDist(4);
+
+//WorldAddQuadTree(gc_top_WallPriority, 'ctpoNotEqual');
+//if TraceLineQuadTree(gox, goz, trx, trz, gc_top_WallPriority, gc_top_WallQuadTree) then
+gint_quickplay_countofplayers := gc_quickplay_countofplayers4;
+
+const _init_steamapi_lib='steam_api.dll';
+const _init_galaxyapi_lib='galaxy.dll';
+gbool_issteam := False;
+gbool_isgog := False;
+if not SteamwrapIsLoaded() and IsFileExists(_init_steamapi_lib) then
+gbool_issteam := True
+else
+if (IsFileExists(_init_galaxyapi_lib)) then
+gbool_isgog := True
+else
+gbool_issteam := True;
+
+LanSetCustErrHandler(True);
+
+_init_CalcCheckSum;

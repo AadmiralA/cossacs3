@@ -1,0 +1,18 @@
+section.begin
+   Name = Position
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\group.inc\position.inc
+section.end
+
+section.begin
+   Name = Nothing
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\group.inc\nothing.inc
+section.end
+
+section.begin
+   CurrentState = Nothing
+   SaveVariables = False
+section.end
+

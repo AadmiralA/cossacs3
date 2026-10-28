@@ -1,0 +1,33 @@
+{refurl=.\data\objects\ref\refproj.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refproj.prop; refkey=mainproperty}
+   CustomName = projhowitzerball
+   BaseName = projhowitzerball
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refproj.prop; refkey=actorproperty}
+   LODActorName = projhowitzerball
+   DefaultMeshName = projhowitzerball.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refproj.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = projhowitzerball
+   Mesh[0].UseableMaterials[0] = projhowitzerball
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=statemachineproperty}
+   Enabled = True
+   Active = True
+   StateMachine.LoadFromFile = .\data\scripts\misc\projectile.aix
+   DefaultInitStateName = InitialEmpty
+   AfterLoadStateName = OnAfterLoad
+   BeforeSaveStateName = 
+   TagStatesChangedStateName = OnTagStates
+   StateMachineInterval = 29
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refproj.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.16
+   DefaultScale.Y = 0.16
+   DefaultScale.Z = 0.16
+section.end

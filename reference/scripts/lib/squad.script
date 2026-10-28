@@ -1,0 +1,785 @@
+//
+// squad.script
+//
+
+// _squad_GetOfficer
+//
+function _squad_GetOfficer(pSquad : Pointer) : Integer;
+begin
+   Result := 0;
+   var goHnd : Integer = TSquad(pSquad).Get(0);
+   if (goHnd <> 0) and _unit_IsOfficer(goHnd) then
+   Result := goHnd;
+end;
+
+// _squad_GetDrummer
+//
+function _squad_GetDrummer(pSquad : Pointer) : Integer;
+begin
+   Result := 0;
+   var goHnd : Integer = TSquad(pSquad).Get(1);
+   if (goHnd <> 0) and _unit_IsDrummer(goHnd) then
+   Result := goHnd
+   else
+   begin
+      var goHnd : Integer = TSquad(pSquad).Get(0);
+      if (goHnd <> 0) and _unit_IsDrummer(goHnd) then
+      Result := goHnd;
+   end;
+end;
+
+// _squad_AddUnit
+//
+procedure _squad_AddUnit(var pSquad : Pointer; var goHnd : Integer; inSquad : Boolean);
+begin
+   var pObj : Pointer = _unit_GetTObj(goHnd);
+   
+   if inSquad and (TObj(pObj).squad >= 0) then
+   begin
+      var pOldSquad : Pointer = gPlayer[TObj(pObj).pl].squads.Get(TObj(pObj).squad);
+      TSquad(pOldSquad).Remove(goHnd);
+   end;
+   
+   if inSquad or (TObj(pObj).squad < 0) then
+   begin
+      TSquad(pSquad).Add(goHnd);
+      TObj(pObj).squad := TSquad(pSquad).fIndex;
+   end;
+end;
+
+// _squad_GetSquadPosition
+//
+procedure _squad_GetSquadPosition(plHnd : Integer; pSquad : Pointer; var x : Float; var y : Float);
+begin
+   var grHnd : Integer = GetPlayerGrHandleByHandle(plHnd, TSquad(pSquad).fGroupName);
+   if grHnd <> 0 then
+   begin
+      x := GetGroupStateTargetPositionXByHandle(grHnd);
+      y := GetGroupStateTargetPositionZByHandle(grHnd);
+   end
+   else
+   begin
+      x := 0;
+      y := 0;
+   end;
+end;
+
+// _squad_GetSquadCentralPosAndDir
+//
+procedure _squad_GetSquadCentralPosAndDir(pSquad : Pointer; var x, z, dirX, dirZ : Float);
+begin
+   x := 0;
+   z := 0;
+   dirX := 0;
+   dirZ := 0;
+   var count : Integer = TSquad(pSquad).GetCount;
+   if count > 0 then
+   begin
+      var i : Integer;
+      for i := 0 to count-1 do
+      begin
+         var goHnd : Integer = TSquad(pSquad).Get(i);
+         x := x + GetGameObjectPositionXByHandle(goHnd);
+         z := z + GetGameObjectPositionZByHandle(goHnd);
+         dirX := dirX + GetGameObjectTransformedVirtualDirectionXByHandle(goHnd);
+         dirZ := dirZ + GetGameObjectTransformedVirtualDirectionZByHandle(goHnd);
+      end;
+      
+      x := x / count;
+      z := z / count;
+      var dirY : Float;
+      if VectorLength(dirX, 0, dirZ) > 0 then
+      VectorNormalize(dirX, dirY, dirZ);
+   end;
+end;
+
+// _squad_GetBaseUnitCount
+//
+function _squad_GetBaseUnitCount(pSquad : Pointer) : Integer;
+begin
+   Result := TSquad(pSquad).GetCount;
+   if _squad_GetOfficer(pSquad) <> 0 then
+   Result := Result-1;
+   if _squad_GetDrummer(pSquad) <> 0 then
+   Result := Result-1;
+   if Result < 0 then
+   Result := 0;
+end;
+
+// _squad_SwapOfficerDrummer
+//
+procedure _squad_SwapOfficerDrummer(pSquad : Pointer);
+begin
+   var form : Integer = TSquad(pSquad).fFormation;
+   var rows : Integer = TSquad(pSquad).fHeight;
+   var cols : Integer = TSquad(pSquad).fWidth;
+   
+   var i, j : Integer;
+   var iOff, jOff, iDrum, jDrum : Integer = -1;
+   
+   for i := 0 to rows-1 do
+   for j := 0 to cols-1 do
+   begin
+      var goHnd : Integer = TSquad(pSquad).arGrid[i, j];
+      if (goHnd <> 0) and (_unit_IsOfficer(goHnd) or _unit_IsDrummer(goHnd)) then
+      begin
+         if _unit_IsOfficer(goHnd) then
+         begin
+            iOff := i;
+            jOff := j;
+         end
+         else
+         begin
+            iDrum := i;
+            jDrum := j;
+         end;
+      end;
+   end;
+   
+   if (iOff >= 0) and (jOff >= 0) and (iDrum >= 0) and (jDrum >= 0) then
+   begin
+      var offHnd : Integer = TSquad(pSquad).arGrid[iOff, jOff];
+      TSquad(pSquad).arGrid[iOff, jOff] := TSquad(pSquad).arGrid[iDrum, jDrum];
+      TSquad(pSquad).arGrid[iDrum, jDrum] := offHnd;
+   end;
+end;
+
+// _squad_IsRowUsed
+//
+function _squad_IsRowUsed(formation, row : Integer) : Boolean;
+begin
+   Result := false;
+   
+   if (formation >= 0) and (formation < gc_formation_maxcount) and (row >= 0) and
+   (row < gFormation[formation].height) then
+   begin
+      var i : Integer;
+      for i := 0 to gFormation[formation].width-1 do
+      if gFormation[formation].mask[row, i] then
+      begin
+         Result := true;
+         break;
+      end;
+   end;
+end;
+
+// _squad_GetRowUnitsCount
+//
+function _squad_GetRowUnitsCount(pSquad : Pointer; row : Integer) : Integer;
+begin
+   Result := 0;
+   var form : Integer = TSquad(pSquad).fFormation;
+   
+   if (form >= 0) and (form < gc_formation_maxcount) and (row >= 0) and
+   (row < gFormation[form].height) then
+   begin
+      var j : Integer;
+      for j := 0 to gFormation[form].width-1 do
+      if (TSquad(pSquad).arGrid[row, j] <> 0) and (gFormation[form].mask[row, j]) then
+      Result := Result+1;
+   end;
+end;
+
+// _squad_GetFormationRowUnitsCount
+//
+function _squad_GetFormationRowUnitsCount(formInd, row : Integer) : Integer;
+begin
+   Result := 0;
+   
+   if (formInd >= 0) and (formInd < gc_formation_maxcount) and (row >= 0) and
+   (row < gFormation[formInd].height) then
+   begin
+      var i : Integer;
+      for i := 0 to gFormation[formInd].width-1 do
+      if gFormation[formInd].mask[row, i] then
+      Result := Result+1;
+   end;
+end;
+
+// _squad_FullRebuildGrid
+//
+procedure _squad_FullRebuildGrid(pSquad : Pointer; posX, posZ, dirX, dirZ : Float);
+begin
+   var i, j, k : Integer;
+   var form : Integer = TSquad(pSquad).fFormation;
+   
+   var rows, cols : Integer;
+   if form >= 0 then
+   begin
+      rows := gFormation[form].height;
+      cols := gFormation[form].width;
+   end
+   else
+   begin
+      rows := TSquad(pSquad).fHeight;
+      cols := TSquad(pSquad).fWidth;
+   end;
+   
+   gIntegerList.Clear;
+   
+   for i := 0 to rows-1 do
+   for j := 0 to cols-1 do
+   if (TSquad(pSquad).arGrid[i, j] <> 0) and ((form < 0) or gFormation[form].mask[i, j]) then
+   begin
+      var goHnd : Integer = TSquad(pSquad).arGrid[i, j];
+      gIntegerList.Add(goHnd);
+   end;
+   
+   var count : Integer = gIntegerList.GetCount;
+   _misc_SortListByDirection(gIntegerList, 0, count-1, posX, posZ, -dirX, -dirZ);
+   
+   // build grid by list
+   var fDirX : Float = dirX;
+   var fDirY : Float;
+   var fDirZ : Float = dirZ;
+   VectorRotateY(fDirX, fDirY, fDirZ, -90);
+   
+   var ind : Integer;
+   
+   for i := 0 to rows-1 do
+   begin
+      var rowCount : Integer;
+      if form >= 0 then
+      rowCount := _squad_GetFormationRowUnitsCount(form, i)
+      else
+      rowCount := TSquad(pSquad).fWidth;
+      
+      _misc_SortListByDirection(gIntegerList, ind, ind+rowCount-1, posX, posZ, fDirX, fDirZ);
+      
+      for j := 0 to cols-1 do
+      if (form < 0) or gFormation[form].mask[i, j] then
+      begin
+         if ind < count then
+         begin
+            TSquad(pSquad).arGrid[i, j] := gIntegerList.Get(ind);
+            ind := ind+1;
+         end
+         else
+         TSquad(pSquad).arGrid[i, j] := 0;
+      end;
+   end;
+   
+   TSquad(pSquad).fNeedRebuild := false;
+end;
+
+// _squad_SetCustomFormation
+//
+procedure _squad_SetCustomFormation(pSquad : Pointer; blan : Boolean);
+begin
+   if pSquad <> nil then
+   begin
+      var plInd : Integer = TSquad(pSquad).fPlIndex;
+      if _net_IsOffline or ({blan and} _net_IsServer) or ((not blan) and _net_IsClient) then
+      begin
+         var i, j : Integer;
+         var goCount : Integer = TSquad(pSquad).GetCount;
+         var cols : Integer = MathCeil(Sqrt(goCount));
+         var rows : Integer = MathCeil(goCount/cols);
+         
+         TSquad(pSquad).fFormation := -1;
+         TSquad(pSquad).fWidth := cols;
+         TSquad(pSquad).fHeight := rows;
+         TSquad(pSquad).fNeedRebuild := true;
+         
+         for i := 0 to rows-1 do
+         for j := 0 to cols-1 do
+         TSquad(pSquad).arGrid[i, j] := 0;
+         
+         for [MAIN]i := 0 to rows-1 do
+         for j := 0 to cols-1 do
+         begin
+            var ind : Integer = i*cols+j;
+            if ind >= goCount then
+            break(MAIN);
+            
+            var goHnd : Integer = TSquad(pSquad).Get(ind);
+            TSquad(pSquad).arGrid[i, j] := goHnd;
+         end;
+      end;
+      
+      // network
+      if blan and (_net_IsOnline or _net_IsRecord) then begin
+         var plHnd : Integer = GetPlayerHandleByIndex(plInd);
+         var squadInd : Integer = TSquad(pSquad).fIndex;
+         var parg: Pointer = StateMachineGetArgDataByInd(GetPlayerStateMachineHandle(plhnd), gc_argplayer_plr);
+         if parg<>nil then begin
+            gWriteSquadPtrList.Clear;
+            gWriteSquadPtrList.AddPointer(psquad);
+            gIntListWriteSquadAction.Clear;
+            TPlayerArgs(parg).fpointer0 := gWriteSquadPtrList;
+            TPlayerArgs(parg).fordtyp := gc_playersquad_action_form;
+            TPlayerArgs(parg).fbstate := False;
+            TPlayerArgs(parg).fform := -1;
+            TPlayerArgs(parg).fintlst := gIntListWriteSquadAction;
+            PlayerExecuteStateByHandle(plhnd, 'WriteSquadListAction');
+         end else _misc_ErrorLog('_squad_SetCustomFormation: parg = nil');
+      end;
+   end;
+end;
+
+// _squad_RebuildGrid
+//
+procedure _squad_RebuildGrid(pSquad : Pointer; posX, posZ, dirX, dirZ : Float);
+begin
+   var dx : Float = TSquad(pSquad).fDirX;
+   var dz : Float = TSquad(pSquad).fDirZ;
+   var plHnd : Integer = GetPlayerHandleByIndex(TSquad(pSquad).fPlIndex);
+   var grHnd : Integer = GetPlayerGrHandleByHandle(plHnd, TSquad(pSquad).fGroupName);
+   if grHnd <> 0 then
+   begin
+      GroupFastCalcCentralPositionByHandle(grHnd);
+      var grPosX : Float = GroupGetCentralPositionXByHandle(grHnd);
+      var grPosZ : Float = GroupGetCentralPositionZByHandle(grHnd);
+      
+      var reflect : Boolean;
+      var angle : Float = VectorAngle(dx, 0, dz, dirX, 0, dirZ);
+      if angle > 90 then
+      reflect := true;
+      
+      var i, j : Integer;
+      var form : Integer = TSquad(pSquad).fFormation;
+      var rows : Integer = TSquad(pSquad).fHeight;
+      var cols : Integer = TSquad(pSquad).fWidth;
+      if form < 0 then
+      begin
+         // AI pseudo-formations
+         var goCount : Integer = TSquad(pSquad).GetCount;
+         var newCols : Integer = MathCeil(Sqrt(goCount));
+         if newCols < cols then
+         _squad_SetCustomFormation(pSquad, true)
+         else
+         if reflect then
+         begin
+            var goGrid : array [0..gc_formation_maskmaxheight] of array [0..gc_formation_maskmaxwidth] of Integer;
+            
+            for [MAIN]i := 0 to rows-1 do
+            for j := 0 to cols-1 do
+            begin
+               var ind : Integer = i*cols+j;
+               if ind > (rows*cols) div 2 then
+               break(MAIN);
+               
+               var goHnd : Integer = TSquad(pSquad).arGrid[i, j];
+               TSquad(pSquad).arGrid[i, j] := TSquad(pSquad).arGrid[rows-1-i, cols-1-j];
+               TSquad(pSquad).arGrid[rows-1-i, cols-1-j] := goHnd;
+            end;
+         end;
+         
+         if TSquad(pSquad).fNeedRebuild then
+         _squad_FullRebuildGrid(pSquad, posX, posZ, dirX, dirZ);
+      end
+      else
+      begin
+         var sym : Integer = gFormation[form].symmetry;
+         
+         // fill empty grid cells
+         var fCount, lCount : Integer;
+         var fRow, lRow : Integer = -1;
+         
+         for i := 0 to rows-1 do
+         if _squad_IsRowUsed(form, i) then
+         begin
+            for j := 0 to cols-1 do
+            begin
+               if (TSquad(pSquad).arGrid[i, j] <> 0) and (gFormation[form].mask[i, j]) then
+               fCount := fCount+1;
+            end;
+            if fCount > 0 then
+            begin
+               fRow := i;
+               break;
+            end;
+         end;
+         
+         for i := rows-1 downto 0 do
+         if _squad_IsRowUsed(form, i) then
+         begin
+            for j := 0 to cols-1 do
+            begin
+               if (TSquad(pSquad).arGrid[i, j] <> 0) and (gFormation[form].mask[i, j]) then
+               lCount := lCount+1;
+            end;
+            if lCount > 0 then
+            begin
+               lRow := i;
+               break;
+            end;
+         end;
+         
+         var fromRow, fromCol : Integer;
+         var curRow, curCol : Integer;
+         var dRow : Integer;
+         {if fCount < lCount then
+         begin
+            fromRow := fRow;
+            curRow := rows-1;
+            dRow := 1;
+         end
+         else}
+         begin
+            fromRow := lRow;
+            curRow := 0;
+            dRow := -1;
+         end;
+         
+         if fromRow >= 0 then
+         begin
+            var lCol, rCol : Integer = -1;
+            var dCol : Integer;
+            for j := 0 to cols-1 do
+            if (TSquad(pSquad).arGrid[fromRow, j] <> 0) and (gFormation[form].mask[fromRow, j]) then
+            begin
+               if lCol < 0 then
+               lCol := j;
+               rCol := j;
+            end;
+            
+            if lCol > (cols-1-rCol) then
+            begin
+               fromCol := lCol;
+               dCol := 1;
+            end
+            else
+            begin
+               fromCol := rCol;
+               dCol := -1;
+            end;
+            
+            while (curRow>=0) and (curRow<rows) and ((not _squad_IsRowUsed(form, curRow)) or (_squad_GetRowUnitsCount(pSquad, curRow) <= 0)) do
+            curRow := curRow-dRow;
+            
+            // [fromRow, fromCol] - position of taken game object in grid
+            while [MAIN](curRow >= 0) and (curRow < rows) and _squad_IsRowUsed(form, curRow) do
+            begin
+               for j := 0 to cols-1 do
+               if (TSquad(pSquad).arGrid[curRow, j] = 0) and (gFormation[form].mask[curRow, j]) then
+               begin
+                  if ((curRow-fromRow)*dRow > 0) or ((curRow = fromRow) and ((j-fromCol)*dCol > 0)) then
+                  begin
+                     TSquad(pSquad).arGrid[curRow, j] := TSquad(pSquad).arGrid[fromRow, fromCol];
+                     TSquad(pSquad).arGrid[fromRow, fromCol] := 0;
+                     
+                     while (fromRow >= 0) and (fromRow < rows) and (TSquad(pSquad).arGrid[fromRow, fromCol] = 0) do
+                     begin
+                        while (fromCol >= 0) and (fromCol < cols) and
+                        ((TSquad(pSquad).arGrid[fromRow, fromCol] = 0) or (not gFormation[form].mask[fromRow, fromCol])) do
+                        fromCol := fromCol+dCol;
+                        
+                        if (fromCol < 0) or (fromCol >= cols) or (TSquad(pSquad).arGrid[fromRow, fromCol] = 0) or
+                        (not gFormation[form].mask[fromRow, fromCol]) then
+                        begin
+                           fromRow := fromRow+dRow;
+                           fromCol := cols-1;
+                           dCol := -1;
+                        end;
+                     end;
+                  end
+                  else
+                  break(MAIN);
+               end;
+               
+               curRow := curRow-dRow;
+            end;
+         end;
+         
+         var fullRebuild : Boolean = true;
+         if (sym > 0) and (not TSquad(pSquad).fNeedRebuild) then
+         begin
+            fullRebuild := false;
+            for j := 0 to (cols-2) div 2 do
+            begin
+               var j1 : Integer = cols-1-j;
+               var count1, count2 : Integer;
+               for i := 0 to rows-1 do
+               begin
+                  if gFormation[form].mask[i, j] then
+                  count1 := count1+1;
+                  if gFormation[form].mask[i, j1] then
+                  count2 := count2+1;
+               end;
+               
+               if count1 <> count2 then
+               begin
+                  fullRebuild := true;
+                  break;
+               end;
+            end;
+         end;
+         
+         if reflect then
+         _squad_SwapOfficerDrummer(pSquad);
+         
+         if fullRebuild then
+         _squad_FullRebuildGrid(pSquad, posX, posZ, dirX, dirZ)
+         else
+         if reflect then
+         begin
+            var goGrid : array [0..gc_formation_maskmaxheight] of array [0..gc_formation_maskmaxwidth] of Integer;
+            
+            for j := 0 to cols-1 do
+            begin
+               var fInd, lInd : Integer = -1;
+               fRow := -1;
+               lRow := -1;
+               var count : Integer;
+               
+               for i := 0 to rows-1 do
+               begin
+                  if gFormation[form].mask[i, j] then
+                  begin
+                     count := count+1;
+                     if TSquad(pSquad).arGrid[i, j] <> 0 then
+                     begin
+                        if fInd < 0 then
+                        begin
+                           fInd := count-1;
+                           fRow := i;
+                        end;
+                        lInd := count-1;
+                        lRow := i;
+                     end;
+                  end;
+               end;
+               
+               var i1 : Integer;
+               var j1 : Integer = cols-1-j;
+               curRow := lRow;
+               count := -1;
+               
+               for i1 := 0 to rows-1 do
+               if gFormation[form].mask[i1, j1] then
+               begin
+                  count := count+1;
+                  if (count >= fInd) and (count <= lInd) then
+                  begin
+                     goGrid[i1, j1] := TSquad(pSquad).arGrid[curRow, j];
+                     for i := curRow-1 downto 0 do
+                     if gFormation[form].mask[i, j] then
+                     begin
+                        curRow := i;
+                        break;
+                     end;
+                  end;
+               end;
+            end;
+            
+            for i := 0 to rows-1 do
+            for j := 0 to cols-1 do
+            begin
+               var goHnd : Integer = TSquad(pSquad).arGrid[i, j];
+               if (goHnd = 0) or ((not _unit_IsOfficer(goHnd)) and (not _unit_IsDrummer(goHnd))) then
+               TSquad(pSquad).arGrid[i, j] := goGrid[i, j]
+            end;
+         end;
+      end;
+   end;
+end;
+
+// _squad_GetCentralPosition
+//
+procedure _squad_GetCentralPosition(pSquad : Pointer; var cx, cz : Float);
+begin
+   if pSquad <> nil then
+   begin
+      cx := 0;
+      cz := 0;
+      var i : Integer;
+      var count : Integer = TSquad(pSquad).GetCount;
+      if count > 0 then
+      begin
+         for i := count-1 downto 0 do
+         begin
+            var goHnd : Integer = TSquad(pSquad).Get(i);
+            cx := cx + GetGameObjectPositionXByHandle(goHnd);
+            cz := cz + GetGameObjectPositionZByHandle(goHnd);
+         end;
+         
+         cx := cx / count;
+         cz := cz / count;
+      end;
+   end;
+end;
+
+// _squad_GetCentralPosAndDir
+//
+procedure _squad_GetCentralPosAndDir(pSquad : Pointer; var cx, cz, cDirX, cDirZ : Float);
+begin
+   if pSquad <> nil then
+   begin
+      cx := 0;
+      cz := 0;
+      cDirX := 0;
+      cDirZ := 0;
+      var count : Integer = TSquad(pSquad).GetCount;
+      if count > 0 then
+      begin
+         var i : Integer;
+         for i := count-1 downto 0 do
+         begin
+            var goHnd : Integer = TSquad(pSquad).Get(i);
+            cx := cx + GetGameObjectPositionXByHandle(goHnd);
+            cz := cz + GetGameObjectPositionZByHandle(goHnd);
+            cDirX := cDirX + GetGameObjectTransformedVirtualDirectionXByHandle(goHnd);
+            cDirZ := cDirZ + GetGameObjectTransformedVirtualDirectionZByHandle(goHnd);
+         end;
+         
+         cx := cx / count;
+         cz := cz / count;
+         cDirX := cDirX / count;
+         cDirZ := cDirZ / count;
+         var len : Float = VectorLength(cDirX, 0, cDirZ);
+         if len > 0 then
+         begin
+            cDirX := cDirX / len;
+            cDirZ := cDirZ / len;
+         end
+         else
+         begin
+            cDirX := 1;
+            cDirZ := 0;
+         end;
+      end;
+   end;
+end;
+
+// _squad_SetupGroup
+//
+function _squad_SetupGroup(pSquad : Pointer) : Integer;
+begin
+   if (pSquad <> nil) and (TSquad(pSquad).fGroupName = '') then
+   begin
+      var plInd : Integer = TSquad(pSquad).fPlIndex;
+      var plHnd : Integer = GetPlayerHandleByIndex(plInd);
+      var grInd : Integer = -1;
+      var i, j : Integer;
+      
+      for i := 0 to gPlayer[plInd].squads.GetCount-1 do
+      begin
+         var grName : String = gc_group_squad + '.' + IntToStr(i);
+         if GetPlayerGrHandleByHandle(plHnd, grName) = 0 then
+         begin
+            grInd := i;
+            break;
+         end
+         else
+         begin
+            var free : Boolean = true;
+            for j := 0 to gPlayer[plInd].squads.GetCount-1 do
+            begin
+               var pSquad : Pointer = gPlayer[plInd].squads.Get(j);
+               if TSquad(pSquad).fGroupName = grName then
+               begin
+                  free := false;
+                  break;
+               end;
+            end;
+            
+            if free then
+            begin
+               grInd := i;
+               break;
+            end;
+         end;
+      end;
+      
+      if grInd < 0 then
+      grInd := gPlayer[plInd].squads.GetCount;
+      
+      var grName : String = gc_group_squad + '.' + IntToStr(grInd);
+      var grHnd : Integer = _misc_GetOrCreateGroupByName(plHnd, grName);
+      GroupGameObjectsGridSetGridFormatByHandle(grHnd, 'gfStatic');
+      TSquad(pSquad).fGroupName := grName;
+      Result := grHnd;
+   end
+   else
+   Result := 0;
+end;
+
+// _squad_GetGroupHandle
+//
+function _squad_GetGroupHandle(pSquad : Pointer) : Integer;
+begin
+   if pSquad <> nil then
+   begin
+      var plHnd : Integer = GetPlayerHandleByIndex(TSquad(pSquad).fPlIndex);
+      Result := GetPlayerGrHandleByHandle(plHnd, TSquad(pSquad).fGroupName);
+   end
+   else
+   Result := 0;
+end;
+
+// _squad_SetGroupCollisionOptions
+//
+procedure _squad_SetGroupCollisionOptions(pSquad : Pointer);
+begin
+   if pSquad <> nil then
+   begin
+      var grHnd : Integer = _squad_GetGroupHandle(pSquad);
+      if grHnd <> 0 then
+      begin
+         var isWater : Boolean;
+         if TSquad(pSquad).GetCount > 0 then
+         begin
+            var goHnd : Integer = TSquad(pSquad).Get(0);
+            isWater := _unit_IsWaterUnit(goHnd);
+         end;
+         
+         if isWater then
+         begin
+            SetGroupCollisionPriorityByHandle(grHnd, gc_collisiontag_water);
+            SetGroupTestPriorityOptionByHandle(grHnd, gc_TestPriorityOption_Water);
+         end
+         else
+         begin
+            SetGroupCollisionPriorityByHandle(grHnd, gc_collisiontag_stretchland);
+            SetGroupTestPriorityOptionByHandle(grHnd, gc_TestPriorityOption_Land);
+         end;
+      end;
+   end;
+end;
+
+// _squad_IsWaterSquad
+//
+function _squad_IsWaterSquad(pSquad : Pointer) : Boolean;
+begin
+   if (pSquad <> nil) and (TSquad(pSquad).GetCount > 0) then
+   begin
+      var goHnd : Integer = TSquad(pSquad).Get(0);
+      Result := _unit_IsWaterUnit(goHnd);
+   end
+   else
+   Result := false;
+end;
+
+// _player_CheckProgressLastTimeAndIncrease
+//
+function _player_CheckProgressLastTimeAndIncrease(var lasttime : Float; itype : Integer; addtime : Float) : Boolean;
+begin
+   Result := False;
+   var gametime : Float = GetGameTime;
+   if (gametime>lasttime) then
+   begin
+      var bskip : Boolean;
+      var i : Integer;
+      for i:=0 to gc_MaxPlayerCount-1 do
+      begin
+         var checktime : Float;
+         case itype of
+            0 : checktime := gPlayer[i].lastcheckexists;
+            1 : checktime := gPlayer[i].lastcalcsquadsmovecounttime;
+            2 : checktime := gPlayer[i].lastprogressaitime;
+            3 : checktime := gPlayer[i].lastseedwheattime;
+         end;
+         if (checktime-addtime=gametime) then
+         begin
+            bskip := true;
+            break;
+         end;
+      end;
+      if (not bskip) then
+      begin
+         Result := True;
+         lasttime := gametime+addtime;
+      end;
+   end;
+end;

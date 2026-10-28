@@ -1,0 +1,740 @@
+//
+// profile.script
+//
+
+// _profile_SetDefault
+//
+procedure _profile_SetDefault(var profile : TProfile);
+begin
+   profile.name := '';
+   profile.sndmute := 0;
+   profile.sndmaster := 0.75;
+   profile.sndmusic := 0.75;
+   profile.sndambient := 0.75;
+   profile.sndfx := 0.75;
+   profile.sndvoice := 0.75;
+   profile.sndinterface := 0.5;
+   profile.keyscrollspeed := 0.5;
+   profile.mousescrollspeed := 0.5;
+   profile.middlemousescrollspeed := 0.5;
+   profile.wheelspeed := 0.5;
+   profile.igamespeed := 1;
+   profile.lastcampaignsave := '';
+   profile.lastcustomsave := '';
+   profile.netemail := '';
+   profile.netpass := '';
+   profile.netcdkey := '';
+   profile.bautosave := True;
+   profile.bbrushunderunit := True;
+   profile.bclipmouse := True;
+   profile.bsearchenemyinfront := True;
+   profile.binfiniteonleftclick := False;
+   profile.bselectallunitsonz := False;
+   profile.bDbgPreloadPatterns := False;
+   profile.bDbgLogPointerNil := IsEditor;
+   profile.bDbgVisualizePlayOnceProjFX := False;
+   profile.bShowPause := true;
+   profile.bShowMiniMap := true;
+   profile.bcenterfirstrow := false;
+   profile.bFamine := true;
+   profile.bRestrictCamera := true;
+   profile.bDbgCamera := false;
+   profile.bDbgNoBrushes := false;
+   profile.bDbgHotkeys := true;
+   profile.bDbgUnitDebugInfo := false;
+   profile.bNewMapOnMainMenu := true;
+   profile.bCheatPlaceUnits := false;
+   profile.bCheatNoFogOfWar := false;
+   profile.bCheatSwitchPlayer := false;
+   profile.bCheatPeaceMode := false;
+   profile.bCheatNoSpeedLimit := false;
+   profile.bCheatCopyPaste := false;
+   profile.bCheatMoveUnits := false;
+   profile.bCheatShowAllMissions := false;
+   profile.bShowFPS := false;
+   profile.bNoAchs := false;
+   profile.bDevMode := false;
+   profile.lang := '';
+   profile.displaymode := 'dmWindowFullScreen';
+   profile.dontshowannouncement := 0;
+   profile.lastknowndlcs := 0;
+   profile.purchaseunixtime := 0;
+end;
+
+// _profile_ConvertConfigValueToLocale
+//
+function _profile_ConvertConfigValueToLocale(const configlang : String; var langsid : String) : Boolean;
+begin
+   langsid := configlang;
+   Result := StrExists(langsid, '.\data\locale\') and StrExists(langsid, '\table.lng');
+   langsid := StrReplace(langsid, '.\data\locale\', '');
+   langsid := StrReplace(langsid, '\table.lng', '');
+end;
+
+// _profile_ConvertLocaleToConfigValue
+//
+procedure _profile_ConvertLocaleToConfigValue(const locale : String; var configvalue : String);
+begin
+   configvalue := '.\data\locale\'+locale+'\table.lng';
+end;
+
+// _profile_ConvertSteamLocaleToGame
+//
+function _profile_ConvertGameLocaleToSteam(const lang : String; var steamlangsid : String) : Boolean;
+begin
+   Result := True;
+   case lang of
+      'en' : steamlangsid := 'english';
+      'fr' : steamlangsid := 'french';
+      'de' : steamlangsid := 'german';
+      'cs' : steamlangsid := 'czech';
+      'pl' : steamlangsid := 'polish';
+      'ru' : steamlangsid := 'russian';
+      'it' : steamlangsid := 'italian';
+      'es' : steamlangsid := 'spanish';
+      'uk' : steamlangsid := 'ukrainian';
+      'po' : steamlangsid := 'portuguese';
+      'tu' : steamlangsid := 'turkish';
+      else
+      begin
+         Result := False;
+         steamlangsid := 'default';
+      end;
+   end;
+end;
+
+// _profile_GetLocaleFromResource
+//
+procedure _profile_GetLocaleFromResource(var lang : String);
+begin
+   const cResourceFileName = 'resource.lib';
+   var resourcefile : String = GetAppSaveDirectoryPath+cResourceFileName;
+   if IsFileExists(resourcefile) then
+   begin
+      var pResource : Integer = _parser_ParserTemporary(True);
+      ParserLoadFromFileByHandle(pResource, resourcefile);
+      lang := ParserGetValueByKeyByHandle(pResource, 'LocaleTableFileName');
+   end;
+end;
+
+// _profile_SetLocaleFromResource
+//
+procedure _profile_SetLocaleFromResource(var profile : TProfile);
+begin
+   const cResourceFileName = 'resource.lib';
+   var resourcefile : String = GetAppSaveDirectoryPath+cResourceFileName;
+   if IsFileExists(resourcefile) then
+   begin
+      var pResource : Integer = _parser_ParserTemporary(True);
+      ParserLoadFromFileByHandle(pResource, resourcefile);
+      profile.lang := ParserGetValueByKeyByHandle(pResource, 'LocaleTableFileName');
+   end
+   else
+   ErrorLog('_profile_SetLocaleFromResource : resource.lib not exists');
+end;
+
+// _profile_GetDisplayModeFromResource
+//
+procedure _profile_GetDisplayModeFromResource(var profile : TProfile);
+begin
+   const cResourceFileName = 'resource.lib';
+   var resourcefile : String = GetAppSaveDirectoryPath+cResourceFileName;
+   if IsFileExists(resourcefile) then
+   begin
+      var pResource : Integer = _parser_ParserTemporary(True);
+      ParserLoadFromFileByHandle(pResource, resourcefile);
+      profile.displaymode := ParserGetValueByKeyByHandle(pResource, 'DisplayMode');
+      if (not ((profile.displaymode='dmFullScreen') or (profile.displaymode='dmWindow') or (profile.displaymode='dmWindowFullScreen'))) then
+      profile.displaymode := 'dmWindowFullScreen';
+   end;
+end;
+
+// _profile_SetLocale
+//
+procedure _profile_SetLocale(const configlang : String; bMakeChanges, bSaveFile : Boolean);
+begin
+   var locale, steamlocale : String;
+   _profile_ConvertConfigValueToLocale(configlang, locale);
+   _profile_ConvertGameLocaleToSteam(locale, steamlocale);
+   const cResourceFileName = 'resource.lib';
+   const cLanguageFilename='.\data\locale\lang.loc';
+   var resourcefile : String = GetAppSaveDirectoryPath+cResourceFileName;
+   if IsFileExists(resourcefile) and (IsFileExists(clanguagefilename)) then
+   begin
+      if (steamlocale='') then
+      steamlocale := 'default';
+      var pResource : Integer = _parser_ParserTemporary(True);
+      ParserLoadFromFileByHandle(pResource, resourcefile);
+      var pLanguage : integer = ParserSelectByKey('language');
+      if (pLanguage=0) then
+      pLanguage := ParserCreate('language')
+      else
+      ParserClearByHandle(pLanguage);
+      ParserLoadFromFileByHandle(pLanguage, cLanguageFilename);
+      var pUserLanguage : Integer = ParserSelectByHandleByKey(pLanguage, steamlocale);
+      if (pUserLanguage<>0) then
+      begin
+         var i: integer;
+         for i:=0 to ParserGetCountByHandle(pUserLanguage)-1 do begin
+            var p : Integer = ParserSelectByHandleByIndex(pUserLanguage, i);
+            var k : String = ParserGetKeyName(p);
+            var v : String = ParserGetValueByIndexByHandle(pUserLanguage, i);
+            ParserSetValueByKeyByHandle(pResource, k, v);
+            if (bMakeChanges) then
+            case k of
+               'LocaleTableFileName' : SetLocaleTableFileName(v);
+               'LocaleTableListFileName' : SetLocaleTableListFileName(v);
+               'FontsCollectionFileName' : SetGUIFontCollectionFileName(v);
+            end;
+         end;
+         if (bSaveFile) Then
+         ParserSaveToFileByHandle(pResource, resourcefile);
+         if (bMakeChanges) then
+         GUIResetFonts;
+      end;
+   end;
+end;
+
+// _profile_SetDisplayMode
+//
+function _profile_SetDisplayMode(const displaymode : String; bMakeChanges, bSaveFile : Boolean) : Boolean;
+begin
+   Result := False;
+   if (displaymode='dmFullScreen') or (displaymode='dmWindow') or (displaymode='dmWindowFullScreen') then
+   begin
+      const cResourceFileName = 'resource.lib';
+      var resourcefile : String = GetAppSaveDirectoryPath+cResourceFileName;
+      if IsFileExists(resourcefile) then
+      begin
+         Result := True;
+         var pResource : Integer = _parser_ParserTemporary(True);
+         ParserLoadFromFileByHandle(pResource, resourcefile);
+         var oldDisplayMode : String = ParserGetValueByKeyByHandle(pResource, 'DisplayMode');
+         if (displaymode<>oldDisplayMode) then
+         begin
+            ParserSetValueByKeyByHandle(pResource, 'DisplayMode', displaymode);
+            if (bSaveFile) Then
+            ParserSaveToFileByHandle(pResource, resourcefile);
+         end;
+         if (bMakeChanges) then
+         begin
+            if (GetDisplayMode='dmFullScreen') and (displaymode='dmWindow') then // prevent for 100% context error
+            SetDisplayMode('dmWindowFullScreen'); // set window full screen first and then go to window, without crash
+            SetDisplayMode(displaymode);
+         end;
+      end;
+   end;
+end;
+
+// _profile_SetGameOptionsDefault
+//
+procedure _profile_SetGameOptionsDefault(var profile : TProfile; mode : Integer);
+begin
+   if (mode=0) or (mode=gc_settings_video) then
+   begin
+      //AutoDetect;
+      profile.bfreezoom := False;
+   end;
+   if (mode=0) or (mode=gc_settings_sound) then
+   begin
+      profile.sndmute := 0;
+      profile.sndmaster := 0.75;
+      profile.sndmusic := 0.75;
+      profile.sndambient := 0.75;
+      profile.sndfx := 0.75;
+      profile.sndvoice := 0.75;
+      profile.sndinterface := 0.33;
+   end;
+   if (mode=0) or (mode=gc_settings_control) then
+   begin
+      profile.keyscrollspeed := 0.5;
+      profile.mousescrollspeed := 0.5;
+      profile.middlemousescrollspeed := 0.5;
+      profile.wheelspeed := 0.5;
+      profile.bclipmouse := True;
+      // gameplay
+      profile.igamespeed := 1;
+      profile.bbrushunderunit := True;
+      profile.bsearchenemyinfront := True;
+      profile.binfiniteonleftclick := False;
+      profile.bselectallunitsonz := False;
+      profile.bcenterfirstrow := False;
+   end;
+   if (mode=0) or (mode=gc_settings_keybinding) then
+   begin
+      
+   end;
+end;
+
+// _profile_SaveStructToUserProfileParser
+//
+procedure _profile_SaveStructToUserProfileParser(const structName : String);
+begin
+   var pUser : Integer = ParserSelectUser;
+   var pUserStructName : Integer = ParserSelectByHandleByKey(pUser, structName);
+   if (pUserStructName=0) then
+   pUserStructName := ParserAddChildByIndex(pUser, structName)
+   else
+   ParserClearByHandle(pUserStructName);
+   StateMachineGlobalVariablesSaveToParser(pUserStructName, structName, False, False);
+   UserSaveProfileExt(false, true); //UserSaveProfile;
+end;
+
+// _profile_LoadStructFromUserProfileParser
+//
+function _profile_LoadStructFromUserProfileParser(const structName : String) : Boolean;
+begin
+   var pUser : Integer = ParserSelectUser;
+   var pUserStruct : Integer = ParserSelectByHandleByKey(pUser, structName);
+   StateMachineGlobalVariablesLoadFromParser(pUserStruct, structName, False, False);
+   Result := (pUserStruct<>0);
+end;
+
+// _profile_SetCheats
+//
+procedure _profile_SetCheats(var profile : TProfile; const val : Boolean);
+begin
+   profile.bCheatPlaceUnits := val;
+   profile.bCheatNoFogOfWar := val;
+   profile.bCheatSwitchPlayer := val;
+   profile.bCheatPeaceMode := val;
+   profile.bCheatNoSpeedLimit := val;
+   profile.bCheatCopyPaste := val;
+   profile.bCheatMoveUnits := val;
+   profile.bCheatShowAllMissions := val;
+   // false
+   profile.bShowFPS := False;
+end;
+
+// _profile_UpdateLastKnownSteamDLC
+//
+function _profile_UpdateLastKnownSteamDLC() : Boolean;
+begin
+   Result := False;
+   const cD1Path = '.\data\maps\missions\polmis1.map';
+   const cD2Path = '.\data\maps\missions\swemis1.map';
+   const cD3Path = '.\data\maps\missions\spamis1.map';
+   const cD4Path = '.\data\maps\missions\netmis1.map';
+   const cE1Path = '.\data\maps\missions\scomis1.map';
+   var bIsWindows : Boolean = _misc_IsWindows;
+   if (gbool_isgog) then
+   begin
+      var newval : Integer = gProfile.lastknowndlcs;
+      var bchanged : Boolean;
+      var pParser : Integer = _parser_ParserTemporary(True);
+      ParserLoadFromFileByHandle(pParser, '.\data\game\var\random.cfg');
+      var bEB : Boolean = (not bIsWindows) or StrExists(ParserGetValueByKeyByHandle(pParser, 'field'), 'geb');
+      ParserLoadFromFileByHandle(pParser, '.\data\game\var\randoma.cfg');
+      var bDE : Boolean = StrExists(ParserGetValueByKeyByHandle(pParser, 'field'), 'gde');
+      var bD1 : Boolean = IsFileExists(cD1Path);
+      var bD2 : Boolean = IsFileExists(cD2Path);
+      var bD3 : Boolean = IsFileExists(cD3Path);
+      var bD4 : Boolean = IsFileExists(cD4Path);
+      var bE1 : Boolean = IsFileExists(cE1Path);
+      if (bEB) then
+      newval := newval or gc_lastknowndlc_earlybird
+      else
+      newval := newval and not gc_lastknowndlc_earlybird;
+      if (bDE) then
+      newval := newval or gc_lastknowndlc_deluxe
+      else
+      newval := newval and not gc_lastknowndlc_deluxe;
+      if (bD1) then
+      newval := newval or gc_lastknowndlc_dlc1
+      else
+      newval := newval and not gc_lastknowndlc_dlc1;
+      if (bD2) then
+      newval := newval or gc_lastknowndlc_dlc2
+      else
+      newval := newval and not gc_lastknowndlc_dlc2;
+      if (bD3) then
+      newval := newval or gc_lastknowndlc_dlc3
+      else
+      newval := newval and not gc_lastknowndlc_dlc3;
+      if (bD4) then
+      newval := newval or gc_lastknowndlc_dlc4
+      else
+      newval := newval and not gc_lastknowndlc_dlc4;
+      if (bE1) then
+      newval := newval or gc_lastknowndlc_exp1
+      else
+      newval := newval and not gc_lastknowndlc_exp1;
+      if (gProfile.lastknowndlcs<>newval) then
+      begin
+         Result := True;
+         gProfile.lastknowndlcs := newval;
+      end;
+      if bEB then
+      newval := 1
+      else
+      newval := 0;
+      if (gProfile.purchaseunixtime<>newval) then
+      begin
+         Result := true;
+         gProfile.purchaseunixtime := newval;
+      end;
+   end
+   else
+   if ((SteamwrapIsLoaded) and (SteamwrapIsSteamRunning)) or (not bIsWindows) then
+   begin
+      var newval : Integer = gProfile.lastknowndlcs;
+      var bchanged : Boolean;
+      var ept : Integer;
+      if ((SteamwrapIsLoaded) and (SteamwrapIsSteamRunning)) then
+      begin
+         ept := SteamwrapGetEarliestPurchaseUnixTime(gc_app_cossacks3);
+         if (not bIsWindows) or ((ept>0) and (ept<gc_unixtime_earlybirdend)) or (SteamwrapIsDlcInstalled(gc_dlc_earlybird)) then
+         newval := newval or gc_lastknowndlc_earlybird
+         else
+         newval := newval and not gc_lastknowndlc_earlybird;
+         if (SteamwrapIsDlcInstalled(gc_dlc_deluxe)) then
+         newval := newval or gc_lastknowndlc_deluxe
+         else
+         newval := newval and not gc_lastknowndlc_deluxe;
+         if (SteamwrapIsDlcInstalled(gc_dlc_dlc1)) then
+         newval := newval or gc_lastknowndlc_dlc1
+         else
+         newval := newval and not gc_lastknowndlc_dlc1;
+         if (SteamwrapIsDlcInstalled(gc_dlc_dlc2)) then
+         newval := newval or gc_lastknowndlc_dlc2
+         else
+         newval := newval and not gc_lastknowndlc_dlc2;
+         if (SteamwrapIsDlcInstalled(gc_dlc_dlc3)) then
+         newval := newval or gc_lastknowndlc_dlc3
+         else
+         newval := newval and not gc_lastknowndlc_dlc3;
+         if (SteamwrapIsDlcInstalled(gc_dlc_dlc4)) then
+         newval := newval or gc_lastknowndlc_dlc4
+         else
+         newval := newval and not gc_lastknowndlc_dlc4;
+         if (SteamwrapIsDlcInstalled(gc_dlc_exp1)) then
+         newval := newval or gc_lastknowndlc_exp1
+         else
+         newval := newval and not gc_lastknowndlc_exp1;
+         if (gProfile.lastknowndlcs<>newval) then
+         begin
+            Result := True;
+            gProfile.lastknowndlcs := newval;
+         end;
+      end;
+      if (not bIsWindows) or ((ept>=gc_unixtime_earlybirdend) or (ept=0)) and (SteamwrapIsDlcInstalled(gc_dlc_earlybird)) then
+      ept := 1;
+      if (gProfile.purchaseunixtime<>ept) and (ept>0) then
+      begin
+         Result := true;
+         gProfile.purchaseunixtime := ept;
+      end;
+   {end
+   else
+   begin
+      var newval : Integer = gProfile.lastknowndlcs;}
+      var bD1 : Boolean = IsFileExists(cD1Path);
+      var bD2 : Boolean = IsFileExists(cD2Path);
+      var bD3 : Boolean = IsFileExists(cD3Path);
+      var bD4 : Boolean = IsFileExists(cD4Path);
+      var bE1 : Boolean = IsFileExists(cE1Path);
+      if (bD1) then
+      newval := newval or gc_lastknowndlc_dlc1
+      else
+      newval := newval and not gc_lastknowndlc_dlc1;
+      if (bD2) then
+      newval := newval or gc_lastknowndlc_dlc2
+      else
+      newval := newval and not gc_lastknowndlc_dlc2;
+      if (bD3) then
+      newval := newval or gc_lastknowndlc_dlc3
+      else
+      newval := newval and not gc_lastknowndlc_dlc3;
+      if (bD4) then
+      newval := newval or gc_lastknowndlc_dlc4
+      else
+      newval := newval and not gc_lastknowndlc_dlc4;
+      if (bE1) then
+      newval := newval or gc_lastknowndlc_exp1
+      else
+      newval := newval and not gc_lastknowndlc_exp1;
+      if (gProfile.lastknowndlcs<>newval) then
+      begin
+         Result := True;
+         gProfile.lastknowndlcs := newval;
+      end;
+   end
+   else
+   begin
+      var newval : Integer = gProfile.lastknowndlcs;
+      var bD1 : Boolean = IsFileExists(cD1Path);
+      var bD2 : Boolean = IsFileExists(cD2Path);
+      var bD3 : Boolean = IsFileExists(cD3Path);
+      var bD4 : Boolean = IsFileExists(cD4Path);
+      var bE1 : Boolean = IsFileExists(cE1Path);
+      if (bD1) then
+      newval := newval or gc_lastknowndlc_dlc1
+      else
+      newval := newval and not gc_lastknowndlc_dlc1;
+      if (bD2) then
+      newval := newval or gc_lastknowndlc_dlc2
+      else
+      newval := newval and not gc_lastknowndlc_dlc2;
+      if (bD3) then
+      newval := newval or gc_lastknowndlc_dlc3
+      else
+      newval := newval and not gc_lastknowndlc_dlc3;
+      if (bD4) then
+      newval := newval or gc_lastknowndlc_dlc4
+      else
+      newval := newval and not gc_lastknowndlc_dlc4;
+      if (bE1) then
+      newval := newval or gc_lastknowndlc_exp1
+      else
+      newval := newval and not gc_lastknowndlc_exp1;
+      if (gProfile.lastknowndlcs<>newval) then
+      begin
+         Result := True;
+         gProfile.lastknowndlcs := newval;
+      end;
+   end;
+   gProfileUserStruct.adviserdefault.bavailable := ((gProfile.lastknowndlcs and gc_lastknowndlc_exp1)<>0);
+   var i : Integer;
+   for i:=0 to gc_MaxPlayerCount-1 do
+   gPlayer[i].playeradviser.adviser.bavailable := gProfileUserStruct.adviserdefault.bavailable;
+end;
+
+// _profile_ClampProfileValues
+//
+function _profile_ClampProfileValues(var profile : TProfile) : Boolean;
+begin
+   Result := False;
+   profile.sndmaster := Clamp(profile.sndmaster, 0, 1);
+   profile.sndmusic := Clamp(profile.sndmusic, 0, 1);
+   profile.sndambient := Clamp(profile.sndambient, 0, 1);
+   profile.sndfx := Clamp(profile.sndfx, 0, 1);
+   profile.sndvoice := Clamp(profile.sndvoice, 0, 1);
+   profile.sndinterface := Clamp(profile.sndinterface, 0, 1);
+   profile.keyscrollspeed := Clamp(profile.keyscrollspeed, 0, 1);
+   profile.mousescrollspeed := Clamp(profile.mousescrollspeed, 0, 1);
+   profile.middlemousescrollspeed := Clamp(profile.middlemousescrollspeed, 0, 1);
+   profile.wheelspeed := Clamp(profile.wheelspeed, 0, 1);
+   profile.igamespeed := _misc_ClampInt(profile.igamespeed, 0, 3);
+   if (profile.name='CFG.PROFILE.NAME.DEF') then
+   profile.name := GetLocaleTableListItemByID('gui', 'name.def');
+   
+   var bClampLocale : Boolean;
+   var locale, steamlangsid : String;
+   var curliblang, prevlang : String;
+   _profile_GetLocaleFromResource(curliblang);
+   prevlang := profile.lang;
+   
+   if (not _profile_ConvertConfigValueToLocale(profile.lang, locale)) then
+   bClampLocale := True
+   else
+   if (not _profile_ConvertGameLocaleToSteam(locale, steamlangsid)) then
+   bClampLocale := True;
+   if (bClampLocale) then
+   _profile_ConvertLocaleToConfigValue('en', profile.lang);
+   if (GetProjectOptionAsString('WaterReflection')='wrmUltra') then
+   SetProjectOptionAsString('WaterReflection', 'wrmHigh');
+   
+   if (GetProjectOptionAsString('WaterReflection')='wrmUltra') then
+   SetProjectOptionAsString('WaterReflection', 'wrmHigh');
+   
+   if (not ((profile.displaymode='dmFullScreen') or (profile.displaymode='dmWindow') or (profile.displaymode='dmWindowFullScreen'))) then
+   begin
+      profile.displaymode := 'dmWindowFullScreen';
+      _profile_SetDisplayMode(profile.displaymode, (GetDisplayMode<>profile.displaymode), True);
+   end;
+   
+   var pUser : Integer = ParserSelectUser;
+   var pUserStruct : Integer = ParserSelectByHandleByKey(pUser, 'gProfileUserStruct');
+   if (pUserStruct=0) then
+   begin
+      gProfileUserStruct.Clear;
+      gProfileUserStructTmp.Clear;
+      _profile_SaveStructToUserProfileParser('gProfileUserStruct');
+   end;
+   
+   // prevent crashes on low memory pc on preload textures
+   _misc_ClampToAvailableTextureQualityOptionsByRAM;
+   SetClipCursor(gProfile.bclipmouse and IsEngine and (gInterface.gamemode<>gc_gamemode_mainmenu));
+   
+   if (curliblang<>profile.lang) then
+   begin
+      ErrorLog('_profile_ClampProfileValues lang fixed : curliblang='+curliblang+' profile.lang='+profile.lang);
+      _profile_SetLocale(curliblang, True, False);
+      if (_profile_ConvertConfigValueToLocale(curliblang, locale)) then
+      profile.lang := curliblang;
+      Result := True;
+   end;
+   
+   // optimize
+   profile.bDbgLogPointerNil := IsEditor;
+end;
+
+// _profile_SetDefaultProjectOptions
+//
+procedure _profile_SetDefaultProjectOptions(var profile : TProfile);
+begin
+   SetProjectOptionAsFloat('Sound.Master', profile.sndmaster);
+   SetProjectOptionAsFloat('svgMusic', profile.sndmusic);
+   SetProjectOptionAsFloat('svgAmbient', profile.sndambient);
+   SetProjectOptionAsFloat('svgSFX', profile.sndfx);
+   SetProjectOptionAsFloat('svgInterface', profile.sndinterface);
+end;
+
+// _profile_ApplySoundOptions
+//
+procedure _profile_ApplySoundOptions(var profile : TProfile);
+begin
+   SetProjectOptionAsFloat('Sound.Master', profile.sndmaster);
+   SetProjectOptionAsFloat('svgMusic', profile.sndmusic);
+   SetProjectOptionAsFloat('svgAmbient', profile.sndambient);
+   SetProjectOptionAsFloat('svgSFX', profile.sndfx);
+   SetProjectOptionAsFloat('svgInterface', profile.sndinterface);
+   SetSoundManagerMuteMode('svgInterface', (profile.sndmute=1));
+   SetSoundManagerMuteMode('svgAmbient', (profile.sndmute=1));
+   SetSoundManagerMuteMode('svgMusic', (profile.sndmute=1));
+   SetSoundManagerMuteMode('svgSFX', (profile.sndmute=1));
+   SetSoundManagerMuteMode('svgVoice', (profile.sndmute=1));
+end;
+
+// _profile_SetDefaultServerBasedOnLocale
+//
+procedure _profile_SetDefaultServerBasedOnLocale(var profile : TProfile);
+begin
+   if (gConnectIPCount>1) then
+   begin
+      var locale : String;
+      _profile_ConvertConfigValueToLocale(profile.lang, locale);
+      case locale of
+         'ru', 'uk' : gConnectIPIndex := 1
+         else
+         gConnectIPIndex := 0;
+      end;
+   end;
+end;
+
+// _profile_SaveUserProfile
+//
+procedure _profile_SaveUserProfile;
+begin
+   _profile_ClampProfileValues(gProfile);
+   //_profile_SaveStructToUserProfileParser('gProfileUserStruct'); // save manualy on custom map start
+   StateMachineGlobalVariablesSaveToStack(GetUserProfileStateMachineHandle, 'gProfile', '');
+   UserSaveProfile;
+end;
+
+// _profile_SaveUserProfileExt
+//
+procedure _profile_SaveUserProfileExt(bvars, bengine, bdata : Boolean);
+begin
+   if (bvars) then
+   begin
+      _profile_ClampProfileValues(gProfile);
+      //_profile_SaveStructToUserProfileParser('gProfileUserStruct'); // save manualy on custom map start
+      StateMachineGlobalVariablesSaveToStack(GetUserProfileStateMachineHandle, 'gProfile', '');
+   end;
+   UserSaveProfileExt(bengine, bdata);
+end;
+
+// _profile_LoadUserProfile
+//
+procedure _profile_LoadUserProfile;
+begin
+   StateMachineGlobalVariablesLoadFromStack(GetUserProfileStateMachineHandle, 'gProfile', '');
+   var bsave : Boolean;
+   bsave := _profile_ClampProfileValues(gProfile);
+   _profile_SetCheats(gProfile, False);
+   _profile_SetDefaultServerBasedOnLocale(gProfile);
+   if (bsave or _profile_UpdateLastKnownSteamDLC) then
+   begin
+      StateMachineGlobalVariablesSaveToStack(GetUserProfileStateMachineHandle, 'gProfile', '');
+      UserSaveProfileExt(false, true); //_profile_SaveUserProfile;
+   end;
+end;
+
+// _profile_SetDefaultAdviser
+//
+procedure _profile_SetDefaultAdviser(profileuserstruct : TProfileUserStruct);
+begin
+   profileuserstruct.adviserdefault.bavailable := ((gProfile.lastknowndlcs and gc_lastknowndlc_exp1)<>0);
+   if (profileuserstruct.adviserdefault.version=0) then
+   begin
+      profileuserstruct.adviserdefault.version := 1;
+      profileuserstruct.adviserdefault.bvisible := True;
+      profileuserstruct.adviserdefault.benable := profileuserstruct.adviserdefault.bavailable;
+      profileuserstruct.adviserdefault.bconstruct := True;
+      profileuserstruct.adviserdefault.beconomy := True;
+      profileuserstruct.adviserdefault.beconomyadvanced := True;
+      profileuserstruct.adviserdefault.bcontrolpeasants := True;
+      profileuserstruct.adviserdefault.bproducepeasants := True;
+      profileuserstruct.adviserdefault.brepairbuildings := True;
+      profileuserstruct.adviserdefault.bfillmines := True;
+      profileuserstruct.adviserdefault.bmarketadvises := False;
+      //profileuserstruct.adviserdefault.bmanualresource :=
+      //profileuserstruct.adviserdefault.resonfood :=
+      //profileuserstruct.adviserdefault.resonwood :=
+      //profileuserstruct.adviserdefault.resonstone :=
+      profileuserstruct.adviserdefault.bupgrades := True;
+      profileuserstruct.adviserdefault.bupgradesunavailable := True;
+      profileuserstruct.adviserdefault.bquartermaster := True;
+      profileuserstruct.adviserdefault.bsetupguards := True;
+      profileuserstruct.adviserdefault.bproduceofficers := True;
+      profileuserstruct.adviserdefault.bshowsquads := True;
+      profileuserstruct.adviserdefault.settings := 0;
+   end;
+
+   var i : Integer;
+   for i:=0 to gc_MaxPlayerCount-1 do
+   gPlayer[i].playeradviser.adviser := profileuserstruct.adviserdefault;
+end;
+
+// _profile_SaveAdviser
+//
+function _profile_SaveAdviser() : Boolean;
+begin
+   var plhnd : Integer = GetPlayerHandleInterfaceIO;
+   if (plhnd<>0) then
+   begin
+      var plind : Integer = GetPlayerIndexByHandle(plhnd);
+      if (plind>=0) and (gPlayer[plInd].playeradviser.adviser.bavailable) then
+      begin
+         var pvar1 : Pointer = gProfileUserStruct.adviserdefault;
+         var pvar2 : Pointer = gPlayer[plInd].playeradviser.adviser;
+         if not _misc_CompareVariables(pvar1, pvar2, SizeOf(gProfileUserStruct.adviserdefault)) then
+         begin
+            gProfileUserStruct.adviserdefault := gPlayer[plInd].playeradviser.adviser;
+
+            if not ((gProfile.lastknowndlcs and gc_lastknowndlc_exp1)<>0) then
+            begin
+               gProfileUserStruct.adviserdefault.bavailable := False;
+               if not gProfileUserStruct.adviserdefault.bavailable then
+               gProfileUserStruct.adviserdefault.benable := False;
+            end;
+            
+            _profile_SaveStructToUserProfileParser('gProfileUserStruct');
+         end;
+      end;
+   end;
+end;
+
+// _profile_LoadAdviser
+//
+function _profile_LoadAdviser() : Boolean;
+begin
+   Log('_profile_LoadAdviser');
+   var i : Integer;
+   for i:=0 to gc_MaxPlayerCount-1 do
+   gPlayer[i].playeradviser.adviser := gProfileUserStruct.adviserdefault;
+end;
+
+_profile_SetDefault(gProfile);
+_profile_SetDefaultProjectOptions(gProfile);
+_profile_LoadUserProfile;
+_profile_SetLocaleFromResource(gProfile);
+_profile_GetDisplayModeFromResource(gProfile);
+//_profile_SetLocale(gProfile.lang, True, False);
+_profile_ApplySoundOptions(gProfile);
+_profile_LoadStructFromUserProfileParser('gProfileUserStruct');
+_profile_SetDefaultAdviser(gProfileUserStruct);
+
+if (not gProfileUserStruct.achs.binit) then
+gProfileUserStruct.achs.Create;

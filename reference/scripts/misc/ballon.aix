@@ -1,0 +1,54 @@
+section.begin
+   Name = OnTagStates
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\ballon.inc\ontagstates.inc
+section.end
+
+section.begin
+   Name = SetTagStates
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\ballon.inc\settagstates.inc
+section.end
+
+section.begin
+   Name = Initial
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\ballon.inc\initial.inc
+section.end
+
+section.begin
+   Name = Nothing
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\ballon.inc\nothing.inc
+section.end
+
+section.begin
+   Name = OnEndFrameReached
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\ballon.inc\onendframereached.inc
+section.end
+
+section.begin
+   Name = OnAclAnimationEnd
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\ballon.inc\onaclanimationend.inc
+section.end
+
+section.begin
+   Name = OnAclAnimationFloat
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\ballon.inc\onaclanimationfloat.inc
+section.end
+
+section.begin
+   Name = OnDestroy
+   UsedFileName = 
+   Code[*] = ;log('balloon : ondestroy');
+section.end
+
+section.begin
+   CurrentState = 
+   SaveVariables = False
+section.end
+

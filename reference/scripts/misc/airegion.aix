@@ -1,0 +1,73 @@
+section.begin
+   Name = OnInclude
+   UsedFileName = 
+   Code : struct.begin
+      [*] = ;_scenario_AIRegionOnInclude(GetCurrentAIRegionHandle, IntRegister0);
+      [*] = ;Log('OnInclude of AIRegion = '+IntToStr(GetIntValueByIndex(0)));
+      [*] = ;exit;
+      [*] = ;var gohnd : Integer = IntRegister0;
+      [*] = ;var zoneid : Integer = GetIntValueByIndex(0);
+      [*] = ;if (zoneid>=0) and (zoneid<gc_scenario_maxzones) then
+      [*] = ;begin
+      [*] = ;   var pobj : Pointer = _unit_GetTObj(gohnd);
+      [*] = ;   if (pobj<>nil) then
+      [*] = ;   begin
+      [*] = ;      var bOk : Boolean = True;
+      [*] = ;      if (gScenario.zones[zoneid].player>=0) and (TObj(pobj).pl<>gScenario.zones[zoneid].player) then
+      [*] = ;      bOk := False;
+      [*] = ;      if (bOk) and (gScenario.zones[zoneid].group>=0) and (TObj(pobj).scenariogroupid<>gScenario.zones[zoneid].group) then
+      [*] = ;      bOk := False;
+      [*] = ;      if (bOk) and (TObj(pobj).bdead) then
+      [*] = ;      bOk := False;
+      [*] = ;      if (bOk) then
+      [*] = ;      begin
+      [*] = ;         gScenario.zones[zoneid].unitslist.Add(gohnd);
+      [*] = ;         Log('OnInclude : gohnd = '+IntToStr(gohnd));
+      [*] = ;      end;
+      [*] = ;   end
+      [*] = ;   else
+      [*] = ;   ErrorLog('OnInclude : gohnd = '+IntToStr(gohnd)+' pobj=nil');
+      [*] = ;end
+      [*] = ;else
+      [*] = ;ErrorLog('airegion out of range');
+   struct.end
+section.end
+
+section.begin
+   Name = OnDeclude
+   UsedFileName = 
+   Code : struct.begin
+      [*] = ;_scenario_AIRegionOnDeclude(GetCurrentAIRegionHandle, IntRegister0);
+      [*] = ;Log('OnDeclude of AIRegion = '+IntToStr(GetIntValueByIndex(0)));
+      [*] = ;exit;
+      [*] = ;var gohnd : Integer = IntRegister0;
+      [*] = ;var zoneid : Integer = GetIntValueByIndex(0);
+      [*] = ;if (zoneid>=0) and (zoneid<gc_scenario_maxzones) then
+      [*] = ;begin
+      [*] = ;   var pobj : Pointer = _unit_GetTObj(gohnd);
+      [*] = ;   if (pobj<>nil) then
+      [*] = ;   begin
+      [*] = ;      var bOk : Boolean = True;
+      [*] = ;      if (gScenario.zones[zoneid].player>=0) and (TObj(pobj).pl<>gScenario.zones[zoneid].player) then
+      [*] = ;      bOk := False;
+      [*] = ;      if (bOk) and (gScenario.zones[zoneid].group>=0) and (TObj(pobj).scenariogroupid<>gScenario.zones[zoneid].group) then
+      [*] = ;      bOk := False;
+      [*] = ;      if (bOk) then
+      [*] = ;      begin
+      [*] = ;         gScenario.zones[zoneid].unitslist.Remove(gohnd);
+      [*] = ;         Log('OnDeclude : gohnd = '+IntToStr(gohnd));
+      [*] = ;      end;
+      [*] = ;   end
+      [*] = ;   else
+      [*] = ;   ErrorLog('OnDeclude : gohnd = '+IntToStr(gohnd)+' pobj=nil');
+      [*] = ;end
+      [*] = ;else
+      [*] = ;ErrorLog('airegion out of range');
+   struct.end
+section.end
+
+section.begin
+   CurrentState = 
+   SaveVariables = False
+section.end
+

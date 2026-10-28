@@ -1,0 +1,35 @@
+{refurl=.\data\objects\ref\refunithorse.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=mainproperty}
+   CustomName = reiter
+   BaseName = reiter
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=actorproperty}
+   LODActorName = reiter
+   DefaultMeshName = reiter.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = reiter
+   Mesh[0].UseableMaterials[0] = reiter
+section.end
+
+autochildrenproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=autochildrenproperty}
+   Enabled = True
+   Mesh[0] : struct.begin
+      Children : struct.begin
+         [0] : struct.begin
+            BaseName = reiter_horse
+            DefaultMeshName = reiter_horse.mesh
+            Mesh[*] = reiter_horse.mesh
+            DefaultMaterialName = horseblack
+            Materials[*] = horseblack
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=frameanimationproperty}
+   FrameAnimationCyclesLibName = reiter
+section.end

@@ -1,0 +1,40 @@
+{refurl=.\data\objects\ref\refunitattach.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=mainproperty}
+   CustomName = battleship_sail
+   BaseName = battleship_sail
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=actorproperty}
+   LODActorName = battleship_sail
+   DefaultMeshName = battleship_sail.mesh
+   UseableMeshes : struct.begin
+      [0] = True
+   struct.end
+   //UseParentTLFToPosition = True
+section.end
+
+stringproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=stringproperty}
+   StringTag = 104
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = battleship
+   Mesh[0].UseableMaterials[0] = battleship
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=frameanimationproperty}
+   ClassName = FrameAnimationProperty
+   FrameAnimationSynchronizeOption = fasoNone
+   RandomOffsetFrameAnimationCycles = False
+   RandomOffsetFrameAnimation = False
+   FrameAnimationCyclesLibName = shipsail
+section.end
+
+designproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=designproperty}
+   Enabled = True
+   Static = True
+   ClassName = DesignProperty
+   VisibleAtDesignTime = True
+   DesignPriority = 100
+section.end

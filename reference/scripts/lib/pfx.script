@@ -1,0 +1,415 @@
+//
+// pfx.script
+//
+
+// TLibEffect
+//
+type TLibEffect = class
+   fKeyName,
+   fSourceName: String;
+   // 0 - AnimatedSprite;
+   fSourceType: Integer;
+   // 0 - off; from 1 to 8 - random by id;
+   fRandMirrorU,
+   fRandMirrorV,
+   fRandAnimation: Integer;
+   // Start, Stop - random relative dispersion;
+   // FrameRate;
+   fRandFrameRate: Integer;
+   fRandFrameRateStart,
+   fRandFrameRateStop: Float;
+   // PixelRatio;
+   fRandPixelRatio,
+   fRandPixelRatioStart,
+   fRandPixelRatioStop: Integer;
+   // Position;
+   fRandPosition: Integer;
+   fRandPositionStart,
+   fRandPositionStop: TVec3f;
+   // Scale;
+   fRandScale: Integer;
+   fRandScaleStart,
+   fRandScaleStop: TVec3f;
+   
+   procedure Create; begin end;
+   constructor TLibEffect; begin Create; end;
+   procedure Destroy; begin end;
+   destructor TLibEffect; begin Destroy; end;
+   
+   function GetOrCreate(hnd: Integer; ptr: Pointer): Integer;
+   begin
+      result:=GameObjectGetOrCreateEffectFXSourceByHandle(hnd, self.fSourceName, self.fKeyName);
+      var i: Integer;
+      var rand: array[0..7] of Float;
+      if ptr=nil then
+      for i:=0 to 7 do rand[i]:=Random
+      else for i:=0 to 7 do rand[i]:=Float(ptr+i*SizeOf(Float));
+      if self.fRandMirrorU>0 then
+      SetBehaviourBoolProperty(result, 'MirrorU', Round(rand[ClampInt(self.fRandMirrorU-1, 0, 7)])=1);
+      if self.fRandMirrorV>0 then
+      SetBehaviourBoolProperty(result, 'MirrorV', Round(rand[ClampInt(self.fRandMirrorV-1, 0, 7)])=1);
+      if self.fRandAnimation>0 then begin
+         var n: Integer=GetBehaviourIntProperty(result, 'AnimationsCount');
+         if n>1 then begin
+            var a: Integer=Round(rand[ClampInt(self.fRandAnimation-1, 0, 7)]*(n-1));
+            SetBehaviourIntProperty(result, 'AnimationIndex', a);
+         end;
+      end;
+      if self.fRandFrameRate>0 then begin
+         var d: Float=Lerp(self.fRandFrameRateStart, self.fRandFrameRateStop, rand[ClampInt(self.fRandFrameRate-1, 0, 7)]);
+         var f: Float=GetBehaviourFloatProperty(result, 'FrameRate');
+         SetBehaviourFloatProperty(result, 'FrameRate', f+d);
+      end;
+      if self.fRandPixelRatio>0 then begin
+         var d: Integer=Round(Lerp(self.fRandPixelRatioStart, self.fRandPixelRatioStop, rand[ClampInt(self.fRandPixelRatio-1, 0, 7)]));
+         var i: Integer=GetBehaviourIntProperty(result, 'PixelRatio');
+         SetBehaviourIntProperty(result, 'PixelRatio', i+d);
+      end;
+      if self.fRandPosition>0 then begin
+         var rl: Float=rand[ClampInt(self.fRandPosition-1, 0, 7)];
+         var dx: Float=Lerp(self.fRandPositionStart.x, self.fRandPositionStop.x, rl);
+         var dy: Float=Lerp(self.fRandPositionStart.y, self.fRandPositionStop.y, rl);
+         var dz: Float=Lerp(self.fRandPositionStart.z, self.fRandPositionStop.z, rl);
+         var px, py, pz: Float;
+         GetBehaviourAffineVectorProperty(result, 'Position', px, py, pz);
+         SetBehaviourAffineVectorProperty(result, 'Position', px+dx, py+dy, pz+dz);
+      end;
+      if self.fRandScale>0 then begin
+         var rl: Float=rand[ClampInt(self.fRandScale-1, 0, 7)];
+         var dx: Float=Lerp(self.fRandScaleStart.x, self.fRandScaleStop.x, rl);
+         var dy: Float=Lerp(self.fRandScaleStart.y, self.fRandScaleStop.y, rl);
+         var dz: Float=Lerp(self.fRandScaleStart.z, self.fRandScaleStop.z, rl);
+         var sx, sy, sz: Float;
+         GetBehaviourAffineVectorProperty(result, 'Scale', sx, sy, sz);
+         SetBehaviourAffineVectorProperty(result, 'Scale', sx+dx, sy+dy, sz+dz);
+      end;
+   end;
+   
+   procedure SaveToStruct(struct: Integer);
+   begin
+      ParserSetValueByKeyByHandle(struct, 'keyname', self.fKeyName);
+      ParserSetValueByKeyByHandle(struct, 'sourcename', self.fSourceName);
+      ParserSetIntValueByKeyByHandle(struct, 'sourcetype', self.fSourceType);
+      ParserSetIntValueByKeyByHandle(struct, 'randmirroru', self.fRandMirrorU);
+      ParserSetIntValueByKeyByHandle(struct, 'randmirrorv', self.fRandMirrorV);
+      ParserSetIntValueByKeyByHandle(struct, 'randanimation', self.fRandAnimation);
+      ParserSetIntValueByKeyByHandle(struct, 'randframerate', self.fRandFrameRate);
+      ParserSetFloatValueByKeyByHandle(struct, 'randframeratestart', self.fRandFrameRateStart);
+      ParserSetFloatValueByKeyByHandle(struct, 'randframeratestop', self.fRandFrameRateStop);
+      ParserSetIntValueByKeyByHandle(struct, 'randpixelratio', self.fRandPixelRatio);
+      ParserSetIntValueByKeyByHandle(struct, 'randpixelratiostart', self.fRandPixelRatioStart);
+      ParserSetIntValueByKeyByHandle(struct, 'randpixelratiostop', self.fRandPixelRatioStop);
+      ParserSetIntValueByKeyByHandle(struct, 'randposition', self.fRandPosition);
+      ParserSetFloatValueByKeyByHandle(struct, 'randpositionstart.x', self.fRandPositionStart.x);
+      ParserSetFloatValueByKeyByHandle(struct, 'randpositionstart.y', self.fRandPositionStart.y);
+      ParserSetFloatValueByKeyByHandle(struct, 'randpositionstart.z', self.fRandPositionStart.z);
+      ParserSetFloatValueByKeyByHandle(struct, 'randpositionstop.x', self.fRandPositionStop.x);
+      ParserSetFloatValueByKeyByHandle(struct, 'randpositionstop.y', self.fRandPositionStop.y);
+      ParserSetFloatValueByKeyByHandle(struct, 'randpositionstop.z', self.fRandPositionStop.z);
+      ParserSetIntValueByKeyByHandle(struct, 'randscale', self.fRandScale);
+      ParserSetFloatValueByKeyByHandle(struct, 'randscalestart.x', self.fRandScaleStart.x);
+      ParserSetFloatValueByKeyByHandle(struct, 'randscalestart.y', self.fRandScaleStart.y);
+      ParserSetFloatValueByKeyByHandle(struct, 'randscalestart.z', self.fRandScaleStart.z);
+      ParserSetFloatValueByKeyByHandle(struct, 'randscalestop.x', self.fRandScaleStop.x);
+      ParserSetFloatValueByKeyByHandle(struct, 'randscalestop.y', self.fRandScaleStop.y);
+      ParserSetFloatValueByKeyByHandle(struct, 'randscalestop.z', self.fRandScaleStop.z);
+   end;
+   
+   procedure LoadFromStruct(struct: Integer);
+   begin
+      self.fKeyName:=ParserGetValueByKeyByHandle(struct, 'keyname');
+      self.fSourceName:=ParserGetValueByKeyByHandle(struct, 'sourcename');
+      self.fSourceType:=ParserGetIntValueByKeyByHandle(struct, 'sourcetype');
+      self.fRandMirrorU:=ParserGetIntValueByKeyByHandle(struct, 'randmirroru');
+      self.fRandMirrorV:=ParserGetIntValueByKeyByHandle(struct, 'randmirrorv');
+      self.fRandAnimation:=ParserGetIntValueByKeyByHandle(struct, 'randanimation');
+      self.fRandFrameRate:=ParserGetIntValueByKeyByHandle(struct, 'randframerate');
+      self.fRandFrameRateStart:=ParserGetFloatValueByKeyByHandle(struct, 'randframeratestart');
+      self.fRandFrameRateStop:=ParserGetFloatValueByKeyByHandle(struct, 'randframeratestop');
+      self.fRandPixelRatio:=ParserGetIntValueByKeyByHandle(struct, 'randpixelratio');
+      self.fRandPixelRatioStart:=ParserGetIntValueByKeyByHandle(struct, 'randpixelratiostart');
+      self.fRandPixelRatioStop:=ParserGetIntValueByKeyByHandle(struct, 'randpixelratiostop');
+      self.fRandPosition:=ParserGetIntValueByKeyByHandle(struct, 'randposition');
+      self.fRandPositionStart.x:=ParserGetFloatValueByKeyByHandle(struct, 'randpositionstart.x');
+      self.fRandPositionStart.y:=ParserGetFloatValueByKeyByHandle(struct, 'randpositionstart.y');
+      self.fRandPositionStart.z:=ParserGetFloatValueByKeyByHandle(struct, 'randpositionstart.z');
+      self.fRandPositionStop.x:=ParserGetFloatValueByKeyByHandle(struct, 'randpositionstop.x');
+      self.fRandPositionStop.y:=ParserGetFloatValueByKeyByHandle(struct, 'randpositionstop.y');
+      self.fRandPositionStop.z:=ParserGetFloatValueByKeyByHandle(struct, 'randpositionstop.z');
+      self.fRandScale:=ParserGetIntValueByKeyByHandle(struct, 'randscale');
+      self.fRandScaleStart.x:=ParserGetFloatValueByKeyByHandle(struct, 'randscalestart.x');
+      self.fRandScaleStart.y:=ParserGetFloatValueByKeyByHandle(struct, 'randscalestart.y');
+      self.fRandScaleStart.z:=ParserGetFloatValueByKeyByHandle(struct, 'randscalestart.z');
+      self.fRandScaleStop.x:=ParserGetFloatValueByKeyByHandle(struct, 'randscalestop.x');
+      self.fRandScaleStop.y:=ParserGetFloatValueByKeyByHandle(struct, 'randscalestop.y');
+      self.fRandScaleStop.z:=ParserGetFloatValueByKeyByHandle(struct, 'randscalestop.z');
+   end;
+end;
+
+// TLibEffects
+//
+type TLibEffects = class
+{ Private Declarations }
+   fList: TPtrList;
+   fRand: array[0..7] of Float;
+protected
+{ Protected Declarations }
+public
+{ Public Declarations }
+   fEffectName: String;
+   fEffectOffset: TVec3f;
+   fParentRandom: Boolean;
+   fOwnerPitch, fOwnerRoll, fOwnerTurn: Float;
+   
+   procedure Create; begin if self.fList.GetItemSize=0 then self.fList.Create; end;
+   constructor TLibEffects; begin Create; end;
+   procedure Clear;
+   begin
+      var i: Integer;
+      for i:=0 to self.fList.GetCount-1 do begin
+         var p: Pointer=self.fList.GetPointer(i);
+         TLibEffect(p).Destroy;
+         FreeMem(p);
+      end;
+      self.fList.Clear;
+   end;
+   procedure Destroy; begin Clear; self.fList.Destroy; end;
+   destructor TLibEffects; begin Destroy; end;
+   function GetCount: Integer; begin result:=self.fList.GetCount; end;
+   function Get(index: Integer): Pointer; begin result:=self.fList.GetPointer(index); end;
+   function Add: Pointer;
+   begin
+      GetMem(result, SizeOf(TLibEffect));
+      FillMem(result, SizeOf(TLibEffect), 0);
+      TLibEffect(result).Create;
+      self.fList.AddPointer(result);
+   end;
+   procedure Delete(const index: Integer);
+   begin
+      if (index>=0) and (index<GetCount) then
+      begin
+         var p: Pointer=self.fList.GetPointer(index);
+         if p<>nil then begin
+            TLibEffect(p).Destroy;
+            FreeMem(p);
+         end;
+         self.fList.Delete(index);
+      end;
+   end;
+   
+   procedure FillRand;
+   begin
+      var i: Integer;
+      for i:=0 to 7 do fRand[i]:=Random;
+   end;
+   
+   procedure GetOrCreate(hnd: Integer);
+   begin
+      if fOwnerPitch<>0 then
+      SetGameObjectPitchAngleByHandle(hnd, fOwnerPitch);
+      if fOwnerRoll<>0 then
+      SetGameObjectRollAngleByHandle(hnd, fOwnerRoll);
+      if fOwnerTurn<>0 then
+      SetGameObjectTurnAngleByHandle(hnd, fOwnerTurn);
+      var prand: Pointer=nil;
+      if fParentRandom then begin
+         FillRand;
+         prand:=fRand;
+      end;
+      var i: Integer;
+      for i:=0 to self.fList.GetCount-1 do begin
+         var p: Pointer=self.fList.GetPointer(i);
+         var e: Integer=TLibEffect(p).GetOrCreate(hnd, prand);
+         if(self.fEffectOffset.x<>0) or (self.fEffectOffset.y<>0) or (self.fEffectOffset.z<>0) then begin
+            var px, py, pz: Float;
+            GetBehaviourAffineVectorProperty(e, 'Position', px, py, pz);
+            SetBehaviourAffineVectorProperty(e, 'Position', px+self.fEffectOffset.x, py+self.fEffectOffset.y, pz+self.fEffectOffset.z);
+         end;
+      end;
+   end;
+   
+   procedure GetOrCreateOffset(hnd: Integer; tx, ty, tz: Float);
+   begin
+      if fOwnerPitch<>0 then
+      SetGameObjectPitchAngleByHandle(hnd, fOwnerPitch);
+      if fOwnerRoll<>0 then
+      SetGameObjectRollAngleByHandle(hnd, fOwnerRoll);
+      if fOwnerTurn<>0 then
+      SetGameObjectTurnAngleByHandle(hnd, fOwnerTurn);
+      var prand: Pointer=nil;
+      if fParentRandom then begin
+         FillRand;
+         prand:=fRand;
+      end;
+      var i: Integer;
+      for i:=0 to self.fList.GetCount-1 do begin
+         var p: Pointer=self.fList.GetPointer(i);
+         var e: Integer=TLibEffect(p).GetOrCreate(hnd, prand);
+         var px, py, pz: Float;
+         GetBehaviourAffineVectorProperty(e, 'Position', px, py, pz);
+         SetBehaviourAffineVectorProperty(e, 'Position', px+tx+self.fEffectOffset.x, py+ty+self.fEffectOffset.y, pz+tz+self.fEffectOffset.z);
+      end;
+   end;
+   
+   procedure SaveToStruct(struct: Integer);
+   begin
+      ParserSetValueByKeyByHandle(struct, 'effectname', self.fEffectName);
+      ParserSetFloatValueByKeyByHandle(struct, 'effectoffset.x', self.fEffectOffset.x);
+      ParserSetFloatValueByKeyByHandle(struct, 'effectoffset.y', self.fEffectOffset.y);
+      ParserSetFloatValueByKeyByHandle(struct, 'effectoffset.z', self.fEffectOffset.z);
+      ParserSetFloatValueByKeyByHandle(struct, 'ownerpitch', self.fOwnerPitch);
+      ParserSetFloatValueByKeyByHandle(struct, 'ownerroll', self.fOwnerRoll);
+      ParserSetFloatValueByKeyByHandle(struct, 'ownerturn', self.fOwnerTurn);
+      ParserSetBoolValueByKeyByHandle(struct, 'parentrandom', self.fParentRandom);
+      var child: Integer=ParserAddChildByIndex(struct, 'libeffects');
+      var i: Integer;
+      for i:=0 to self.fList.GetCount-1 do begin
+         var p: Pointer=self.fList.GetPointer(i);
+         TLibEffect(p).SaveToStruct(ParserAddChildByIndex(child, '*'));
+      end;
+   end;
+   
+   procedure LoadFromStruct(struct: Integer);
+   begin
+      Clear;
+      self.fEffectName:=ParserGetValueByKeyByHandle(struct, 'effectname');
+      self.fEffectOffset.x:=ParserGetFloatValueByKeyByHandle(struct, 'effectoffset.x');
+      self.fEffectOffset.y:=ParserGetFloatValueByKeyByHandle(struct, 'effectoffset.y');
+      self.fEffectOffset.z:=ParserGetFloatValueByKeyByHandle(struct, 'effectoffset.z');
+      self.fOwnerPitch:=ParserGetFloatValueByKeyByHandle(struct, 'ownerpitch');
+      self.fOwnerRoll:=ParserGetFloatValueByKeyByHandle(struct, 'ownerroll');
+      self.fOwnerTurn:=ParserGetFloatValueByKeyByHandle(struct, 'ownerturn');
+      self.fParentRandom:=ParserGetBoolValueByKeyByHandle(struct, 'parentrandom');
+      var child: Integer=ParserSelectByHandleByKey(struct, 'libeffects');
+      var i: Integer;
+      for i:=0 to ParserGetCountByHandle(child)-1 do begin
+         var p: Pointer=Add;
+         TLibEffect(p).LoadFromStruct(ParserSelectByHandleByIndex(child, i));
+      end;
+   end;
+end;
+
+// TEffectLibrary
+//
+type TEffectLibrary = class
+{ Private Declarations }
+   fList: TPtrList;
+protected
+{ Protected Declarations }
+public
+{ Public Declarations }
+   fFileName: String;
+   
+   procedure Create; begin if self.fList.GetItemSize=0 then self.fList.Create; end;
+   constructor TEffectLibrary; begin Create; end;
+   procedure Clear;
+   begin
+      var i: Integer;
+      for i:=0 to self.fList.GetCount-1 do begin
+         var p: Pointer=self.fList.GetPointer(i);
+         TLibEffects(p).Destroy;
+         FreeMem(p);
+      end;
+      self.fList.Clear;
+   end;
+   procedure Destroy; begin Clear; self.fList.Destroy; end;
+   destructor TEffectLibrary; begin Destroy; end;
+   function GetCount: Integer; begin result:=self.fList.GetCount; end;
+   function Get(index: Integer): Pointer; begin result:=self.fList.GetPointer(index); end;
+   
+   function Add: Pointer;
+   begin
+      GetMem(result, SizeOf(TLibEffects));
+      FillMem(result, SizeOf(TLibEffects), 0);
+      TLibEffects(result).Create;
+      self.fList.AddPointer(result);
+   end;
+   procedure Delete(const index: Integer);
+   begin
+      if (index>=0) and (index<GetCount) then
+      begin
+         var p: Pointer=self.fList.GetPointer(index);
+         if p<>nil then begin
+            TLibEffects(p).Destroy;
+            FreeMem(p);
+         end;
+         self.fList.Delete(index);
+      end;
+   end;
+   
+   function IndexOf(const effectname: String): Integer;
+   begin
+      result:=-1;
+      var i: Integer;
+      for i:=0 to self.fList.GetCount-1 do begin
+         var p: Pointer=self.fList.GetPointer(i);
+         if SameText(effectname, TLibEffects(p).fEffectName) then begin
+            result:=i;
+            break;
+         end;
+      end;
+   end;
+   
+   function GetOrCreate(const effectname: String; hnd: Integer): Integer;
+   begin
+      result:=IndexOf(effectname);
+      if result>=0 then begin
+         var p: Pointer=self.fList.GetPointer(result);
+         TLibEffects(p).GetOrCreate(hnd);
+      end;
+   end;
+   
+   function GetOrCreateOffset(const effectname: String; hnd: Integer; tx, ty, tz: Float): Integer;
+   begin
+      result:=IndexOf(effectname);
+      if result>=0 then begin
+         var p: Pointer=self.fList.GetPointer(result);
+         TLibEffects(p).GetOrCreateOffset(hnd, tx, ty, tz);
+      end;
+   end;
+   
+   procedure SaveToStruct(struct: Integer);
+   begin
+      var child: Integer=ParserAddChildByIndex(struct, 'effectlibrary');
+      var i: Integer;
+      for i:=0 to self.fList.GetCount-1 do begin
+         var p: Pointer=self.fList.GetPointer(i);
+         TLibEffects(p).SaveToStruct(ParserAddChildByIndex(child, '*'));
+      end;
+   end;
+   
+   procedure LoadFromStruct(struct: Integer);
+   begin
+      Clear;
+      var child: Integer=ParserSelectByHandleByKey(struct, 'effectlibrary');
+      var i: Integer;
+      for i:=0 to ParserGetCountByHandle(child)-1 do begin
+         var p: Pointer=Add;
+         TLibEffects(p).LoadFromStruct(ParserSelectByHandleByIndex(child, i));
+      end;
+   end;
+   
+   procedure SaveToFile(const filename: String);
+   begin
+      self.fFileName:=filename;
+      var p: Integer=ParserCreate('teffectlibrary');
+      SaveToStruct(p);
+      ParserSaveToFileByHandle(p, filename);
+      ParserFreeByHandle(p);
+   end;
+   
+   procedure LoadFromFile(const filename: String);
+   begin
+      self.fFileName:=filename;
+      var p: Integer=ParserCreate('teffectlibrary');
+      ParserLoadFromFileByHandle(p, filename);
+      LoadFromStruct(p);
+      ParserFreeByHandle(p);
+   end;
+   
+   procedure Reload; begin LoadFromFile(self.fFileName); end;
+end;
+
+global gEffectLibrary: TEffectLibrary;
+gEffectLibrary.Create;
+gEffectLibrary.LoadFromFile('.\data\pfx\fx.tree');

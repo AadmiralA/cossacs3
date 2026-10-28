@@ -1,0 +1,100 @@
+{refurl=.\data\objects\ref\refproj.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refproj.prop; refkey=mainproperty}
+   CustomName = debris_stone
+   BaseName = debris_stone
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refproj.prop; refkey=actorproperty}
+   LODActorName = debris_stone
+   DefaultMeshName = debris_stone_1.mesh
+   RandomMeshName = True
+   UseableMeshes : struct.begin
+      [0] = True
+      [1] = True
+      [2] = True
+      [3] = True
+      [4] = True
+      [5] = True
+      [6] = True
+      [7] = True
+      [8] = True
+      [9] = True
+      [10] = True
+      [11] = True
+      [12] = True
+      [13] = True
+      [14] = True
+      [15] = True
+      [16] = True
+      [17] = True
+      [18] = True
+      [19] = True
+      [20] = True
+   struct.end
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refproj.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = debris
+   Mesh[0].UseableMaterials[0] = debris
+   Mesh[1].DefaultMaterialName = debris
+   Mesh[1].UseableMaterials[0] = debris
+   Mesh[2].DefaultMaterialName = debris
+   Mesh[2].UseableMaterials[0] = debris
+   Mesh[3].DefaultMaterialName = debris
+   Mesh[3].UseableMaterials[0] = debris
+   Mesh[4].DefaultMaterialName = debris
+   Mesh[4].UseableMaterials[0] = debris
+   Mesh[5].DefaultMaterialName = debris
+   Mesh[5].UseableMaterials[0] = debris
+   Mesh[6].DefaultMaterialName = debris
+   Mesh[6].UseableMaterials[0] = debris
+   Mesh[7].DefaultMaterialName = debris
+   Mesh[7].UseableMaterials[0] = debris
+   Mesh[8].DefaultMaterialName = debris
+   Mesh[8].UseableMaterials[0] = debris
+   Mesh[9].DefaultMaterialName = debris
+   Mesh[9].UseableMaterials[0] = debris
+   Mesh[10].DefaultMaterialName = debris
+   Mesh[10].UseableMaterials[0] = debris
+   Mesh[11].DefaultMaterialName = debris
+   Mesh[11].UseableMaterials[0] = debris
+   Mesh[12].DefaultMaterialName = debris
+   Mesh[12].UseableMaterials[0] = debris
+   Mesh[13].DefaultMaterialName = debris
+   Mesh[13].UseableMaterials[0] = debris
+   Mesh[14].DefaultMaterialName = debris
+   Mesh[14].UseableMaterials[0] = debris
+   Mesh[15].DefaultMaterialName = debris
+   Mesh[15].UseableMaterials[0] = debris
+   Mesh[16].DefaultMaterialName = debris
+   Mesh[16].UseableMaterials[0] = debris
+   Mesh[17].DefaultMaterialName = debris
+   Mesh[17].UseableMaterials[0] = debris
+   Mesh[18].DefaultMaterialName = debris
+   Mesh[18].UseableMaterials[0] = debris
+   Mesh[19].DefaultMaterialName = debris
+   Mesh[19].UseableMaterials[0] = debris
+   Mesh[20].DefaultMaterialName = debris
+   Mesh[20].UseableMaterials[0] = debris
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=statemachineproperty}
+   Enabled = True
+   Active = True
+   StateMachine.LoadFromFile = .\data\scripts\misc\projectile.aix
+   DefaultInitStateName = InitialEmpty
+   AfterLoadStateName = OnAfterLoad
+   BeforeSaveStateName = 
+   TagStatesChangedStateName = OnTagStates
+   StateMachineInterval = 27
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refproj.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.175
+   DefaultScale.Y = 0.175
+   DefaultScale.Z = 0.175
+   RandomScale = True
+   MinScaleFactor = 1.0
+   MaxScaleFactor = 1.6
+section.end

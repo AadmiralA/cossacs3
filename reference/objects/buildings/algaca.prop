@@ -1,0 +1,6 @@
+{refurl=.\data\objects\buildings\turaca.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\buildings\turaca.prop; refkey=mainproperty}
+   CustomName = algaca
+   BaseName = algaca
+section.end

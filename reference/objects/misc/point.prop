@@ -1,0 +1,50 @@
+{refurl=.\data\objects\ref\refmisc.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=mainproperty}
+   CustomName = point
+   BaseName = point
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=collisionmeshproperty}
+   Static = False
+   Detection = False
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=actorproperty}
+   Enabled = False
+   LODActorName = point
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = box
+   Mesh[0].UseableMaterials[0] = box
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=statemachineproperty}
+   Enabled = True
+   Active = True
+   StateMachine.LoadFromFile = .\data\scripts\misc\projectile.aix
+   DefaultInitStateName = InitialEmpty
+   AfterLoadStateName = OnAfterLoad
+   BeforeSaveStateName = 
+   TagStatesChangedStateName = OnTagStates
+   StateMachineInterval = 24
+section.end
+
+pfxproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=pfxproperty}
+   Enabled = True
+   Static = True
+   ClassName = PFXProperty
+   BehavioursStored = True
+   EffectsStored = True
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.0001
+   DefaultScale.Y = 0.0001
+   DefaultScale.Z = 0.0001
+section.end
+
+offsetproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=offsetproperty}
+   AutoOffset = False
+section.end

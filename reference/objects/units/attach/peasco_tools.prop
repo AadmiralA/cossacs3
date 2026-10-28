@@ -1,0 +1,38 @@
+{refurl=.\data\objects\ref\refunitattach.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=mainproperty}
+   CustomName = peasco_tools
+   BaseName = peasco_tools
+   StaticObject = False
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=actorproperty}
+   LODActorName = peasco_tools
+   DefaultMeshName = peasco_axe.mesh
+   UseableMeshes : struct.begin
+      [0] = True
+      [1] = True
+      [2] = True
+      [3] = True
+      [4] = True
+      [5] = True
+      [6] = True
+   struct.end
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = peaaustools
+   Mesh[0].UseableMaterials[0] = peaaustools
+   Mesh[1].DefaultMaterialName = peaaustools
+   Mesh[1].UseableMaterials[0] = peaaustools
+   Mesh[2].DefaultMaterialName = peaaustools
+   Mesh[2].UseableMaterials[0] = peaaustools
+   Mesh[3].DefaultMaterialName = peaaustools
+   Mesh[3].UseableMaterials[0] = peaaustools
+   Mesh[4].DefaultMaterialName = peaaustools
+   Mesh[4].UseableMaterials[0] = peaaustools
+   Mesh[5].DefaultMaterialName = peaaustools
+   Mesh[5].UseableMaterials[0] = peaaustools
+   Mesh[6].DefaultMaterialName = peaaustools
+   Mesh[6].UseableMaterials[0] = peaaustools
+section.end

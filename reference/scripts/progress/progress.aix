@@ -1,0 +1,112 @@
+section.begin
+   Name = Initial
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\progress\progress.inc\initial.inc
+section.end
+
+section.begin
+   Name = OnBeforeSave
+   UsedFile = True
+   UsedFileName = .\data\scripts\progress\progress.inc\onbeforesave.inc
+section.end
+
+section.begin
+   Name = OnAfterLoad
+   UsedFile = True
+   UsedFileName = .\data\scripts\progress\progress.inc\onafterload.inc
+section.end
+
+section.begin
+   Name = Scenario
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\progress\progress.inc\scenario.inc
+section.end
+
+section.begin
+   Name = SoundControl
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\progress\progress.inc\soundcontrol.inc
+section.end
+
+section.begin
+   Name = SoundControlCounters
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\progress\progress.inc\soundcontrolcounters.inc
+section.end
+
+section.begin
+   Name = Nothing
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\progress\progress.inc\nothing.inc
+section.end
+
+section.begin
+   Name = WriteRes
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\progress\progress.inc\writeres.inc
+section.end
+
+section.begin
+   Name = ReadRes
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\progress\progress.inc\readres.inc
+section.end
+
+section.begin
+   Name = WriteStats
+   UsedFile = True
+   UsedFileName = .\data\scripts\progress\progress.inc\writestats.inc
+section.end
+
+section.begin
+   Name = ReadStats
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\progress\progress.inc\readstats.inc
+section.end
+
+section.begin
+   Name = WriteScenario
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\progress\progress.inc\writescenario.inc
+section.end
+
+section.begin
+   Name = ReadScenario
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\progress\progress.inc\readscenario.inc
+section.end
+
+section.begin
+   Name = ----------------------
+   UsedFileName = 
+section.end
+
+section.begin
+   Name = WriteLanSyncData
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\progress\progress.inc\writelansyncdata.inc
+section.end
+
+section.begin
+   Name = ReadLanSyncData
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\progress\progress.inc\readlansyncdata.inc
+section.end
+
+section.begin
+   CurrentState = Nothing
+   SaveVariables = False
+section.end
+

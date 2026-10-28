@@ -1,0 +1,31 @@
+{refurl=.\data\objects\ref\refmisc.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=mainproperty}
+   CustomName = collision2x2
+   BaseName = collision2x2
+section.end
+
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=actorproperty}
+   Enabled = False
+   LODActorName = point
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = box
+   Mesh[0].UseableMaterials[0] = box
+section.end
+
+collisionmaskproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmaskproperty}
+   Priority = 101
+   Mask : struct.begin
+      [*] = 11
+      [*] = 11
+   struct.end
+section.end
+
+offsetproperty : section.begin
+   Enabled = True
+   Static = False
+   ClassName = OffsetProperty
+section.end

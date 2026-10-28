@@ -1,0 +1,2980 @@
+//
+// serial.script
+//
+
+// arg0 - file stream
+// arg1 - data pointer
+// arg2 - string name of variable
+// arg3 - handle of statemachine
+// arg4 - handle of destination TDSTypeBase
+// arg5 - handle of source TDSTypeBase
+// arg6 - compared
+// procedure DoSerialize(const arg0, arg1, arg2, arg3, arg4: Pointer);
+// procedure DoUnserialize(const arg0, arg1, arg2, arg3, arg4, arg5, arg6: Pointer);
+// function  GetSerializeSize(const arg1, arg2, arg3, arg4: Pointer): Integer;
+// procedure DoSeek(const arg0, arg2, arg3, arg4: Pointer);
+// procedure DoPost(const arg1, arg2, arg3: Pointer);
+
+// in ca.se of troubles on load check
+// 1. if some global constant was changed, check reader/size/seek to use older const value by gSerialVersion
+// 2. check places like SizeOf(val.) cause here can be hidden use of changed consts
+
+global gDataVersion: Integer;
+global gSerialVersion: Integer;
+global gSerialMode: Integer; // 0 - none; 1 - serial; 2 - unserial;
+global gSerialLoaded: Boolean;
+
+gDataVersion:=92;
+gSerialVersion:=gDataVersion;
+gSerialMode:=0;
+gSerialLoaded:=false;
+
+// _serial_BeforeProcWriter
+//
+procedure _serial_BeforeProcWriter(const fs: Integer);
+begin
+   gSerialMode:=1;
+   WriteInteger(fs, gDataVersion);
+end;
+
+// _serial_AfterProcWriter
+//
+procedure _serial_AfterProcWriter(const fs: Integer);
+begin
+end;
+
+// _serial_FinalProcWriter
+//
+procedure _serial_FinalProcWriter(const fs: Integer);
+begin
+   gSerialMode:=0;
+end;
+
+// _serial_BeforeProcReader
+//
+procedure _serial_BeforeProcReader(const fs: Integer);
+begin
+   gSerialMode:=2;
+   ReadInteger(fs, gSerialVersion);
+end;
+
+// _serial_AfterProcReader
+//
+procedure _serial_AfterProcReader(const fs: Integer);
+begin
+end;
+
+// _serial_FinalProcReader
+//
+procedure _serial_FinalProcReader(const fs: Integer);
+begin
+   if gSerialVersion<53 then
+   begin
+      var breplay : Boolean = _net_IsReplay;
+      if (not breplay) then
+      begin
+         var index : Integer = 8;
+         if GetPlayerHandleByName('player'+IntToStr(index))=0 then
+         begin
+            var plhnd : Integer = CreatePlayerInsert('player'+IntToStr(index), gc_racename_units, 'cmPlayer', index);
+            PlayerExecuteStateByHandle(plhnd, 'Initial');
+            _player_ResetSaveLoadStates(plhnd);
+            var i, j : Integer;
+            for i:=0 to gc_MaxPlayerCount-1 do begin
+               var myteam: Integer = gMap.players[i].team;
+               for j:=0 to gc_MaxPlayerCount-1 do begin
+                  if (i<>j) and ((i=index) or (j=index)) then begin
+                     var histeam: Integer = gMap.players[j].team;
+                     if(myteam<>histeam) or (histeam=0) or (myteam=0) then begin
+                        gPlayer[i].enemyplmask:=gPlayer[i].enemyplmask or (1 shl j);
+                        AddPlayerEnemyPlayerByHandle(GetPlayerHandleByIndex(i), GetPlayerHandleByIndex(j));
+                     end else AddPlayerFriendPlayerByHandle(GetPlayerHandleByIndex(i), GetPlayerHandleByIndex(j));
+                  end;
+               end;
+            end;
+            for j:=0 to gc_ResCount-1 do
+            case gMap.settings.gen.resourcestart of
+               0: begin
+                  _res_SetResToPlayerByIndex(index, j, 1000);
+                  gPlayer[index].lanres[j] := gPlayer[index].setres[j];
+                  gPlayer[index].res[j] := gPlayer[index].setres[j];
+               end;
+               1: begin
+                  _res_SetResToPlayerByIndex(index, j, 4000);
+                  gPlayer[index].lanres[j] := gPlayer[index].setres[j];
+                  gPlayer[index].res[j] := gPlayer[index].setres[j];
+               end;
+               2: begin
+                  _res_SetResToPlayerByIndex(index, j, 5000);
+                  gPlayer[index].lanres[j] := gPlayer[index].setres[j];
+                  gPlayer[index].res[j] := gPlayer[index].setres[j];
+               end
+               else
+               begin
+                  _res_SetResToPlayerByIndex(index, j, 1000000);
+                  gPlayer[index].lanres[j] := gPlayer[index].setres[j];
+                  gPlayer[index].res[j] := gPlayer[index].setres[j];
+               end;
+            end;
+            var plpoolhnd : Integer = GetPlayerHandleByName(gc_plname_pool);
+            if (plpoolhnd<>0) then
+            AddPlayerEnemyPlayerByHandle(plpoolhnd, plhnd);
+            var plmischnd : Integer = GetPlayerHandleByName(gc_plname_misc);
+            if (plmischnd<>0) then
+            AddPlayerEnemyPlayerByHandle(plmischnd, plhnd);
+         end;
+      end;
+   end;
+   var bSV88bug : Boolean;
+   var envplhnd : Integer = GetPlayerHandleByName(gc_plname_env);
+   var envplind : Integer = GetPlayerIndexByHandle(envplhnd);
+   if (envplind<>gc_playerind_env) then
+   begin
+      var i : Integer;
+      for i:=gc_MaxNonSpectatorsCount+1 to gc_MaxPlayerCount-1 do
+      begin
+         var plhnd : Integer = GetPlayerHandleByName('player'+IntToStr(i));
+         if (plhnd<>0) then
+         begin
+            var plind : Integer = GetPlayerIndexByHandle(plhnd);
+            if (plind<>i) or (bSV88bug) then
+            begin
+               DeletePlayerByHandle(plhnd);
+               bSV88bug := True;
+            end;
+         end;
+      end;
+   end;
+
+   if (gSerialVersion<89) or (bSV88bug) then
+   begin
+      var breplay : Boolean = _net_IsReplay;
+      if (not breplay) then
+      begin
+         var pl : Integer;
+         for pl:=(gc_MaxNonSpectatorsCount+1) to gc_MaxPlayerCount-1 do
+         begin
+            var index : Integer = pl;
+            if GetPlayerHandleByName('player'+IntToStr(index))=0 then
+            begin
+               var plhnd : Integer = CreatePlayerInsert('player'+IntToStr(index), gc_racename_units, 'cmPlayer', index);
+               PlayerExecuteStateByHandle(plhnd, 'Initial');
+               _player_ResetSaveLoadStates(plhnd);
+               var i, j : Integer;
+               for i:=0 to gc_MaxPlayerCount-1 do begin
+                  var myteam: Integer = gMap.players[i].team;
+                  for j:=0 to gc_MaxPlayerCount-1 do begin
+                     if (i<>j) and ((i=index) or (j=index)) then begin
+                        var histeam: Integer = gMap.players[j].team;
+                        if(myteam<>histeam) or (histeam=0) or (myteam=0) then begin
+                           gPlayer[i].enemyplmask:=gPlayer[i].enemyplmask or (1 shl j);
+                           AddPlayerEnemyPlayerByHandle(GetPlayerHandleByIndex(i), GetPlayerHandleByIndex(j));
+                        end else AddPlayerFriendPlayerByHandle(GetPlayerHandleByIndex(i), GetPlayerHandleByIndex(j));
+                     end;
+                  end;
+               end;
+               for j:=0 to gc_ResCount-1 do
+               case gMap.settings.gen.resourcestart of
+                  0: begin
+                     _res_SetResToPlayerByIndex(index, j, 1000);
+                     gPlayer[index].lanres[j] := gPlayer[index].setres[j];
+                     gPlayer[index].res[j] := gPlayer[index].setres[j];
+                  end;
+                  1: begin
+                     _res_SetResToPlayerByIndex(index, j, 4000);
+                     gPlayer[index].lanres[j] := gPlayer[index].setres[j];
+                     gPlayer[index].res[j] := gPlayer[index].setres[j];
+                  end;
+                  2: begin
+                     _res_SetResToPlayerByIndex(index, j, 5000);
+                     gPlayer[index].lanres[j] := gPlayer[index].setres[j];
+                     gPlayer[index].res[j] := gPlayer[index].setres[j];
+                  end
+                  else
+                  begin
+                     _res_SetResToPlayerByIndex(index, j, 1000000);
+                     gPlayer[index].lanres[j] := gPlayer[index].setres[j];
+                     gPlayer[index].res[j] := gPlayer[index].setres[j];
+                  end;
+               end;
+               var plpoolhnd : Integer = GetPlayerHandleByName(gc_plname_pool);
+               if (plpoolhnd<>0) then
+               AddPlayerEnemyPlayerByHandle(plpoolhnd, plhnd);
+               var plmischnd : Integer = GetPlayerHandleByName(gc_plname_misc);
+               if (plmischnd<>0) then
+               AddPlayerEnemyPlayerByHandle(plmischnd, plhnd);
+            end;
+         end;
+      end;
+   end;
+   
+   if (bSV88bug) then
+   begin
+      _res_ResGridClear;
+      _res_ResGridResetEnvironment;
+   end;
+
+   var i, j, k : Integer;
+   for i:=0 to gc_MaxPlayerCount-1 do
+   begin
+      var plHnd : Integer = GetPlayerHandleByIndex(i);
+      if (gSerialVersion<9) then
+      begin
+         var cid, id : Integer;
+         for cid:=0 to gc_MaxCountryCount-1 do
+         for id:=0 to gc_country_maxmembers-1 do
+         begin
+            var objprop : Pointer = gObjProp[cid][id];
+            var wind : Integer;
+            for wind:=0 to gc_obj_MaxWeapon-1 do
+            begin
+               if (TObjProp(objprop).weapon[wind].enabled) then
+               begin
+                  if (TObjProp(objprop).weapon[wind].weaponsid<>'') then
+                  TObjProp(objprop).weapon[wind].weaponid := _weapon_GetWeaponIdBySID(TObjProp(objprop).weapon[wind].weaponsid);
+               end;
+            end;
+         end;
+      end;
+      if (gSerialVersion<15) then
+      begin
+         _res_ResGridClear;
+         _res_ResGridResetEnvironment;
+      end;
+      
+      var grHnd : Integer = GetPlayerGrHandleByHandle(plHnd, gc_group_selected);
+      SetGroupCollisionPriorityByHandle(grHnd, gc_collisiontag_stretchland);
+      SetGroupTestPriorityOptionByHandle(grHnd, gc_TestPriorityOption_Land);
+      
+      for j := gPlayer[i].squads.GetCount-1 downto 0 do
+      begin
+         var pSquad : Pointer = gPlayer[i].squads.Get(j);
+         _squad_SetGroupCollisionOptions(pSquad);
+      end;
+      
+      if gPlayer[i].bai then
+      _ai_InitInitialLists(i);
+   end;
+
+   if (gSerialVersion<20) then
+   begin
+      var miscplhnd : Integer = GetPlayerHandleByName(gc_racename_misc);
+      if (miscplhnd<>0) then
+      begin
+         for i:=0 to gc_MaxPlayerCount-1 do
+         AddPlayerEnemyPlayerByHandle(miscplhnd, GetPlayerHandleByIndex(i));
+      end;
+   end;
+
+   if gSerialVersion<26 then
+   begin
+      gbool_peacemode := false;
+      gfloat_peacetime := 0;
+      
+      for i := 0 to gc_scangrid_countx-1 do
+      for j := 0 to gc_scangrid_county-1 do
+      begin
+         gScanGrid[i, j].owner := -1;
+         gScanGrid[i, j].dist := 0;
+      end;
+   end;
+
+   if gSerialVersion<28 then
+   gWallSystem.Clear;
+
+   if gSerialVersion<31 then
+   begin
+      var w : Integer = GetMapWidth;
+      var h : Integer = GetMapHeight;
+      var isWater : Boolean;
+      
+      for j := 0 to 2*w-1 do
+      for k := 0 to 2*h-1 do
+      begin
+         var x : Float = (j-w)/2;
+         var y : Float = (k-h)/2;
+         if GetMapCollisionTag(x, y, false) = 200 then
+         begin
+            MapDrawCollision(x, y, gc_collisiontag_water, 0, false);
+            isWater := true;
+         end;
+      end;
+      
+      if isWater then
+      _misc_SetShoresCollision;
+   end;
+
+   //if gSerialVersion<33 then
+   if gSerialVersion<55 then
+   _player_FixPlayersUpgStateBadIndexes; // fix old mission upgstate indexes
+
+   if gSerialVersion<34 then
+   _misc_BuildIslandsGrid;
+
+   if gSerialVersion<35 then
+   _misc_CalcIslandShores;
+
+   if gSerialVersion<36 then
+   _player_FixGameObjectsWallVariations; // arg_obj.wallvariation
+
+   if gSerialVersion<40 then
+   begin
+      _player_FixGameObjectsChildLODActorName;
+      for i:=0 to gc_MaxPlayerCount-1 do
+      begin
+         for j:=0 to gPlayer[i].squads.GetCount-1 do
+         begin
+            var pSquad : Pointer = gPlayer[i].squads.Get(j);
+            if (pSquad<>nil) then
+            TSquad(pSquad).fUID := j;
+         end;
+         gPlayer[i].squads.fNextUID := gPlayer[i].squads.GetCount;
+      end;
+      
+      _player_FixPortBuiChildren;
+      _player_FixPlayerLists;
+      if (gScenario.bexists) then
+      _player_FixRallyPos;
+   end;
+
+   if (gSerialVersion<41) and (gScenario.bexists) then
+   begin
+      for i:=0 to gc_MaxPlayerCount-1 do
+      begin
+         var plHnd : Integer = GetPlayerHandleByIndex(i);
+         for j:=gPlayer[i].squads.GetCount-1 downto 0 do
+         begin
+            var psquad : Pointer = gPlayer[i].squads.Get(j);
+            if (psquad<>nil) then
+            begin
+               var posx, posz, dirx, dirz : Float;
+               _squad_GetCentralPosAndDir(psquad, posx, posz, dirx, dirz);
+               _player_SetSquadPosition(plHnd, j, posx, posz, dirx, dirz, False, True, gc_obj_order_move_mode_default, True);
+               _player_StopSquad(i, j);
+            end;
+         end;
+      end;
+   end;
+
+   if (gSerialVersion<42) then
+   _player_FixGameObjects(gSerialVersion);
+
+   if (gSerialVersion<43) and (gScenario.bexists) then
+   _player_FixPlayersCounters;
+
+   if (gSerialVersion<47) then
+   begin
+      for i:=0 to gc_MaxPlayerCount-1 do
+      begin
+         for j:=gPlayer[i].aiData.agressors.GetCount-1 downto 0 do
+         if (_unit_IsOfficerOrDrummer(gPlayer[i].aiData.agressors.Get(j))) then
+         begin
+            Log('Fix: officers removed from aggresors list');
+            gPlayer[i].aiData.agressors.Delete(j);
+         end;
+      end;
+   end;
+
+   if (gSerialVersion<48) then
+   _player_FixInvalidHandlesInLists(True);
+
+   if (gSerialVersion<49) and (gScenario.bexists) then
+   gMap.players[5].color := 13;
+
+   if (gSerialVersion<50) then
+   begin
+      if (GetPlayerHandleByName(gc_plname_pool)=0) then begin
+         var hnd: Integer=CreatePlayerInsert(gc_plname_pool, gc_racename_misc, 'cmPC', gc_playerind_pool);
+         _player_ResetSaveLoadStates(hnd);
+         var i : Integer;
+         for i:=0 to gc_MaxPlayerCount-1 do
+         AddPlayerEnemyPlayerByHandle(hnd, GetPlayerHandleByIndex(i));
+      end;
+   end;
+
+   if (gSerialVersion<89) then
+   begin
+      _res_ResGridClear;
+      _res_ResGridResetEnvironment;
+   end;
+
+   //if (gSerialVersion<53) then
+   //begin
+   //   _res_ResGridClear;
+   //   _res_ResGridResetEnvironment;
+   //end;
+
+   if (gSerialVersion<54) and (gScenario.bexists) and (not gScenario.bactive) then
+   begin
+      var i : Integer;
+      for i:=CountOfAIRegions-1 downto 0 do
+      DeleteAIRegionByIndex(i);
+      _scenario_UpdateAIRegions(gScenario);
+   end;
+
+   //if (gSerialVersion<63) and (gScenario.bexists) then
+   //begin
+   //   Log('_serial_FinalProcReader : gSerialVersion<63 and gScenario.bexists : ResGrid Clear and ResetEnvironment');
+   //   _res_ResGridClear;
+   //   _res_ResGridResetEnvironment;
+   //end;
+
+   if (gSerialVersion>68) and (gSerialVersion<72) and (gScenario.bexists) and (not gScenario.bactive) then
+   begin
+      _player_ReInitAllPlayersBaseObj;
+      _player_FixRallyPos;
+      if GetCountOfPlayers>=gc_MaxPlayerCount then
+      begin
+         var pl, i : Integer;
+         for [MAIN]pl:=0 to gc_MaxPlayerCount-1 do
+         begin
+            var plHnd : Integer = GetPlayerHandleByIndex(pl);
+            for i:=0 to GetPlayerGameObjectsCountByHandle(plHnd)-1 do
+            begin
+               var goHnd : Integer = GetGameObjectHandleByIndex(i, plHnd);
+               if (_misc_GetBaseObjID(goHnd)=gc_baseid_obj) then
+               begin
+                  var pobj : Pointer = _unit_GetTObj(goHnd);
+                  if (not TObj(pobj).bdead) and (TObj(pobj).hp>0) then
+                  TObj(pobj).hp := gPlayer[pl].objbase[TObj(pobj).cid][TObj(pobj).id].maxhp;
+               end;
+            end;
+         end;
+      end;
+      var pl, cid, upgid : Integer;
+      for pl:=0 to gc_MaxPlayerCount-1 do
+      for cid:=0 to gc_MaxCountryCount-1 do
+      for upgid:=0 to gc_country_maxupgradecount-1 do
+      begin
+         _player_ClearUpgradeState(gPlayer[pl].upgstate[cid][upgid]);
+         gPlayer[pl].upgstate[cid][upgid].sid := gCountry[cid].upgrade[upgid].id;
+         gPlayer[pl].upgstate[cid][upgid].enabled := gCountry[cid].upgrade[upgid].enabled;
+      end;
+   end;
+
+   if (gSerialVersion<74) and (gScenario.bexists) and (not gScenario.bactive) then // fix balance changes in old campaign maps after rebalance patch
+   begin
+      _player_ReInitAllPlayersBaseObj;
+      if GetCountOfPlayers>=gc_MaxPlayerCount then
+      begin
+         var pl, i : Integer;
+         for [MAIN]pl:=0 to gc_MaxPlayerCount-1 do
+         begin
+            var plHnd : Integer = GetPlayerHandleByIndex(pl);
+            for i:=0 to GetPlayerGameObjectsCountByHandle(plHnd)-1 do
+            begin
+               var goHnd : Integer = GetGameObjectHandleByIndex(i, plHnd);
+               if (_misc_GetBaseObjID(goHnd)=gc_baseid_obj) then
+               begin
+                  var pobj : Pointer = _unit_GetTObj(goHnd);
+                  if (not TObj(pobj).bdead) and (TObj(pobj).hp>0) then
+                  TObj(pobj).hp := gPlayer[pl].objbase[TObj(pobj).cid][TObj(pobj).id].maxhp;
+               end;
+            end;
+         end;
+      end;
+      var pl, cid, upgid : Integer;
+      for pl:=0 to gc_MaxPlayerCount-1 do
+      for cid:=0 to gc_MaxCountryCount-1 do
+      for upgid:=0 to gc_country_maxupgradecount-1 do
+      begin
+         _player_ClearUpgradeState(gPlayer[pl].upgstate[cid][upgid]);
+         gPlayer[pl].upgstate[cid][upgid].sid := gCountry[cid].upgrade[upgid].id;
+         gPlayer[pl].upgstate[cid][upgid].enabled := gCountry[cid].upgrade[upgid].enabled;
+      end;
+   end;
+
+   if (gSerialVersion=73) and (gScenario.bexists) and (not gScenario.bactive) then
+   begin
+      _misc_RemoveEnvObjectsOutsideOfMap;
+   end;
+
+   // fix fNextUID for squads
+   var pl : Integer;
+   for pl:=0 to gc_MaxPlayerCount-1 do
+   begin
+      var maxUID : Integer = gPlayer[pl].squads.fNextUID;
+      for i:=0 to gPlayer[pl].squads.GetCount-1 do
+      begin
+         var psquad : Pointer = gPlayer[pl].squads.Get(i);
+         maxUID := Max(maxUID, TSquad(psquad).fUID+1);
+      end;
+      if (gPlayer[pl].squads.fNextUID<maxUID) then
+      begin
+         ErrorLog('fNextUID for player '+IntToStr(pl)+' was fixed. preval='+IntToStr(gPlayer[pl].squads.fNextUID)+' newval='+IntToStr(maxUID));
+         gPlayer[pl].squads.fNextUID := maxUID;
+      end;
+   end;
+
+   if (gSerialVersion<91) then
+   begin
+      var i, cid, id : Integer;
+      for i:=0 to gc_MaxPlayerCount-1 do
+      begin
+         for cid:=0 to gc_MaxCountryCount-1 do
+         for id:=0 to gc_country_maxmembers-1 do
+         gPlayer[i].objbase[cid][id].speed := 1;
+      end;
+   end;
+
+   if (gSerialVersion<92) then
+   begin
+      var pl, i : Integer;
+      for pl:=0 to gc_MaxPlayerCount-1 do
+      for i:=0 to gc_ResCount-1 do
+      begin
+         if (gPlayer[pl].res[i]>=0) then
+         gPlayer[pl].res[i] := not gPlayer[pl].res[i];
+         gPlayer[pl].lanres[i] := gPlayer[pl].res[i];
+         gPlayer[pl].setres[i] := gPlayer[pl].res[i];
+      end;
+   end;
+
+   gSerialMode:=0;
+   gSerialVersion:=gDataVersion;
+   gSerialLoaded:=true;
+   gInt_UpdateAreasCount := 0;
+   
+   gGuiUpdateHighlights.Clear;
+   gGuiSelectionHelper.Clear;
+   
+   var count: Integer = gSelectedObjects.GetCount;
+   if count>0 then begin
+      GameManagerBeginSelection;
+      GameManagerStartSelection('spmRunTime');
+      var i: Integer;
+      for i:=count-1 downto 0 do begin
+         var hnd: Integer = gSelectedObjects.Get(i);
+         var pobj : Pointer = _unit_GetTObj(hnd);
+         if (pobj<>nil) and (not TObj(pobj).bdead) then
+         SetGameObjectPickedByHandle(hnd, True)
+         else
+         begin
+            gSelectedObjects.Delete(i);
+            ErrorLog('Something gone wrong and was fixed');
+         end;
+         if i=count-1 then
+         GameManagerCancelSelection;
+         //gGuiUpdateHighlights.Add(hnd);
+      end;
+   end;
+
+   _unit_ScanGridClear;
+   _unit_ScanGridResetUnits;
+   _unit_IdleGridClear;
+   _unit_IdleGridResetUnits;
+
+   _player_FixPlayersObjBaseBadIndexes; // only newer maps >=33 have objbase.sid, for older maps all indexes will be taken from objprop
+   _player_FixGameObjectsUnitIDs;
+
+   //_misc_UpdateMiniMapPrimitives;
+end;
+
+//
+// TPlayerArgs
+//
+
+// _serial_PlayerArgsWriter
+//
+procedure _serial_PlayerArgsWriter(const fs: Integer; var val: TPlayerArgs; var nam: String; const sm, tp: Integer);
+begin
+   // clear temporary handles and do not save them to map
+   val.fhandle:=0;
+   val.ftarget:=0;
+   val.fofficer:=0;
+   val.fdrummer:=0;
+   val.fresult:=0;
+   
+   // write to stream
+   var typ : Pointer=AddrToPointer(tp);
+   var addr: Pointer=val;
+   SaveStreamTypeBase(fs, typ, addr, nam, sm, false{useproc});
+end;
+
+// _serial_PlayerArgsReader
+//
+procedure _serial_PlayerArgsReader(const fs: Integer; var val: TPlayerArgs; var nam: String; const sm, tpd, tps, cmp: Integer);
+begin
+   // read from stream
+   var typdst: Pointer=AddrToPointer(tpd);
+   var typsrc: Pointer=AddrToPointer(tps);
+   var addr  : Pointer=val;
+   //LoadStreamTypeBase(fs, typdst, addr, nam, sm, false);
+   MergeStreamTypeBase(fs, typdst, addr, nam, sm, false{useproc}, typsrc, cmp=1{compared});
+end;
+
+// _serial_PlayerArgsSize
+//
+procedure _serial_PlayerArgsSize(var res: Integer; var val: TPlayerArgs; var nam: String; const sm, tp: Integer);
+begin
+   var typ : Pointer=AddrToPointer(tp);
+   var addr: Pointer=val;
+   res:=GetStreamSizeTypeBase(typ, addr, nam, sm, false{useproc});
+end;
+
+// _serial_PlayerArgsPost
+//
+procedure _serial_PlayerArgsPost(var val: TPlayerArgs{; var nam: String; const sm: Integer});
+begin
+   val.fintlst:=nil; // TIntegerList(val.fintlst)
+end;
+
+// _serial_PlayerArgsSeek
+//
+procedure _serial_PlayerArgsSeek(const fs: Integer; var nam: String; const sm, tp: Integer);
+begin
+   var typ: Pointer=AddrToPointer(tp);
+   SeekStreamTypeBase(fs, typ, nam, sm, false{useproc});
+end;
+
+//
+// TIntegerList
+//
+
+// _serial_IntegerListIsHandles
+//
+function _serial_IntegerListIsHandles(var nam: String): Boolean;
+begin
+   // test for handles by name
+   result:=false;
+   case StrToLowerCase(nam) of
+      'arg_stolist',
+      'arg_attlist',
+      'arg_ordlist',
+      'arg_inside' ,
+      'ggopathlist',
+      'gwaterpathlist',
+      'gctrlgroups',
+      'gguiupdatehighlights',
+      'gselectedobjects',
+      'buildings',
+      'storehouses',
+      'ports',
+      'defenders',
+      'guards',
+      'agressors',
+      'freewarriors',
+      'unitslist' : result:=true;
+   end;
+end;
+
+// _serial_IntegerListWriter
+//
+procedure _serial_IntegerListWriter(const fs: Integer; var val: TIntegerList; var nam: String{; const sm, tp: Integer});
+begin
+   // write props to stream
+   WriteInteger(fs, val.GetItemSize);
+   WriteInteger(fs, val.GetCount);
+   // test for handles
+   var handles: boolean=_serial_IntegerListIsHandles(nam);
+   // handle to uniqid
+   if handles then begin
+      var i: Integer;
+      for i:=0 to val.GetCount-1 do
+      val.Set(GetGameObjectUniqueIdByHandle(val.Get(i)), i);
+   end;
+   // write to stream
+   if val.DataSize>0 then
+   WriteBuffer(fs, val.GetBaseList, val.DataSize);
+   // uniqid to handle
+   if handles then begin
+      var i: Integer;
+      for i:=0 to val.GetCount-1 do
+      val.Set(GetGameObjectHandleByUniqueId(val.Get(i)), i);
+   end;
+end;
+
+// _serial_IntegerListReader
+//
+procedure _serial_IntegerListReader(const fs: Integer; var val: TIntegerList{; var nam: String; const sm, tpd, tps, cmp: Integer});
+begin
+   // read props from stream
+   var itemsize, count: Integer;
+   ReadInteger(fs, itemsize);
+   ReadInteger(fs, count);
+   // allocate memory
+   val.SetItemSize(itemsize);
+   val.SetCount(count);
+   var p: Pointer=val.GetBaseList;
+   // read from stream
+   if val.DataSize>0 then
+   ReadBuffer(fs, p, count*itemsize); //val.DataSize
+end;
+
+// _serial_IntegerListSize
+//
+procedure _serial_IntegerListSize(var res: Integer; var val: TIntegerList{; var nam: String; const sm, tp: Integer});
+begin
+   res:=val.DataSize+SizeOf(Integer)*2;
+end;
+
+// _serial_IntegerListPost
+//
+procedure _serial_IntegerListPost(var val: TIntegerList; var nam: String{; const sm: Integer});
+begin
+   // test for handles
+   var handles: boolean=_serial_IntegerListIsHandles(nam);
+   // uniqid to handle
+   if handles then begin
+      var i: Integer;
+      for i:=0 to val.GetCount-1 do
+      val.Set(GetGameObjectHandleByUniqueId(val.Get(i)), i);
+   end;
+end;
+
+// _serial_IntegerListSeek
+//
+procedure _serial_IntegerListSeek(const fs: Integer{; var nam: String; const sm, tp: Integer});
+begin
+   // read props from stream
+   var itemsize, count: Integer;
+   ReadInteger(fs, itemsize);
+   ReadInteger(fs, count);
+   // stream seek
+   if itemsize*count>0 then
+   SeekBuffer(fs, itemsize*count);
+end;
+
+//
+// TPtrList
+//
+
+// _serial_PtrListWriter
+//
+procedure _serial_PtrListWriter(const fs: Integer; var val: TPtrList; var nam: String{; const sm, tp: Integer});
+begin
+   // write props to stream
+   WriteInteger(fs, val.GetItemSize);
+   WriteInteger(fs, val.GetCount);
+   // write to stream
+   if val.DataSize>0 then
+   WriteBuffer(fs, val.GetBaseList, val.DataSize);
+end;
+
+// _serial_PtrListReader
+//
+procedure _serial_PtrListReader(const fs: Integer; var val: TPtrList{; var nam: String; const sm, tpd, tps, cmp: Integer});
+begin
+   // read props from stream
+   var itemsize, count: Integer;
+   ReadInteger(fs, itemsize);
+   ReadInteger(fs, count);
+   // allocate memory
+   val.SetItemSize(itemsize);
+   val.SetCount(count);
+   var p: Pointer=val.GetBaseList;
+   // read from stream
+   if val.DataSize>0 then
+   ReadBuffer(fs, p, count*itemsize); //val.DataSize
+end;
+
+// _serial_PtrListSize
+//
+procedure _serial_PtrListSize(var res: Integer; var val: TPtrList{; var nam: String; const sm, tp: Integer});
+begin
+   res:=val.DataSize+SizeOf(Integer)*2;
+end;
+
+// _serial_PtrListPost
+//
+procedure _serial_PtrListPost(var val: TPtrList; var nam: String{; const sm: Integer});
+begin
+end;
+
+// _serial_PtrListSeek
+//
+procedure _serial_PtrListSeek(const fs: Integer{; var nam: String; const sm, tp: Integer});
+begin
+   // read props from stream
+   var itemsize, count: Integer;
+   ReadInteger(fs, itemsize);
+   ReadInteger(fs, count);
+   // stream seek
+   if itemsize*count>0 then
+   SeekBuffer(fs, itemsize*count);
+end;
+
+//
+// TObj
+//
+
+// _serial_ObjWriter
+//
+procedure _serial_ObjWriter(const fs: Integer; var val: TObj; var nam: String; const sm, tp: Integer);
+begin
+   var i: Integer;
+   // handle to uniqid
+   //for i:=0 to gc_obj_MaxOrderCount-1 do
+   //if val.orders[i].info.trg<>0 then
+   //   val.orders[i].info.trg:=GetGameObjectUniqueIdByHandle(val.orders[i].info.trg);
+   
+   if val.trghnd<>0 then
+   val.trghnd:=GetGameObjectUniqueIdByHandle(val.trghnd);
+   if val.artHnd <> 0 then
+   val.artHnd := GetGameObjectUniqueIdByHandle(val.artHnd);
+   
+   // write to stream
+   var typ : Pointer=AddrToPointer(tp);
+   var addr: Pointer=val;
+   SaveStreamTypeBase(fs, typ, addr, nam, sm, false);
+   // uniqid to handle
+   //for i:=0 to gc_obj_MaxOrderCount-1 do
+   //if val.orders[i].info.trg<>0 then
+   //   val.orders[i].info.trg:=GetGameObjectHandleByUniqueId(val.orders[i].info.trg);
+   
+   if val.trghnd<>0 then
+   val.trghnd:=GetGameObjectHandleByUniqueId(val.trghnd);
+   if val.artHnd <> 0 then
+   val.artHnd := GetGameObjectHandleByUniqueId(val.artHnd);
+end;
+
+// _serial_ObjReader
+//
+procedure _serial_ObjReader(const fs: Integer; var val: TObj; var nam: String; const sm, tpd, tps, cmp: Integer);
+begin
+   // read from stream
+   var typdst: Pointer=AddrToPointer(tpd);
+   var typsrc: Pointer=AddrToPointer(tps);
+   var addr  : Pointer=val;
+   //LoadStreamTypeBase(fs, typdst, addr, nam, sm, false);
+   MergeStreamTypeBase(fs, typdst, addr, nam, sm, false{useproc}, typsrc, cmp=1{compared});
+   if (val.uniqrnd=0) then
+   val.uniqrnd := random;
+end;
+
+// _serial_ObjSize
+//
+procedure _serial_ObjSize(var res: Integer; var val: TObj; var nam: String; const sm, tp: Integer);
+begin
+   var typ : Pointer=AddrToPointer(tp);
+   var addr: Pointer=val;
+   res:=GetStreamSizeTypeBase(typ, addr, nam, sm, false);
+end;
+
+// _serial_ObjPost
+//
+procedure _serial_ObjPost(var val: TObj{; var nam: String; const sm: Integer});
+begin
+   // uniqid to handle
+   //var i: Integer;
+   //for i:=0 to gc_obj_MaxOrderCount-1 do
+   //if val.orders[i].info.trg<>0 then
+   //   val.orders[i].info.trg:=GetGameObjectHandleByUniqueId(val.orders[i].info.trg);
+   if val.trghnd<>0 then
+   val.trghnd:=GetGameObjectHandleByUniqueId(val.trghnd);
+   if val.artHnd <> 0 then
+   val.artHnd := GetGameObjectHandleByUniqueId(val.artHnd);
+   
+   val.topzone:=-1;
+   
+   val.lasttimecheckcapture := random*gc_unit_TimeCheckCapture;
+   val.lasttimeidlegrid := random*gc_unit_TimeIdleGrid;
+   val.lasttimescangrid := random*gc_unit_TimeScanGrid;
+   val.lasttimetopology := random*gc_unit_TimeTopology;
+   val.lasttimebestposition := random*gc_unit_TimeFindBestPosition;
+   val.lastsearchenemy := random;
+end;
+
+// _serial_ObjSeek
+//
+procedure _serial_ObjSeek(const fs: Integer; var nam: String; const sm, tp: Integer);
+begin
+   var typ: Pointer=AddrToPointer(tp);
+   SeekStreamTypeBase(fs, typ, nam, sm, false{useproc});
+end;
+
+//
+// TOrderInfo
+//
+
+// _serial_OrderInfoWriter
+//
+procedure _serial_OrderInfoWriter(const fs: Integer; var val: TOrderInfo; var nam: String; const sm, tp: Integer);
+begin
+   // handle to uniqid
+   if val.trg<>0 then
+   val.trg:=GetGameObjectUniqueIdByHandle(val.trg);
+   // write to stream
+   var typ : Pointer=AddrToPointer(tp);
+   var addr: Pointer=val;
+   SaveStreamTypeBase(fs, typ, addr, nam, sm, false);
+   // uniqid to handle
+   if val.trg<>0 then
+   val.trg:=GetGameObjectHandleByUniqueId(val.trg);
+end;
+
+// _serial_OrderInfoReader
+//
+procedure _serial_OrderInfoReader(const fs: Integer; var val: TOrderInfo; var nam: String; const sm, tpd, tps, cmp: Integer);
+begin
+   // read from stream
+   var typdst: Pointer=AddrToPointer(tpd);
+   var typsrc: Pointer=AddrToPointer(tps);
+   var addr  : Pointer=val;
+   //LoadStreamTypeBase(fs, typdst, addr, nam, sm, false);
+   MergeStreamTypeBase(fs, typdst, addr, nam, sm, false{useproc}, typsrc, cmp=1{compared});
+end;
+
+// _serial_OrderInfoSize
+//
+procedure _serial_OrderInfoSize(var res: Integer; var val: TOrderInfo; var nam: String; const sm, tp: Integer);
+begin
+   var typ : Pointer=AddrToPointer(tp);
+   var addr: Pointer=val;
+   res:=GetStreamSizeTypeBase(typ, addr, nam, sm, false);
+end;
+
+// _serial_OrderInfoPost
+//
+procedure _serial_OrderInfoPost(var val: TOrderInfo{; var nam: String; const sm: Integer});
+begin
+   //Log('_serial_OrderInfoPost: val.trg='+IntToStr(val.trg));
+   // uniqid to handle
+   if val.trg<>0 then
+   val.trg:=GetGameObjectHandleByUniqueId(val.trg);
+end;
+
+// _serial_OrderInfoSeek
+//
+procedure _serial_OrderInfoSeek(const fs: Integer; var nam: String; const sm, tp: Integer);
+begin
+   var typ: Pointer=AddrToPointer(tp);
+   SeekStreamTypeBase(fs, typ, nam, sm, false{useproc});
+end;
+
+//
+// TProj
+//
+
+// _serial_ProjWriter
+//
+procedure _serial_ProjWriter(const fs: Integer; var val: TProj; var nam: String; const sm, tp: Integer);
+begin
+   // handle to uniqid
+   if val.owner<>0 then
+   val.owner:=GetGameObjectUniqueIdByHandle(val.owner);
+   if val.trg<>0 then
+   val.trg:=GetGameObjectUniqueIdByHandle(val.trg);
+   // write to stream
+   var typ : Pointer=AddrToPointer(tp);
+   var addr: Pointer=val;
+   SaveStreamTypeBase(fs, typ, addr, nam, sm, false);
+   // uniqid to handle
+   if val.owner<>0 then
+   val.owner:=GetGameObjectHandleByUniqueId(val.owner);
+   if val.trg<>0 then
+   val.trg:=GetGameObjectHandleByUniqueId(val.trg);
+end;
+
+// _serial_ProjReader
+//
+procedure _serial_ProjReader(const fs: Integer; var val: TProj; var nam: String; const sm, tpd, tps, cmp: Integer);
+begin
+   // read from stream
+   var typdst: Pointer=AddrToPointer(tpd);
+   var typsrc: Pointer=AddrToPointer(tps);
+   var addr  : Pointer=val;
+   //LoadStreamTypeBase(fs, typdst, addr, nam, sm, false);
+   MergeStreamTypeBase(fs, typdst, addr, nam, sm, false{useproc}, typsrc, cmp=1{compared});
+end;
+
+// _serial_ProjSize
+//
+procedure _serial_ProjSize(var res: Integer; var val: TProj; var nam: String; const sm, tp: Integer);
+begin
+   var typ : Pointer=AddrToPointer(tp);
+   var addr: Pointer=val;
+   res:=GetStreamSizeTypeBase(typ, addr, nam, sm, false);
+end;
+
+// _serial_ProjPost
+//
+procedure _serial_ProjPost(var val: TProj{; var nam: String; const sm: Integer});
+begin
+   // uniqid to handle
+   if val.owner<>0 then
+   val.owner:=GetGameObjectHandleByUniqueId(val.owner);
+   if val.trg<>0 then
+   val.trg:=GetGameObjectHandleByUniqueId(val.trg);
+end;
+
+// _serial_ProjSeek
+//
+procedure _serial_ProjSeek(const fs: Integer; var nam: String; const sm, tp: Integer);
+begin
+   var typ: Pointer=AddrToPointer(tp);
+   SeekStreamTypeBase(fs, typ, nam, sm, false{useproc});
+end;
+
+//
+// TSquadList
+//
+
+// _serial_SquadListWriter
+//
+procedure _serial_SquadListWriter(const fs: Integer; var val: TSquadList{; var nam: String; const sm, tp: Integer});
+begin
+   // write to stream
+   WriteInteger(fs, val.GetCount);
+   var i: Integer;
+   for i:=0 to val.GetCount-1 do begin
+      var j: Integer;
+      var p: Pointer=val.Get(i);
+      WriteInteger(fs, TSquad(p).GetCount);
+      for j:=0 to TSquad(p).GetCount-1 do
+      WriteInteger(fs, GetGameObjectUniqueIdByHandle(TSquad(p).Get(j)));
+      
+      var h: Integer=TSquad(p).fHeight;
+      var w: Integer=TSquad(p).fWidth;
+      WriteInteger(fs, h);
+      WriteInteger(fs, w);
+      for h:=0 to TSquad(p).fHeight-1 do
+      for w:=0 to TSquad(p).fWidth-1 do
+      WriteInteger(fs, GetGameObjectUniqueIdByHandle(TSquad(p).arGrid[h, w]));
+      WriteInteger(fs, TSquad(p).fFormation);
+      WriteInteger(fs, TSquad(p).fBaseCount);
+      WriteBoolean(fs, TSquad(p).fStandGround);
+      WriteBoolean(fs, TSquad(p).fSearchVictim);
+      WriteBoolean(fs, TSquad(p).fSelected);
+      WriteInteger(fs, TSquad(p).fIndex);
+      WriteInteger(fs, TSquad(p).fOfficerID);
+      WriteInteger(fs, TSquad(p).fPlIndex);
+      WriteString( fs, TSquad(p).fGroupName);
+      WriteBoolean(fs, TSquad(p).fHoldMode);
+      WriteInteger(fs, TSquad(p).fAddDamage);
+      WriteInteger(fs, TSquad(p).fAddShield);
+      WriteInteger(fs, TSquad(p).fAddDamageHold);
+      WriteInteger(fs, TSquad(p).fAddShieldHold);
+      WriteFloat(  fs, TSquad(p).fDirX);
+      WriteFloat(  fs, TSquad(p).fDirZ);
+      WriteInteger(fs, TSquad(p).fArmy);
+      WriteInteger(fs, TSquad(p).fType);
+      WriteInteger(fs, TSquad(p).fWarType);
+      WriteBoolean(fs, TSquad(p).fAgressive);
+      WriteBoolean(fs, TSquad(p).fAttackMode);
+      WriteFloat(  fs, TSquad(p).fHoldModeProgress);
+      WriteBoolean(fs, TSquad(p).fNeedRebuild);
+      
+      // ver = 19
+      WriteInteger(fs, TSquad(p).fMoveCount);
+      WriteInteger(fs, TSquad(p).fAttackCount);
+      WriteFloat(  fs, TSquad(p).fTag);
+      WriteFloat(  fs, TSquad(p).fCurX);
+      WriteFloat(  fs, TSquad(p).fCurZ);
+      
+      // ver = 22
+      WriteInteger(fs, TSquad(p).fDelayCount);
+      
+      // ver = 37
+      WriteInteger(fs, TSquad(p).fUID);
+   end;
+end;
+
+// _serial_SquadListReader
+//
+procedure _serial_SquadListReader(const fs: Integer; var val: TSquadList{; var nam: String; const sm, tpd, tps, cmp: Integer});
+begin
+   val.Clear;
+   var i, c: Integer;
+   // read from stream
+   ReadInteger(fs, c);
+   for i:=0 to c-1 do begin
+      var j: Integer;
+      var p: Pointer=val.Add;
+      var n: Integer;
+      ReadInteger(fs, n);
+      for j:=0 to n-1 do begin
+         var uid: Integer;
+         ReadInteger(fs, uid);
+         //var hnd: Integer=GetGameObjectHandleByUniqueId(uid);
+         //if hnd<>0 then
+         TSquad(p).Add(uid{hnd});
+      end;
+      var h, w: Integer;
+      ReadInteger(fs, TSquad(p).fHeight);
+      ReadInteger(fs, TSquad(p).fWidth);
+      for h:=0 to TSquad(p).fHeight-1 do
+      for w:=0 to TSquad(p).fWidth-1 do begin
+         var hnd, uid: Integer;
+         ReadInteger(fs, uid);
+         //if uid<>0 then
+         //   hnd:=GetGameObjectHandleByUniqueId(uid)
+         //else hnd:=0;
+         TSquad(p).arGrid[h, w]:=uid{hnd};
+      end;
+      ReadInteger(fs, TSquad(p).fFormation);
+      ReadInteger(fs, TSquad(p).fBaseCount);
+      ReadBoolean(fs, TSquad(p).fStandGround);
+      ReadBoolean(fs, TSquad(p).fSearchVictim);
+      ReadBoolean(fs, TSquad(p).fSelected);
+      ReadInteger(fs, TSquad(p).fIndex);
+      ReadInteger(fs, TSquad(p).fOfficerID);
+      ReadInteger(fs, TSquad(p).fPlIndex);
+      ReadString( fs, TSquad(p).fGroupName);
+      ReadBoolean(fs, TSquad(p).fHoldMode);
+      ReadInteger(fs, TSquad(p).fAddDamage);
+      ReadInteger(fs, TSquad(p).fAddShield);
+      ReadInteger(fs, TSquad(p).fAddDamageHold);
+      ReadInteger(fs, TSquad(p).fAddShieldHold);
+      ReadFloat(  fs, TSquad(p).fDirX);
+      ReadFloat(  fs, TSquad(p).fDirZ);
+      
+      if gSerialVersion>=1 then
+      begin
+         ReadInteger(fs, TSquad(p).fArmy);
+         ReadInteger(fs, TSquad(p).fType);
+         ReadInteger(fs, TSquad(p).fWarType);
+      end;
+      
+      if gSerialVersion>=7 then
+      begin
+         ReadBoolean(fs, TSquad(p).fAgressive);
+      end;
+      
+      if gSerialVersion>=8 then
+      begin
+         ReadBoolean(fs, TSquad(p).fAttackMode);
+      end;
+      
+      if gSerialVersion>=9 then
+      begin
+         ReadFloat(fs, TSquad(p).fHoldModeProgress);
+      end;
+      
+      if gSerialVersion>=16 then
+      ReadBoolean(fs, TSquad(p).fNeedRebuild)
+      else
+      TSquad(p).fNeedRebuild := false;
+      
+      if gSerialVersion>=19 then
+      begin
+         ReadInteger(fs, TSquad(p).fMoveCount);
+         ReadInteger(fs, TSquad(p).fAttackCount);
+         ReadFloat(  fs, TSquad(p).fTag);
+         ReadFloat(  fs, TSquad(p).fCurX);
+         ReadFloat(  fs, TSquad(p).fCurZ);
+      end;
+      
+      if gSerialVersion>=22 then
+      ReadInteger(fs, TSquad(p).fDelayCount);
+      
+      if gSerialVersion>=37 then
+      ReadInteger(fs, TSquad(p).fUID);
+   end;
+end;
+
+// _serial_SquadListSize
+//
+procedure _serial_SquadListSize(var res: Integer; var val: TSquadList{; var nam: String; const sm, tp: Integer});
+begin
+   res:=SizeOf(Integer);
+   var i: Integer;
+   for i:=0 to val.GetCount-1 do begin
+      var p: Pointer=val.Get(i);
+      res:=res+SizeOf(Integer)+TSquad(p).GetCount*SizeOf(Integer);
+      res:=res+2*SizeOf(Integer);
+      res:=res+TSquad(p).fHeight*TSquad(p).fWidth*SizeOf(Integer);
+      res:=res+SizeOf(Integer); //TSquad(p).fFormation
+      res:=res+SizeOf(Integer); //TSquad(p).fBaseCount
+      res:=res+SizeOf(Boolean); //TSquad(p).fStandGround
+      res:=res+SizeOf(Boolean); //TSquad(p).fSearchVictim
+      res:=res+SizeOf(Boolean); //TSquad(p).fSelected
+      res:=res+SizeOf(Integer); //TSquad(p).fIndex
+      res:=res+SizeOf(Integer); //TSquad(p).fOfficerID
+      res:=res+SizeOf(Integer); //TSquad(p).fPlIndex
+      res:=res+SizeOf(Integer)+StrLength(TSquad(p).fGroupName);
+      res:=res+SizeOf(Boolean); //TSquad(p).fHoldMode
+      res:=res+SizeOf(Integer); //TSquad(p).fAddDamage
+      res:=res+SizeOf(Integer); //TSquad(p).fAddShield
+      res:=res+SizeOf(Integer); //TSquad(p).fAddDamageHold
+      res:=res+SizeOf(Integer); //TSquad(p).fAddShieldHold
+      res:=res+SizeOf(Float);   //TSquad(p).fDirX
+      res:=res+SizeOf(Float);   //TSquad(p).fDirZ
+      res:=res+SizeOf(Integer); //TSquad(p).fArmy
+      res:=res+SizeOf(Integer); //TSquad(p).fType
+      res:=res+SizeOf(Integer); //TSquad(p).fWarType
+      res:=res+SizeOf(Boolean); //TSquad(p).fAgressive
+      res:=res+SizeOf(Boolean); //TSquad(p).fAttackMode
+      res:=res+SizeOf(Float); //TSquad(p).fHoldModeProgress
+      res:=res+SizeOf(Boolean); //TSquad(p).fNeedRebuild
+      
+      res:=res+SizeOf(Integer); //TSquad(p).fMoveCount
+      res:=res+SizeOf(Integer); //TSquad(p).fAttackCount
+      res:=res+SizeOf(Float);   //TSquad(p).fTag
+      res:=res+SizeOf(Float);   //TSquad(p).fCurX
+      res:=res+SizeOf(Float);   //TSquad(p).fCurZ
+      res:=res+SizeOf(Integer); //TSquad(p).fDelayCount
+      res:=res+SizeOf(Integer); //TSquad(p).fUID
+   end;
+end;
+
+// _serial_SquadListPost
+//
+procedure _serial_SquadListPost(var val: TSquadList{; var nam: String; const sm: Integer});
+begin
+   // uniqid to handle
+   var i: Integer;
+   for i:=0 to val.GetCount-1 do begin
+      var j: Integer;
+      var p: Pointer=val.Get(i);
+      for j:=0 to TSquad(p).GetCount-1 do
+      TSquad(p).Set(GetGameObjectHandleByUniqueId(TSquad(p).Get(j)), j);
+      var h, w: Integer;
+      for h:=0 to TSquad(p).fHeight-1 do
+      for w:=0 to TSquad(p).fWidth-1 do
+      TSquad(p).arGrid[h, w]:=GetGameObjectHandleByUniqueId(TSquad(p).arGrid[h, w]);
+   end;
+end;
+
+// _serial_SquadListSeek
+//
+procedure _serial_SquadListSeek(const fs: Integer{; var nam: String; const sm, tp: Integer});
+begin
+   var i, c: Integer;
+   ReadInteger(fs, c);
+   for i:=0 to c-1 do begin
+      var j, n: Integer;
+      ReadInteger(fs, n);
+      if SizeOf(Integer)*n>0 then
+      SeekBuffer(fs, SizeOf(Integer)*n);
+      var h, w: Integer;
+      ReadInteger(fs, h);
+      ReadInteger(fs, w);
+      if SizeOf(Integer)*h*w>0 then
+      SeekBuffer(fs, SizeOf(Integer)*h*w);
+      SeekInteger(fs); //TSquad(p).fFormation
+      SeekInteger(fs); //TSquad(p).fBaseCount
+      SeekBoolean(fs); //TSquad(p).fStandGround
+      SeekBoolean(fs); //TSquad(p).fSearchVictim
+      SeekBoolean(fs); //TSquad(p).fSelected
+      SeekInteger(fs); //TSquad(p).fIndex
+      SeekInteger(fs); //TSquad(p).fOfficerID
+      SeekInteger(fs); //TSquad(p).fPlIndex
+      SeekString( fs); //TSquad(p).fGroupName
+      SeekBoolean(fs); //TSquad(p).fHoldMode
+      SeekInteger(fs); //TSquad(p).fAddDamage
+      SeekInteger(fs); //TSquad(p).fAddShield
+      SeekInteger(fs); //TSquad(p).fAddDamageHold
+      SeekInteger(fs); //TSquad(p).fAddShieldHold
+      SeekFloat(  fs); //TSquad(p).fDirX
+      SeekFloat(  fs); //TSquad(p).fDirZ
+      if gSerialVersion>=1 then
+      begin
+         SeekInteger(fs); //TSquad(p).fArmy
+         SeekInteger(fs); //TSquad(p).fType
+         SeekInteger(fs); //TSquad(p).fWartType
+      end;
+      
+      if gSerialVersion>=7 then
+      begin
+         SeekBoolean(fs); //TSquad(p).fAgressive;
+      end;
+      
+      if gSerialVersion>=8 then
+      begin
+         SeekBoolean(fs); //TSquad(p).fAttackMode;
+      end;
+      
+      if gSerialVersion>=9 then
+      begin
+         SeekFloat(fs); //TSquad(p).fHoldModeProgress;
+      end;
+      
+      if gSerialVersion>=16 then
+      begin
+         SeekBoolean(fs); //TSquad(p).fNeedRebuild;
+      end;
+      
+      if gSerialVersion>=19 then
+      begin
+         SeekInteger(fs); // TSquad(p).fMoveCount
+         SeekInteger(fs); // TSquad(p).fAttackCount
+         SeekFloat(  fs); // TSquad(p).fTag
+         SeekFloat(  fs); // TSquad(p).fCurX
+         SeekFloat(  fs); // TSquad(p).fCurZ
+      end;
+      if gSerialVersion>=22 then
+      SeekInteger(fs); // TSquad(p).fDelayCount
+      if gSerialVersion>=37 then
+      SeekInteger(fs); // TSquad(p).fUID
+   end;
+end;
+
+//
+// TAIBuildingProject
+//
+
+// _serial_AIBuildingProjectWriter
+//
+procedure _serial_AIBuildingProjectWriter(const fs: Integer; var val: TAIBuildingProject; var nam: String; const sm, tp: Integer);
+begin
+   // handle to uniqid
+   if val.gohnd<>0 then
+   val.gohnd:=GetGameObjectUniqueIdByHandle(val.gohnd);
+   // write to stream
+   var typ : Pointer=AddrToPointer(tp);
+   var addr: Pointer=val;
+   SaveStreamTypeBase(fs, typ, addr, nam, sm, false);
+   // uniqid to handle
+   if val.gohnd<>0 then
+   val.gohnd:=GetGameObjectHandleByUniqueId(val.gohnd);
+end;
+
+// _serial_AIBuildingProjectReader
+//
+procedure _serial_AIBuildingProjectReader(const fs: Integer; var val: TAIBuildingProject; var nam: String; const sm, tpd, tps, cmp: Integer);
+begin
+   // read from stream
+   var typdst: Pointer=AddrToPointer(tpd);
+   var typsrc: Pointer=AddrToPointer(tps);
+   var addr  : Pointer=val;
+   //LoadStreamTypeBase(fs, typdst, addr, nam, sm, false);
+   MergeStreamTypeBase(fs, typdst, addr, nam, sm, false{useproc}, typsrc, cmp=1{compared});
+end;
+
+// _serial_AIBuildingProjectSize
+//
+procedure _serial_AIBuildingProjectSize(var res: Integer; var val: TAIBuildingProject; var nam: String; const sm, tp: Integer);
+begin
+   var typ : Pointer=AddrToPointer(tp);
+   var addr: Pointer=val;
+   res:=GetStreamSizeTypeBase(typ, addr, nam, sm, false);
+end;
+
+// _serial_AIBuildingProjectPost
+//
+procedure _serial_AIBuildingProjectPost(var val: TAIBuildingProject{; var nam: String; const sm: Integer});
+begin
+   // uniqid to handle
+   if val.gohnd<>0 then
+   val.gohnd:=GetGameObjectHandleByUniqueId(val.gohnd);
+end;
+
+// _serial_AIBuildingProjectSeek
+//
+procedure _serial_AIBuildingProjectSeek(const fs: Integer; var nam: String; const sm, tp: Integer);
+begin
+   var typ: Pointer=AddrToPointer(tp);
+   SeekStreamTypeBase(fs, typ, nam, sm, false{useproc});
+end;
+
+//
+// TArmyList
+//
+
+// _serial_ArmyListWriter
+//
+procedure _serial_ArmyListWriter(const fs: Integer; var val: TArmyList; var nam: String; const sm, tp: Integer);
+begin
+   var count : Integer = val.GetCount;
+   WriteInteger(fs, count);
+   var i : Integer;
+   for i := 0 to count-1 do
+   begin
+      var p : Pointer = val.Get(i);
+      var sCount : Integer = TArmy(p).fSquadList.GetCount;
+      WriteInteger(fs, sCount);
+      var j : Integer;
+      for j := 0 to sCount-1 do
+      begin
+         var pSquad : Pointer = TArmy(p).fSquadList.GetPointer(j);
+         WriteInteger(fs, TSquad(pSquad).fIndex);
+      end;
+      
+      WriteInteger(fs, TArmy(p).fIndex);
+      WriteFloat(fs, TArmy(p).fOffsetCol);
+      WriteFloat(fs, TArmy(p).fOffsetRow);
+      WriteInteger(fs, TArmy(p).fSpec);
+      WriteInteger(fs, TArmy(p).fTopZone);
+      WriteBoolean(fs, TArmy(p).fSpecialOrder);
+      WriteInteger(fs, TArmy(p).fOrder.iType);
+      WriteFloat(fs, TArmy(p).fX);
+      WriteFloat(fs, TArmy(p).fZ);
+      WriteFloat(fs, TArmy(p).fCurX);
+      WriteFloat(fs, TArmy(p).fCurZ);
+      WriteInteger(fs, TArmy(p).fOrder.targetUID);
+      WriteInteger(fs, TArmy(p).fOrder.tag);
+      WriteInteger(fs, TArmy(p).fOrder.tag2);
+      
+      // ver = 11
+      WriteFloat(fs, TArmy(p).fLastBattleTime);
+      
+      // ver = 14
+      WriteInteger(fs, TArmy(p).fOrder.tag3);
+      WriteFloat(fs, TArmy(p).fOrder.tagFloat);
+      
+      // ver = 18
+      WriteInteger(fs, TArmy(p).fCurTopZone);
+      
+      // ver = 23
+      WriteInteger(fs, TArmy(p).fPlIndex);
+      
+      // ver = 34
+      WriteBoolean(fs, TArmy(p).fActive);
+      
+      // ver = 45
+      WriteFloat(fs, TArmy(p).fLastArtTime);
+      
+      // ver = 46
+      WriteBoolean(fs, TArmy(p).fOnEnemyLand);
+   end;
+end;
+
+// _serial_ArmyListReader
+//
+procedure _serial_ArmyListReader(const fs: Integer; var val: TArmyList; var nam: String; const sm, tpd, tps, cmp: Integer);
+begin
+   val.Clear;
+   var i, count : Integer;
+   ReadInteger(fs, count);
+   
+   for i := 0 to count-1 do
+   begin
+      var p : Pointer = val.Add;
+      var sCount : Integer;
+      ReadInteger(fs, sCount);
+      var j : Integer;
+      for j := 0 to sCount-1 do
+      begin
+         var ind : Integer;
+         ReadInteger(fs, ind);
+         var p1 : Pointer = AddrToPointer(ind);
+         TArmy(p).fSquadList.AddPointer(p1);
+      end;
+      
+      ReadInteger(fs, TArmy(p).fIndex);
+      ReadFloat(fs, TArmy(p).fOffsetCol);
+      ReadFloat(fs, TArmy(p).fOffsetRow);
+      ReadInteger(fs, TArmy(p).fSpec);
+      ReadInteger(fs, TArmy(p).fTopZone);
+      ReadBoolean(fs, TArmy(p).fSpecialOrder);
+      ReadInteger(fs, TArmy(p).fOrder.iType);
+      ReadFloat(fs, TArmy(p).fX);
+      ReadFloat(fs, TArmy(p).fZ);
+      
+      if gSerialVersion>=3 then
+      begin
+         ReadFloat(fs, TArmy(p).fCurX);
+         ReadFloat(fs, TArmy(p).fCurZ);
+      end;
+      
+      if gSerialVersion>=4 then
+      begin
+         ReadInteger(fs, TArmy(p).fOrder.targetUID);
+         ReadInteger(fs, TArmy(p).fOrder.tag);
+         ReadInteger(fs, TArmy(p).fOrder.tag2);
+      end;
+      
+      if gSerialVersion>=11 then
+      ReadFloat(fs, TArmy(p).fLastBattleTime);
+      
+      if gSerialVersion>=14 then
+      begin
+         ReadInteger(fs, TArmy(p).fOrder.tag3);
+         ReadFloat(fs, TArmy(p).fOrder.tagFloat);
+      end;
+      
+      if gSerialVersion>=18 then
+      ReadInteger(fs, TArmy(p).fCurTopZone);
+      
+      if gSerialVersion>=23 then
+      ReadInteger(fs, TArmy(p).fPlIndex);
+      
+      if gSerialVersion>=34 then
+      ReadBoolean(fs, TArmy(p).fActive)
+      else
+      TArmy(p).fActive := true;
+      
+      if gSerialVersion>=45 then
+      ReadFloat(fs, TArmy(p).fLastArtTime)
+      else
+      TArmy(p).fLastArtTime := 0;
+      
+      if gSerialVersion>=46 then
+      ReadBoolean(fs, TArmy(p).fOnEnemyLand)
+      else
+      TArmy(p).fOnEnemyLand := false;
+   end;
+end;
+
+// _serial_ArmyListSize
+//
+procedure _serial_ArmyListSize(var res: Integer; var val: TArmyList; var nam: String; const sm, tp: Integer);
+begin
+   res := SizeOf(Integer);
+   
+   var i: Integer;
+   for i := 0 to val.GetCount-1 do
+   begin
+      var p : Pointer = val.Get(i);
+      res := res + SizeOf(Integer) + TArmy(p).fSquadList.GetCount*SizeOf(Integer);
+      
+      res := res + SizeOf(Integer); // TArmy(p).fIndex
+      res := res + SizeOf(Float);   // TArmy(p).fOffsetCol
+      res := res + SizeOf(Float);   // TArmy(p).fOffsetRow
+      res := res + SizeOf(Integer); // TArmy(p).fSpec
+      res := res + SizeOf(Integer); // TArmy(p).fTopZone
+      res := res + SizeOf(Boolean); // TArmy(p).fSpecialOrder
+      res := res + SizeOf(Integer); // TArmy(p).fOrder.iType
+      res := res + SizeOf(Float);   // TArmy(p).fX
+      res := res + SizeOf(Float);   // TArmy(p).fZ
+      res := res + SizeOf(Float);   // TArmy(p).fCurX
+      res := res + SizeOf(Float);   // TArmy(p).fCurZ
+      res := res + SizeOf(Integer); // TArmy(p).fOrder.targetUID
+      res := res + SizeOf(Integer); // TArmy(p).fOrder.tag
+      res := res + SizeOf(Integer); // TArmy(p).fOrder.tag2
+      res := res + SizeOf(Float);   // TArmy(p).fLastBattleTime
+      res := res + SizeOf(Integer); // TArmy(p).fOrder.tag3
+      res := res + SizeOf(Float);   // TArmy(p).fOrder.tagFloat
+      res := res + SizeOf(Integer); // TArmy(p).fCurTopZone
+      res := res + SizeOf(Integer); // TArmy(p).fPlIndex
+      res := res + SizeOf(Boolean); // TArmy(p).fActive
+      res := res + SizeOf(Float);   // TArmy(p).fLastArtTime
+      res := res + SizeOf(Boolean); // TArmy(p).fOnEnemyLand
+   end;
+end;
+
+// _serial_ArmyListPost
+//
+procedure _serial_ArmyListPost(var val: TArmyList{; var nam: String; const sm: Integer});
+begin
+end;
+
+// _serial_ArmyListSeek
+//
+procedure _serial_ArmyListSeek(const fs: Integer; var nam: String; const sm, tp: Integer);
+begin
+   var i, c: Integer;
+   ReadInteger(fs, c);
+   for i := 0 to c-1 do begin
+      var n: Integer;
+      ReadInteger(fs, n);
+      if SizeOf(Integer)*n > 0 then
+      SeekBuffer(fs, SizeOf(Integer)*n);
+      
+      SeekInteger(fs); // TArmy(p).fIndex
+      SeekFloat(fs);   // TArmy(p).fOffsetCol
+      SeekFloat(fs);   // TArmy(p).fOffsetRow
+      SeekInteger(fs); // TArmy(p).fSpec
+      SeekInteger(fs); // TArmy(p).fTopZone
+      SeekBoolean(fs); // TArmy(p).fSpecialOrder
+      SeekInteger(fs); // TArmy(p).fOrder.iType
+      SeekFloat(fs);   // TArmy(p).fX
+      SeekFloat(fs);   // TArmy(p).fZ
+      
+      if gSerialVersion>=3 then
+      begin
+         SeekFloat(fs);   // TArmy(p).fCurX
+         SeekFloat(fs);   // TArmy(p).fCurZ
+      end;
+      
+      if gSerialVersion>=4 then
+      begin
+         SeekInteger(fs); // TArmy(p).fOrder.targetUID
+         SeekInteger(fs); // TArmy(p).fOrder.tag
+         SeekInteger(fs); // TArmy(p).fOrder.tag2
+      end;
+      
+      if gSerialVersion>=11 then
+      SeekFloat(fs); // TArmy(p).fLastBattleTime
+      
+      if gSerialVersion>=14 then
+      begin
+         SeekInteger(fs); // TArmy(p).fOrder.tag3
+         SeekFloat(fs);   // TArmy(p).fOrder.tagFloat
+      end;
+      
+      if gSerialVersion>=18 then
+      SeekInteger(fs); // TArmy(p).fCurTopZone
+      
+      if gSerialVersion>=23 then
+      SeekInteger(fs); // TArmy(p).fPlIndex
+      
+      if gSerialVersion>=34 then
+      SeekBoolean(fs); // TArmy(p).fActive
+      
+      if gSerialVersion>=45 then
+      SeekFloat(fs); // TArmy(p).fLastArtTime
+      
+      if gSerialVersion>=46 then
+      SeekBoolean(fs); // TArmy(p).fOnEnemyLand
+   end;
+end;
+
+//
+// TAiProtectedBuildingList
+//
+
+// _serial_AiProtectedBuildingListWriter
+//
+procedure _serial_AiProtectedBuildingListWriter(const fs: Integer; var val: TAiProtectedBuildingList; var nam: String; const sm, tp: Integer);
+begin
+   WriteInteger(fs, val.GetCount);
+   var i : Integer;
+   for i := 0 to val.GetCount-1 do
+   begin
+      var p : Pointer = val.Get(i);
+      
+      var uid : Integer = GetGameObjectUniqueIdByHandle(TAiProtectedBuilding(p).targetHnd);
+      WriteInteger(fs, uid);
+      WriteInteger(fs, TAiProtectedBuilding(p).aiPriority);
+      
+      var pbuf : Pointer = TAiProtectedBuilding(p).defenders;
+      var ptyp : Pointer = PointerOf(TIntegerList);
+      SaveStreamTypeBase(fs, ptyp, pbuf, 'defenders', sm, true);
+   end;
+end;
+
+// _serial_AiProtectedBuildingListReader
+//
+procedure _serial_AiProtectedBuildingListReader(const fs: Integer; var val: TAiProtectedBuildingList; var nam: String; const sm, tpd, tps, cmp: Integer);
+begin
+   val.Clear;
+   var i, c : Integer;
+   ReadInteger(fs, c);
+   for i := 0 to c-1 do
+   begin
+      var p : Pointer = val.Add;
+      
+      ReadInteger(fs, TAiProtectedBuilding(p).targetHnd);
+      ReadInteger(fs, TAiProtectedBuilding(p).aiPriority);
+      
+      var typdst : Pointer = PointerOf(TIntegerList);
+      var typsrc : Pointer = GetTypeBaseByTypeName('TIntegerList', true);
+      var pbuf : Pointer = TAiProtectedBuilding(p).defenders;
+      MergeStreamTypeBase(fs, typdst, pbuf, 'defenders', sm, true{useproc}, typsrc, cmp=1{compared});
+   end;
+end;
+
+// _serial_AiProtectedBuildingListSize
+//
+procedure _serial_AiProtectedBuildingListSize(var res: Integer; var val: TAiProtectedBuildingList; var nam: String; const sm, tp: Integer);
+begin
+   res := SizeOf(Integer);
+   var i: Integer;
+   for i := 0 to val.GetCount-1 do
+   begin
+      var p : Pointer = val.Get(i);
+      res := res+SizeOf(Integer); // TAiProtectedBuilding(p).targetHnd
+      res := res+SizeOf(Integer); // TAiProtectedBuilding(p).aiPriority
+      
+      var ptyp : Pointer = PointerOf(TIntegerList);
+      var pBuf : Pointer = TAiProtectedBuilding(p).defenders;
+      res := res + GetStreamSizeTypeBase(ptyp, pbuf, 'defenders', sm, true);
+   end;
+end;
+
+// _serial_AiProtectedBuildingListPost
+//
+procedure _serial_AiProtectedBuildingListPost(var val: TAiProtectedBuildingList{; var nam: String; const sm: Integer});
+begin
+   var i : Integer;
+   for i := 0 to val.GetCount-1 do
+   begin
+      var p : Pointer = val.Get(i);
+      var uid : Integer = TAiProtectedBuilding(p).targetHnd;
+      TAiProtectedBuilding(p).targetHnd := GetGameObjectHandleByUniqueId(uid);
+   end;
+end;
+
+// _serial_AiProtectedBuildingListSeek
+//
+procedure _serial_AiProtectedBuildingListSeek(const fs: Integer; var nam: String; const sm, tp: Integer);
+begin
+   var i, c : Integer;
+   ReadInteger(fs, c);
+   for i := 0 to c-1 do
+   begin
+      SeekInteger(fs); // TAiProtectedBuilding(p).targetHnd
+      SeekInteger(fs); // TAiProtectedBuilding(p).aiPriority
+      
+      var ptyp : Pointer = GetTypeBaseByTypeName('TIntegerList', true);
+      SeekStreamTypeBase(fs, ptyp, 'defenders', sm, true);
+   end;
+end;
+
+//
+// TAiData
+//
+
+// _serial_AiDataWriter
+//
+procedure _serial_AiDataWriter(const fs: Integer; var val: TAiData; var nam: String; const sm, tp: Integer);
+begin
+   WriteInteger(fs, val.basenation);
+   WriteBoolean(fs, val.centerfound);
+   WriteFloat  (fs, val.centerx);
+   WriteFloat  (fs, val.centerz);
+   var pbuf: Pointer=val.developmentera;
+   WriteBuffer (fs, pbuf, SizeOf(val.developmentera));
+   var ptyp: Pointer=PointerOf(TAIBuildingProject); //GetTypeBaseByTypeName('TAIBuildingProject', false);
+   var i, j : Integer;
+   for i:=0 to gc_ai_max_construction_sites-1 do begin
+      pbuf:=val.buildprojects[i];
+      SaveStreamTypeBase(fs, ptyp, pbuf, 'buildprojects', sm, true);
+   end;
+   pbuf:=val.resbalance;
+   WriteBuffer (fs, pbuf, SizeOf(val.resbalance));
+   
+   pbuf := val.defenders;
+   ptyp := PointerOf(TIntegerList);
+   SaveStreamTypeBase(fs, ptyp, pbuf, 'defenders', sm, true);
+   
+   pbuf := val.guards;
+   SaveStreamTypeBase(fs, ptyp, pbuf, 'guards', sm, true);
+   
+   pbuf := val.agressors;
+   SaveStreamTypeBase(fs, ptyp, pbuf, 'agressors', sm, true);
+   
+   pbuf := val.freewarriors;
+   SaveStreamTypeBase(fs, ptyp, pbuf, 'freewarriors', sm, true);
+   
+   pbuf := val.armyList;
+   ptyp := PointerOf(TArmyList);
+   SaveStreamTypeBase(fs, ptyp, pbuf, 'armylist', sm, true);
+   
+   pbuf := val.defBuildings;
+   ptyp := PointerOf(TAiProtectedBuildingList);
+   SaveStreamTypeBase(fs, ptyp, pbuf, 'defBuildings', sm, true);
+   
+   for i := 0 to gc_ai_max_flags-1 do
+   WriteBoolean(fs, val.bFlags[i]);
+   
+   // ver = 5
+   WriteBoolean(fs, val.defenceStage);
+   WriteBoolean(fs, val.makeDiversion);
+   WriteBoolean(fs, val.landBattle);
+   
+   // ver = 6
+   WriteInteger(fs, val.agressorsSent);
+   
+   // ver = 10
+   WriteFloat(fs, val.inittime);
+   
+   // ver = 14
+   for i := 0 to gc_MaxCountryCount-1 do
+   for j := 0 to gc_country_maxmembers-1 do
+   WriteBoolean(fs, val.avUnits[i][j]);
+   
+   // ver = 21
+   var uid : Integer;
+   for i := 0 to gc_MaxCountryCount-1 do
+   begin
+      if val.officer17[i] <> 0 then
+      uid := GetGameObjectUniqueIdByHandle(val.officer17[i])
+      else uid := 0;
+      WriteInteger(fs, uid);
+   end;
+   
+   for i := 0 to gc_MaxCountryCount-1 do
+   begin
+      if val.drummer17[i] <> 0 then
+      uid := GetGameObjectUniqueIdByHandle(val.drummer17[i])
+      else uid := 0;
+      WriteInteger(fs, uid);
+   end;
+   
+   for i := 0 to gc_MaxCountryCount-1 do
+   begin
+      if val.officer18[i] <> 0 then
+      uid := GetGameObjectUniqueIdByHandle(val.officer18[i])
+      else uid := 0;
+      WriteInteger(fs, uid);
+   end;
+   
+   for i := 0 to gc_MaxCountryCount-1 do
+   begin
+      if val.drummer18[i] <> 0 then
+      uid := GetGameObjectUniqueIdByHandle(val.drummer18[i])
+      else uid := 0;
+      WriteInteger(fs, uid);
+   end;
+   
+   // ver = 24
+   WriteBoolean(fs, val.bhumanai);
+   WriteBoolean(fs, val.bprogressEconomy);
+   WriteBoolean(fs, val.bprogressConstruction);
+   WriteBoolean(fs, val.bprogressProduce);
+   WriteBoolean(fs, val.bprogressUpgrades);
+   WriteBoolean(fs, val.bprogressWar);
+   
+   // ver = 32
+   WriteBoolean(fs, val.waterBattle);
+end;
+
+// _serial_AiDataReader
+//
+procedure _serial_AiDataReader(const fs: Integer; var val: TAiData; var nam: String; const sm, tpd, tps, cmp: Integer);
+begin
+   var maxCountryCount, countryMaxMembers : Integer;
+   if gSerialVersion<54 then
+   maxCountryCount := 13
+   else
+   maxCountryCount := gc_MaxCountryCount; // 24
+   
+   if gSerialVersion<55 then
+   countryMaxMembers := 64
+   else
+   countryMaxMembers := gc_country_maxmembers;
+   
+   ReadInteger(fs, val.basenation);
+   ReadBoolean(fs, val.centerfound);
+   ReadFloat  (fs, val.centerx);
+   ReadFloat  (fs, val.centerz);
+   var pbuf: Pointer;
+   var i, j: Integer;
+   if gSerialVersion<54 then
+   begin
+      for i:=0 to maxCountryCount-1 do
+      ReadInteger(fs, val.developmentera[i]);
+   end
+   else
+   begin
+      pbuf:=val.developmentera;
+      ReadBuffer (fs, pbuf, SizeOf(val.developmentera));
+   end;
+   var typdst: Pointer=PointerOf(TAIBuildingProject);
+   var typsrc: Pointer=GetTypeBaseByTypeName('TAIBuildingProject', true);
+   for i:=0 to gc_ai_max_construction_sites-1 do begin
+      pbuf:=val.buildprojects[i];
+      //LoadStreamTypeBase(fs, typdst, pbuf, 'buildprojects', sm, true);
+      MergeStreamTypeBase(fs, typdst, pbuf, 'buildprojects', sm, true{useproc}, typsrc, cmp=1{compared});
+      
+      if gSerialVersion<51 then
+      val.buildprojects[i].maxTryDist := -1;
+   end;
+   pbuf:=val.resbalance;
+   ReadBuffer (fs, pbuf, SizeOf(val.resbalance));
+   
+   if gSerialVersion>=2 then
+   begin
+      typdst := PointerOf(TIntegerList);
+      typsrc := GetTypeBaseByTypeName('TIntegerList', true);
+      pbuf := val.defenders;
+      MergeStreamTypeBase(fs, typdst, pbuf, 'defenders', sm, true{useproc}, typsrc, cmp=1{compared});
+      
+      pbuf := val.guards;
+      MergeStreamTypeBase(fs, typdst, pbuf, 'guards', sm, true{useproc}, typsrc, cmp=1{compared});
+      
+      pbuf := val.agressors;
+      MergeStreamTypeBase(fs, typdst, pbuf, 'agressors', sm, true{useproc}, typsrc, cmp=1{compared});
+      
+      pbuf := val.freewarriors;
+      MergeStreamTypeBase(fs, typdst, pbuf, 'freewarriors', sm, true{useproc}, typsrc, cmp=1{compared});
+      
+      typdst := PointerOf(TArmyList);
+      typsrc := GetTypeBaseByTypeName('TArmyList', true);
+      pbuf := val.armyList;
+      MergeStreamTypeBase(fs, typdst, pbuf, 'armylist', sm, true{useproc}, typsrc, cmp=1{compared});
+   end;
+   
+   if gSerialVersion>=4 then
+   begin
+      typdst := PointerOf(TAiProtectedBuildingList);
+      typsrc := GetTypeBaseByTypeName('TAiProtectedBuildingList', true);
+      pbuf := val.defBuildings;
+      MergeStreamTypeBase(fs, typdst, pbuf, 'defBuildings', sm, true{useproc}, typsrc, cmp=1{compared});
+      
+      for i := 0 to gc_ai_max_flags-1 do
+      ReadBoolean(fs, val.bFlags[i]);
+   end;
+   
+   if gSerialVersion>=5 then
+   begin
+      ReadBoolean(fs, val.defenceStage);
+      ReadBoolean(fs, val.makeDiversion);
+      ReadBoolean(fs, val.landBattle);
+   end;
+   
+   if gSerialVersion>=6 then
+   ReadInteger(fs, val.agressorsSent);
+   
+   if gSerialVersion>=10 then
+   ReadFloat(fs, val.inittime)
+   else
+   val.inittime := 0;
+   
+   if gSerialVersion>=14 then
+   begin
+      if gSerialVersion<17 then
+      begin
+         for i := 0 to maxCountryCount-1 do
+         for j := 0 to 11-1 do
+         ReadBoolean(fs, val.avUnits[i][j]);
+      end
+      else
+      begin
+         for i := 0 to maxCountryCount-1 do
+         for j := 0 to countryMaxMembers-1 do
+         ReadBoolean(fs, val.avUnits[i][j]);
+      end;
+   end;
+   
+   if gSerialVersion>=21 then
+   begin
+      var uid : Integer;
+      for i := 0 to maxCountryCount-1 do
+      begin
+         ReadInteger(fs, uid);
+         val.officer17[i] := GetGameObjectHandleByUniqueId(uid);
+      end;
+      
+      for i := 0 to maxCountryCount-1 do
+      begin
+         ReadInteger(fs, uid);
+         val.drummer17[i] := GetGameObjectHandleByUniqueId(uid);
+      end;
+      
+      for i := 0 to maxCountryCount-1 do
+      begin
+         ReadInteger(fs, uid);
+         val.officer18[i] := GetGameObjectHandleByUniqueId(uid);
+      end;
+      
+      for i := 0 to maxCountryCount-1 do
+      begin
+         ReadInteger(fs, uid);
+         val.drummer18[i] := GetGameObjectHandleByUniqueId(uid);
+      end;
+   end
+   else
+   begin
+      for i := 0 to maxCountryCount-1 do
+      begin
+         val.officer17[i] := 0;
+         val.drummer17[i] := 0;
+         val.officer18[i] := 0;
+         val.drummer18[i] := 0;
+      end;
+   end;
+   
+   if gSerialVersion>=24 then
+   begin
+      ReadBoolean(fs, val.bhumanai);
+      ReadBoolean(fs, val.bprogressEconomy);
+      ReadBoolean(fs, val.bprogressConstruction);
+      ReadBoolean(fs, val.bprogressProduce);
+      ReadBoolean(fs, val.bprogressUpgrades);
+      ReadBoolean(fs, val.bprogressWar);
+   end
+   else
+   begin
+      val.bhumanai := False;
+      val.bprogressEconomy := True;
+      val.bprogressConstruction := True;
+      val.bprogressProduce := True;
+      val.bprogressUpgrades := True;
+      val.bprogressWar := True;
+   end;
+   
+   if gSerialVersion>=32 then
+   begin
+      ReadBoolean(fs, val.waterBattle);
+      if gSerialVersion<38 then
+      val.waterBattle := true;
+   end
+   else
+   val.waterBattle := true;
+end;
+
+// _serial_AiDataSize
+//
+procedure _serial_AiDataSize(var res: Integer; var val: TAiData; var nam: String; const sm, tp: Integer);
+begin
+   var maxCountryCount, countryMaxMembers : Integer;
+   if gSerialVersion<54 then
+   maxCountryCount := 13
+   else
+   maxCountryCount := gc_MaxCountryCount; // 24
+   
+   if gSerialVersion<55 then
+   countryMaxMembers := 64
+   else
+   countryMaxMembers := gc_country_maxmembers;
+   
+   res:=0;
+   res:=res+SizeOf(Integer);            //val.basenation
+   res:=res+SizeOf(Boolean);            //val.centerfound
+   res:=res+SizeOf(Float);              //val.centerx
+   res:=res+SizeOf(Float);              //val.centerz
+   
+   var i: Integer;
+   if gSerialVersion<54 then
+   begin
+      for i:=0 to maxCountryCount-1 do
+      res:=res+SizeOf(Integer);
+   end
+   else
+   res:=res+SizeOf(val.developmentera); //val.developmentera
+   var ptyp: Pointer=PointerOf(TAIBuildingProject); //GetTypeBaseByTypeName('TAIBuildingProject', false); //gSerialMode: Integer; // 0 - none; 1 - serial; 2 - unserial;
+   for i:=0 to gc_ai_max_construction_sites-1 do begin
+      var pbuf: Pointer=val.buildprojects[i];
+      res:=res+GetStreamSizeTypeBase(ptyp, pbuf, 'buildprojects', sm, true);
+   end;
+   res:=res+SizeOf(val.resbalance);
+   
+   ptyp := PointerOf(TIntegerList);
+   var pBuf : Pointer = val.defenders;
+   res := res + GetStreamSizeTypeBase(ptyp, pbuf, 'defenders', sm, true);
+   
+   pBuf := val.guards;
+   res := res + GetStreamSizeTypeBase(ptyp, pbuf, 'guards', sm, true);
+   
+   pBuf := val.agressors;
+   res := res + GetStreamSizeTypeBase(ptyp, pbuf, 'agressors', sm, true);
+   
+   pBuf := val.freewarriors;
+   res := res + GetStreamSizeTypeBase(ptyp, pbuf, 'freewarriors', sm, true);
+   
+   ptyp := PointerOf(TArmyList);
+   pBuf := val.armyList;
+   res := res + GetStreamSizeTypeBase(ptyp, pbuf, 'armylist', sm, true);
+   
+   ptyp := PointerOf(TAiProtectedBuildingList);
+   pBuf := val.defBuildings;
+   res := res + GetStreamSizeTypeBase(ptyp, pbuf, 'defBuildings', sm, true);
+   
+   res := res + gc_ai_max_flags*SizeOf(Boolean);
+   
+   // ver = 5
+   res:=res+SizeOf(Boolean); //val.defenceStage
+   res:=res+SizeOf(Boolean); //val.makeDiversion
+   res:=res+SizeOf(Boolean); //val.landBattle
+   
+   // ver = 6
+   res:=res+SizeOf(Integer); //val.agressorsSent
+   
+   // ver = 10
+   res:=res+SizeOf(Float); //val.inittime
+   
+   // ver = 17 (14)
+   res := res + maxCountryCount * countryMaxMembers * SizeOf(Boolean); //val.avUnits
+   
+   // ver = 21
+   res := res + maxCountryCount * SizeOf(Integer); //val.officer17
+   res := res + maxCountryCount * SizeOf(Integer); //val.drummer17
+   res := res + maxCountryCount * SizeOf(Integer); //val.officer18
+   res := res + maxCountryCount * SizeOf(Integer); //val.drummer18
+   
+   // ver = 24
+   res := res + SizeOf(Boolean); //val.bhumanai
+   res := res + SizeOf(Boolean); //val.bprogressEconomy
+   res := res + SizeOf(Boolean); //val.bprogressConstruction
+   res := res + SizeOf(Boolean); //val.bprogressProduce
+   res := res + SizeOf(Boolean); //val.bprogressUpgrades
+   res := res + SizeOf(Boolean); //val.bprogressWar
+   
+   // ver = 32
+   res := res + SizeOf(Boolean); //val.waterBattle
+end;
+
+// _serial_AiDataPost
+//
+procedure _serial_AiDataPost(var val: TAiData; var nam: String; const sm: Integer);
+begin
+   if gSerialVersion<17 then
+   begin
+      var i, j : Integer;
+      for i := 0 to gc_MaxCountryCount-1 do
+      for j := 0 to gc_country_maxmembers-1 do
+      val.avUnits[i][j] := true;
+   end;
+end;
+
+// _serial_AiDataSeek
+//
+procedure _serial_AiDataSeek(const fs: Integer; var nam: String; const sm, tp: Integer);
+begin
+   var maxCountryCount, countryMaxMembers : Integer;
+   if gSerialVersion<54 then
+   maxCountryCount := 13
+   else
+   maxCountryCount := gc_MaxCountryCount; // 24
+   
+   if gSerialVersion<55 then
+   countryMaxMembers := 64
+   else
+   countryMaxMembers := gc_country_maxmembers;
+   
+   SeekInteger(fs); //val.basenation
+   SeekBoolean(fs); //val.centerfound
+   SeekFloat  (fs); //val.centerx
+   SeekFloat  (fs); //val.centerz
+   SeekBuffer (fs, maxCountryCount*SizeOf(Integer){SizeOf(TAiData.developmentera)});
+   var ptyp: Pointer=GetTypeBaseByTypeName('TAIBuildingProject', true);
+   var i: Integer;
+   for i:=0 to gc_ai_max_construction_sites-1 do
+   SeekStreamTypeBase(fs, ptyp, 'buildprojects', sm, true{useproc});
+   SeekBuffer (fs, gc_ResCount*3*SizeOf(Integer){SizeOf(TAiData.resbalance)});
+   
+   if gSerialVersion>=2 then
+   begin
+      var ptyp : Pointer = GetTypeBaseByTypeName('TIntegerList', true);
+      
+      SeekStreamTypeBase(fs, ptyp, 'defenders', sm, true);
+      SeekStreamTypeBase(fs, ptyp, 'guards', sm, true);
+      SeekStreamTypeBase(fs, ptyp, 'agressors', sm, true);
+      SeekStreamTypeBase(fs, ptyp, 'freewarriors', sm, true);
+      
+      ptyp := GetTypeBaseByTypeName('TArmyList', true);
+      SeekStreamTypeBase(fs, ptyp, 'armylist', sm, true);
+   end;
+   
+   if gSerialVersion>=4 then
+   begin
+      ptyp := GetTypeBaseByTypeName('TAiProtectedBuildingList', true);
+      SeekStreamTypeBase(fs, ptyp, 'defBuildings', sm, true);
+      
+      SeekBuffer (fs, gc_ai_max_flags*SizeOf(Boolean));
+   end;
+   
+   if gSerialVersion>=5 then
+   begin
+      SeekBoolean(fs); //val.defenceStage
+      SeekBoolean(fs); //val.makeDiversion
+      SeekBoolean(fs); //val.landBattle
+   end;
+   
+   if gSerialVersion>=6 then
+   SeekInteger(fs); //val.agressorsSent
+   
+   if gSerialVersion>=10 then
+   SeekFloat(fs); //val.inittime
+   
+   if gSerialVersion>=14 then
+   begin
+      if gSerialVersion<17 then
+      SeekBuffer(fs, maxCountryCount * 11 * SizeOf(Boolean)) //val.avUnits
+      else
+      SeekBuffer(fs, maxCountryCount * countryMaxMembers * SizeOf(Boolean)) //val.avUnits
+   end;
+   
+   if gSerialVersion>=21 then
+   begin
+      SeekBuffer(fs, maxCountryCount * SizeOf(Integer)); //val.officer17
+      SeekBuffer(fs, maxCountryCount * SizeOf(Integer)); //val.drummer17
+      SeekBuffer(fs, maxCountryCount * SizeOf(Integer)); //val.officer18
+      SeekBuffer(fs, maxCountryCount * SizeOf(Integer)); //val.drummer18
+   end;
+   
+   if gSerialVersion>=24 then
+   begin
+      SeekBoolean(fs); //val.bhumanai
+      SeekBoolean(fs); //val.bprogressEconomy
+      SeekBoolean(fs); //val.bprogressConstruction
+      SeekBoolean(fs); //val.bprogressProduce
+      SeekBoolean(fs); //val.bprogressUpgrades
+      SeekBoolean(fs); //val.bprogressWar
+   end;
+   
+   if gSerialVersion>=32 then
+   SeekBoolean(fs); //val.waterBattle
+end;
+
+//
+// TPlayer
+//
+
+// _serial_PlayerPost
+//
+procedure _serial_PlayerPost(var val: TPlayer{; var nam: String; const sm: Integer});
+begin
+   var plInd : Integer = val.id;
+   var i, j : Integer;
+   var count : Integer = gPlayer[plInd].aiData.armyList.GetCount;
+   var sqCount : Integer = gPlayer[plInd].squads.GetCount;
+   for i := 0 to count-1 do
+   begin
+      var pArmy : Pointer = gPlayer[plInd].aiData.armyList.Get(i);
+      for j := TArmy(pArmy).fSquadList.GetCount-1 downto 0 do
+      begin
+         var pArSquad : Pointer = TArmy(pArmy).fSquadList.GetPointer(j);
+         var ind : Integer = PointerToAddr(pArSquad);
+         
+         var pSquad : Pointer = gPlayer[plInd].squads.Get(ind);
+         if pSquad <> nil then
+         TArmy(pArmy).fSquadList.SetPointer(pSquad, j)
+         else
+         TArmy(pArmy).fSquadList.Delete(j);
+      end;
+   end;
+   
+   if (gSerialVersion<30) then
+   begin
+      for i:=0 to gc_ResCount-1 do
+      begin
+         val.setres[i] := val.res[i];
+         val.lanres[i] := val.res[i];
+      end;
+   end;
+   
+   val.lastcheckexists := plInd*0.25+gc_global_TimeCheckExists;
+   val.lastcalcsquadsmovecounttime := plInd*0.25+gc_global_TimeCalcSquadsMoveCount;
+   val.lastprogressaitime := plInd*0.25+gc_global_TimeProgressAI;
+   val.lastseedwheattime := plInd*0.25+gc_global_TimeSeedWheat;
+   
+   _player_GetOrCreateEnemyInfo(plInd);
+end;
+
+//
+// TTower
+//
+
+// _serial_TowerWriter
+//
+procedure _serial_TowerWriter(const fs: Integer; var val: TTower; var nam: String; const sm, tp: Integer);
+begin
+   if val.hnd <> 0 then
+   val.hnd := GetGameObjectUniqueIdByHandle(val.hnd);
+   
+   var typ : Pointer = AddrToPointer(tp);
+   var addr: Pointer = val;
+   SaveStreamTypeBase(fs, typ, addr, nam, sm, false);
+   
+   if val.hnd <> 0 then
+   val.hnd := GetGameObjectHandleByUniqueId(val.hnd);
+end;
+
+// _serial_TowerReader
+//
+procedure _serial_TowerReader(const fs: Integer; var val: TTower; var nam: String; const sm, tpd, tps, cmp: Integer);
+begin
+   var typdst: Pointer=AddrToPointer(tpd);
+   var typsrc: Pointer=AddrToPointer(tps);
+   var addr  : Pointer=val;
+   MergeStreamTypeBase(fs, typdst, addr, nam, sm, false{useproc}, typsrc, cmp=1{compared});
+end;
+
+// _serial_TowerSize
+//
+procedure _serial_TowerSize(var res: Integer; var val: TTower; var nam: String; const sm, tp: Integer);
+begin
+   var typ : Pointer=AddrToPointer(tp);
+   var addr: Pointer=val;
+   res:=GetStreamSizeTypeBase(typ, addr, nam, sm, false);
+end;
+
+// _serial_TowerPost
+//
+procedure _serial_TowerPost(var val: TTower{; var nam: String; const sm: Integer});
+begin
+   if val.hnd <> 0 then
+   val.hnd := GetGameObjectHandleByUniqueId(val.hnd);
+end;
+
+// _serial_TowerSeek
+//
+procedure _serial_TowerSeek(const fs: Integer; var nam: String; const sm, tp: Integer);
+begin
+   var typ: Pointer=AddrToPointer(tp);
+   SeekStreamTypeBase(fs, typ, nam, sm, false{useproc});
+end;
+
+//
+// TEnemyInfoList
+//
+
+// _serial_EnemyInfoListWriter
+//
+procedure _serial_EnemyInfoListWriter(const fs: Integer; var val: TEnemyInfoList; var nam: String; const sm, tp: Integer);
+begin
+   var count : Integer = val.GetCount;
+   WriteInteger(fs, count);
+   var i, j : Integer;
+   for i := 0 to count-1 do
+   begin
+      var p : Pointer = val.Get(i);
+      var tCount : Integer = TEnemyInfo(p).towers.GetCount;
+      WriteInteger(fs, tCount);
+      var ptyp : Pointer = PointerOf(TTower);
+      for j := 0 to tCount-1 do
+      begin
+         var pBuf : Pointer = TEnemyInfo(p).towers.Get(j);
+         SaveStreamTypeBase(fs, ptyp, pbuf, 'towers', sm, true);
+      end;
+      
+      var pbuf : Pointer = TEnemyInfo(p).towerMap;
+      WriteBuffer(fs, pbuf, SizeOf(TEnemyInfo(p).towerMap));
+      
+      WriteInteger(fs, TEnemyInfo(p).team);
+      WriteInteger(fs, TEnemyInfo(p).enemyMask);
+      WriteBoolean(fs, TEnemyInfo(p).changed);
+      WriteBoolean(fs, TEnemyInfo(p).enabled);
+      
+      // ver = 12
+      pbuf := TEnemyInfo(p).armyInfos;
+      ptyp := PointerOf(TArmyInfoList);
+      SaveStreamTypeBase(fs, ptyp, pbuf, 'armyInfos', sm, true);
+   end;
+end;
+
+// _serial_EnemyInfoListReader
+//
+procedure _serial_EnemyInfoListReader(const fs: Integer; var val: TEnemyInfoList; var nam: String; const sm, tpd, tps, cmp: Integer);
+begin
+   val.Clear;
+   var count : Integer;
+   ReadInteger(fs, count);
+   var i, j : Integer;
+   for i := 0 to count-1 do
+   begin
+      var p : Pointer = val.Add;
+      var tCount : Integer;
+      ReadInteger(fs, tCount);
+      if tCount > 0 then
+      begin
+         var typdst: Pointer=PointerOf(TTower);
+         var typsrc: Pointer=GetTypeBaseByTypeName('TTower', true);
+         for j := 0 to tCount-1 do
+         begin
+            var pbuf : Pointer = TEnemyInfo(p).towers.Add(0);
+            MergeStreamTypeBase(fs, typdst, pbuf, 'towers', sm, true, typsrc, cmp=1);
+         end;
+      end;
+      
+      var pbuf : Pointer = TEnemyInfo(p).towerMap;
+      if gSerialVersion<53 then
+      ReadBuffer(fs, pbuf, SizeOf(Float)*80*80)
+      else
+      ReadBuffer(fs, pbuf, SizeOf(TEnemyInfo(p).towerMap));
+      
+      ReadInteger(fs, TEnemyInfo(p).team);
+      ReadInteger(fs, TEnemyInfo(p).enemyMask);
+      ReadBoolean(fs, TEnemyInfo(p).changed);
+      ReadBoolean(fs, TEnemyInfo(p).enabled);
+      
+      if gSerialVersion>=12 then
+      begin
+         var typdst: Pointer=PointerOf(TArmyInfoList);
+         var typsrc: Pointer=GetTypeBaseByTypeName('TArmyInfoList', false);
+         var pbuf : Pointer = TEnemyInfo(p).armyInfos;
+         MergeStreamTypeBase(fs, typdst, pbuf, 'armyinfos', sm, true, typsrc, cmp=1);
+      end;
+   end;
+end;
+
+// _serial_EnemyInfoListSize
+//
+procedure _serial_EnemyInfoListSize(var res: Integer; var val: TEnemyInfoList; var nam: String; const sm, tp: Integer);
+begin
+   res := SizeOf(Integer);
+   var count : Integer = val.GetCount;
+   var i, j : Integer;
+   for i := 0 to count-1 do
+   begin
+      var p : Pointer = val.Get(i);
+      res := res + SizeOf(Integer);
+      var tCount : Integer = TEnemyInfo(p).towers.GetCount;
+      if tCount > 0 then
+      begin
+         var ptyp: Pointer = PointerOf(TTower);
+         for j := 0 to tCount-1 do
+         begin
+            var pbuf: Pointer = TEnemyInfo(p).towers.Get(j);
+            res := res + GetStreamSizeTypeBase(ptyp, pbuf, 'towers', sm, true);
+         end;
+      end;
+      
+      if gSerialVersion<53 then
+      res := res + SizeOf(Float)*80*80
+      else
+      res := res + SizeOf(TEnemyInfo(p).towerMap);
+      
+      res := res + SizeOf(Integer); //TEnemyInfo(p).team
+      res := res + SizeOf(Integer); //TEnemyInfo(p).enemyMask
+      res := res + SizeOf(Boolean); //TEnemyInfo(p).changed
+      res := res + SizeOf(Boolean); //TEnemyInfo(p).enabled
+      
+      var ptyp: Pointer = PointerOf(TArmyInfoList);
+      var pbuf: Pointer = TEnemyInfo(p).armyInfos;
+      res := res + GetStreamSizeTypeBase(ptyp, pbuf, 'armyInfos', sm, true);
+   end;
+end;
+
+// _serial_EnemyInfoListSeek
+//
+procedure _serial_EnemyInfoListSeek(const fs: Integer; var nam: String; const sm, tp: Integer);
+begin
+   var i, count : Integer;
+   ReadInteger(fs, count);
+   for i := 0 to count-1 do begin
+      var n: Integer;
+      ReadInteger(fs, n);
+      if n > 0 then
+      begin
+         var j : Integer;
+         var ptyp : Pointer = GetTypeBaseByTypeName('TTower', true);
+         for j := 0 to n-1 do
+         SeekStreamTypeBase(fs, ptyp, 'towers', sm, true{useproc});
+      end;
+      
+      if gDataVersion<53 then
+      SeekBuffer(fs, SizeOf(Float)*80*80)
+      else
+      SeekBuffer(fs, SizeOf(Float)*gc_scangrid_countx*gc_scangrid_county);
+      
+      SeekInteger(fs);
+      SeekInteger(fs);
+      SeekBoolean(fs);
+      SeekBoolean(fs);
+      
+      if gSerialVersion>=12 then
+      begin
+         var ptyp : Pointer = GetTypeBaseByTypeName('TArmyInfoList', true);
+         SeekStreamTypeBase(fs, ptyp, 'armyinfos', sm, true{useproc});
+      end;
+   end;
+end;
+
+//
+// TArmyInfoList
+//
+
+// _serial_ArmyInfoListWriter
+//
+procedure _serial_ArmyInfoListWriter(const fs: Integer; var val: TArmyInfoList; var nam: String; const sm, tp: Integer);
+begin
+   WriteInteger(fs, val.GetCount);
+   var i : Integer;
+   for i := 0 to val.GetCount-1 do
+   begin
+      var p : Pointer = val.Get(i);
+      
+      WriteInteger(fs, TArmyInfo(p).infantry);
+      WriteInteger(fs, TArmyInfo(p).shooters);
+      WriteInteger(fs, TArmyInfo(p).cavalry);
+      WriteInteger(fs, TArmyInfo(p).cannons);
+      WriteInteger(fs, TArmyInfo(p).mortars);
+      WriteInteger(fs, TArmyInfo(p).towers);
+      WriteInteger(fs, TArmyInfo(p).force);
+      
+      WriteInteger(fs, TArmyInfo(p).minx);
+      WriteInteger(fs, TArmyInfo(p).maxx);
+      WriteInteger(fs, TArmyInfo(p).miny);
+      WriteInteger(fs, TArmyInfo(p).maxy);
+      
+      // ver = 13
+      WriteInteger(fs, TArmyInfo(p).mcannons);
+   end;
+end;
+
+// _serial_ArmyInfoListReader
+//
+procedure _serial_ArmyInfoListReader(const fs: Integer; var val: TArmyInfoList; var nam: String; const sm, tpd, tps, cmp: Integer);
+begin
+   val.Clear;
+   var i, c : Integer;
+   ReadInteger(fs, c);
+   for i := 0 to c-1 do
+   begin
+      var p : Pointer = val.Add;
+      
+      ReadInteger(fs, TArmyInfo(p).infantry);
+      ReadInteger(fs, TArmyInfo(p).shooters);
+      ReadInteger(fs, TArmyInfo(p).cavalry);
+      ReadInteger(fs, TArmyInfo(p).cannons);
+      ReadInteger(fs, TArmyInfo(p).mortars);
+      ReadInteger(fs, TArmyInfo(p).towers);
+      ReadInteger(fs, TArmyInfo(p).force);
+      
+      ReadInteger(fs, TArmyInfo(p).minx);
+      ReadInteger(fs, TArmyInfo(p).maxx);
+      ReadInteger(fs, TArmyInfo(p).miny);
+      ReadInteger(fs, TArmyInfo(p).maxy);
+      
+      if gSerialVersion>=13 then
+      ReadInteger(fs, TArmyInfo(p).mcannons);
+   end;
+end;
+
+// _serial_ArmyInfoListSize
+//
+procedure _serial_ArmyInfoListSize(var res: Integer; var val: TArmyInfoList; var nam: String; const sm, tp: Integer);
+begin
+   res := SizeOf(Integer);
+   var i: Integer;
+   for i := 0 to val.GetCount-1 do
+   begin
+      res := res + SizeOf(Integer); // TArmyInfo(p).infantry
+      res := res + SizeOf(Integer); // TArmyInfo(p).shooters
+      res := res + SizeOf(Integer); // TArmyInfo(p).cavalry
+      res := res + SizeOf(Integer); // TArmyInfo(p).cannons
+      res := res + SizeOf(Integer); // TArmyInfo(p).mortars
+      res := res + SizeOf(Integer); // TArmyInfo(p).towers
+      res := res + SizeOf(Integer); // TArmyInfo(p).force
+      
+      res := res + SizeOf(Integer); // TArmyInfo(p).minx
+      res := res + SizeOf(Integer); // TArmyInfo(p).maxx
+      res := res + SizeOf(Integer); // TArmyInfo(p).miny
+      res := res + SizeOf(Integer); // TArmyInfo(p).maxy
+      
+      res := res + SizeOf(Integer); // TArmyInfo(p).mcannons
+   end;
+end;
+
+// _serial_ArmyInfoListSeek
+//
+procedure _serial_ArmyInfoListSeek(const fs: Integer; var nam: String; const sm, tp: Integer);
+begin
+   var i, c : Integer;
+   ReadInteger(fs, c);
+   for i := 0 to c-1 do
+   begin
+      SeekInteger(fs); // TArmyInfo(p).infantry
+      SeekInteger(fs); // TArmyInfo(p).shooters
+      SeekInteger(fs); // TArmyInfo(p).cavalry
+      SeekInteger(fs); // TArmyInfo(p).cannons
+      SeekInteger(fs); // TArmyInfo(p).mortars
+      SeekInteger(fs); // TArmyInfo(p).towers
+      SeekInteger(fs); // TArmyInfo(p).force
+      
+      SeekInteger(fs); // TArmyInfo(p).minx
+      SeekInteger(fs); // TArmyInfo(p).maxx
+      SeekInteger(fs); // TArmyInfo(p).miny
+      SeekInteger(fs); // TArmyInfo(p).maxy
+      
+      if gSerialVersion>=13 then
+      SeekInteger(fs); // TArmyInfo(p).mcannons
+   end;
+end;
+
+//
+// TGridList
+//
+
+// _serial_GridListWriter
+//
+procedure _serial_GridListWriter(const fs: Integer; var val: TGridList);
+begin
+   WriteInteger(fs, val.owner);
+   WriteInteger(fs, val.dist);
+end;
+
+// _serial_GridListReader
+//
+procedure _serial_GridListReader(const fs: Integer; var val: TGridList);
+begin
+   if gSerialVersion>=26 then
+   begin
+      ReadInteger(fs, val.owner);
+      ReadInteger(fs, val.dist);
+   end;
+end;
+
+// _serial_GridListSize
+//
+procedure _serial_GridListSize(var res: Integer; var val: TGridList);
+begin
+   res := res + SizeOf(Integer); // val.owner
+   res := res + SizeOf(Integer); // val.dist
+end;
+
+// _serial_GridListSeek
+//
+procedure _serial_GridListSeek(const fs: Integer);
+begin
+   if gSerialVersion>=26 then
+   begin
+      SeekInteger(fs); // val.owner
+      SeekInteger(fs); // val.dist
+   end;
+end;
+
+//
+// TResGridList
+//
+
+// _serial_ResGridListWriter
+//
+procedure _serial_ResGridListWriter(const fs: Integer; var val: TResGridList);
+begin
+   // write props to stream
+   WriteInteger(fs, val.GetItemSize);
+   WriteInteger(fs, val.GetCount);
+   // handle to uniqid
+   var i: Integer;
+   for i:=0 to val.GetCount-1 do
+   val.Set(GetGameObjectUniqueIdByHandle(val.Get(i)), i);
+   // write to stream
+   if val.DataSize>0 then
+   WriteBuffer(fs, val.GetBaseList, val.DataSize);
+   // uniqid to handle
+   for i:=0 to val.GetCount-1 do
+   val.Set(GetGameObjectHandleByUniqueId(val.Get(i)), i);
+   // write fResCount array
+   var buf: Pointer=val.fResCount;
+   WriteBuffer (fs, buf, SizeOf(val.fResCount));
+   // write fWorkerCount array
+   buf:=val.fWorkerCount;
+   WriteBuffer (fs, buf, SizeOf(val.fWorkerCount));
+end;
+
+// _serial_ResGridListReader
+//
+procedure _serial_ResGridListReader(const fs: Integer; var val: TResGridList);
+begin
+   // read props from stream
+   var itemsize, count: Integer;
+   ReadInteger(fs, itemsize);
+   ReadInteger(fs, count);
+   // allocate memory
+   val.SetItemSize(itemsize);
+   val.SetCount(count);
+   var p: Pointer=val.GetBaseList;
+   // read from stream
+   if val.DataSize>0 then
+   ReadBuffer(fs, p, count*itemsize); //val.DataSize
+   // read fResCount array
+   var buf: Pointer=val.fResCount;
+   ReadBuffer (fs, buf, SizeOf(val.fResCount));
+   // read fWorkerCount array
+   buf:=val.fWorkerCount;
+   if gSerialVersion<53 then
+   ReadBuffer (fs, buf, SizeOf(Integer)*8*gc_ResCount)
+   else
+   if gSerialVersion<89 then
+   ReadBuffer (fs, buf, SizeOf(Integer)*(gc_MaxNonSpectatorsCount+1)*gc_ResCount)
+   else
+   ReadBuffer (fs, buf, SizeOf(val.fWorkerCount));
+end;
+
+// _serial_ResGridListSize
+//
+procedure _serial_ResGridListSize(var res: Integer; var val: TResGridList);
+begin
+   if gSerialVersion<53 then
+   res:=val.DataSize+SizeOf(Integer)*2+SizeOf(val.fResCount)+SizeOf(Integer)*8*gc_ResCount
+   else
+   if (gSerialVersion<89) then
+   res:=val.DataSize+SizeOf(Integer)*2+SizeOf(val.fResCount)+SizeOf(Integer)*(gc_MaxNonSpectatorsCount+1)*gc_ResCount // TODO check 16.05.18 strange value
+   else
+   res:=val.DataSize+SizeOf(Integer)*2+SizeOf(val.fResCount)+SizeOf(val.fWorkerCount);
+end;
+
+// _serial_ResGridListPost
+//
+procedure _serial_ResGridListPost(var val: TResGridList);
+begin
+   // uniqid to handle
+   var i: Integer;
+   for i:=0 to val.GetCount-1 do
+   val.Set(GetGameObjectHandleByUniqueId(val.Get(i)), i);
+end;
+
+// _serial_ResGridListSeek
+//
+procedure _serial_ResGridListSeek(const fs: Integer);
+begin
+   // read props from stream
+   var itemsize, count: Integer;
+   ReadInteger(fs, itemsize);
+   ReadInteger(fs, count);
+   // stream seek
+   if itemsize*count>0 then
+   SeekBuffer(fs, itemsize*count);
+   // seek fResCount array
+   SeekBuffer (fs, SizeOf(Integer)*gc_ResCount);
+   // seek fWorkerCount array
+   if gSerialVersion<53 then
+   SeekBuffer (fs, SizeOf(Integer)*8*gc_ResCount)
+   else
+   if gSerialVersion<89 then
+   SeekBuffer (fs, SizeOf(Integer)*(gc_MaxNonSpectatorsCount+1)*gc_ResCount)
+   else
+   SeekBuffer (fs, SizeOf(Integer)*gc_MaxPlayerCount*gc_ResCount);
+end;
+
+//
+// TInterface
+//
+
+// _serial_InterfaceWriter
+//
+procedure _serial_InterfaceWriter(const fs: Integer; var val: TInterface);
+begin
+   WriteInteger(fs, val.gamemode);
+end;
+
+// _serial_InterfaceReader
+//
+procedure _serial_InterfaceReader(const fs: Integer; var val: TInterface);
+begin
+   ReadInteger(fs, val.gamemode);
+end;
+
+// _serial_InterfaceSize
+//
+procedure _serial_InterfaceSize(var res: Integer; var val: TInterface);
+begin
+   res:=SizeOf(val.gamemode);
+end;
+
+// _serial_InterfacePost
+//
+procedure _serial_InterfacePost(var val: TInterface);
+begin
+end;
+
+// _serial_InterfaceSeek
+//
+procedure _serial_InterfaceSeek(const fs: Integer);
+begin
+   SeekBuffer(fs, SizeOf(Integer));
+end;
+
+//
+// TWallSystem
+//
+
+// _serial_WallSystemWriter
+//
+procedure _serial_WallSystemWriter(const fs: Integer; var val: TWallSystem; var nam: String; const sm, tp: Integer);
+begin
+   var count : Integer = val.GetCount;
+   WriteInteger(fs, count);
+   var i, j : Integer;
+   for i := 0 to count-1 do
+   begin
+      var pbuf : Pointer = val.Get(i);
+      var ptyp : Pointer = PointerOf(TWallCluster);
+      SaveStreamTypeBase(fs, ptyp, pbuf, 'flist', sm, true);
+   end;
+end;
+
+// _serial_WallSystemReader
+//
+procedure _serial_WallSystemReader(const fs: Integer; var val: TWallSystem; var nam: String; const sm, tpd, tps, cmp: Integer);
+begin
+   if gSerialVersion>=28 then
+   begin
+      val.Clear;
+      var count : Integer;
+      ReadInteger(fs, count);
+      var i, j : Integer;
+      for i := 0 to count-1 do
+      begin
+         var pbuf : Pointer = val.Add;
+         var typdst: Pointer = PointerOf(TWallCluster);
+         var typsrc: Pointer = GetTypeBaseByTypeName('TWallCluster', true);
+         MergeStreamTypeBase(fs, typdst, pbuf, 'flist', sm, true{useproc}, typsrc, cmp=1{compared});
+      end;
+   end;
+end;
+
+// _serial_WallSystemSize
+//
+procedure _serial_WallSystemSize(var res: Integer; var val: TWallSystem; var nam: String; const sm, tp: Integer);
+begin
+   res := SizeOf(Integer);
+   var count : Integer = val.GetCount;
+   var i, j : Integer;
+   for i := 0 to count-1 do
+   begin
+      var pbuf : Pointer = val.Get(i);
+      var ptyp: Pointer = PointerOf(TTower);
+      res := res + GetStreamSizeTypeBase(ptyp, pbuf, 'flist', sm, true);
+   end;
+end;
+
+// _serial_WallSystemSeek
+//
+procedure _serial_WallSystemSeek(const fs: Integer; var nam: String; const sm, tp: Integer);
+begin
+   if gSerialVersion>=28 then
+   begin
+      var i, count : Integer;
+      ReadInteger(fs, count);
+      for i := 0 to count-1 do
+      begin
+         var ptyp : Pointer = GetTypeBaseByTypeName('TWallCluster', true);
+         SeekStreamTypeBase(fs, ptyp, 'flist', sm, true{useproc});
+      end;
+   end;
+end;
+
+//
+// TWallCluster
+//
+
+// _serial_WallClusterWriter
+//
+procedure _serial_WallClusterWriter(const fs: Integer; var val: TWallCluster; var nam: String; const sm, tp: Integer);
+begin
+   WriteInteger(fs, val.wallType);
+   
+   var pbuf : Pointer = val.cornPt;
+   var ptyp : Pointer = PointerOf(TIntegerList);
+   SaveStreamTypeBase(fs, ptyp, pbuf, 'cornPt', sm, true);
+   
+   var count : Integer = val.cells.GetCount;
+   WriteInteger(fs, count);
+   var i : Integer;
+   for i := 0 to count-1 do
+   begin
+      var pbuf : Pointer = val.cells.GetPointer(i);
+      var ptyp : Pointer = PointerOf(TWallCell);
+      SaveStreamTypeBase(fs, ptyp, pbuf, 'cells', sm, true);
+   end;
+   
+   WriteInteger(fs, val.lastX);
+   WriteInteger(fs, val.lastY);
+   WriteInteger(fs, val.finalX);
+   WriteInteger(fs, val.finalY);
+   WriteInteger(fs, val.plIndex);
+   WriteInteger(fs, val.cid);
+   WriteBoolean(fs, val.firstWall);
+   WriteBoolean(fs, val.buildWall);
+end;
+
+// _serial_WallClusterReader
+//
+procedure _serial_WallClusterReader(const fs: Integer; var val: TWallCluster; var nam: String; const sm, tpd, tps, cmp: Integer);
+begin
+   ReadInteger(fs, val.wallType);
+   
+   var typdst : Pointer = PointerOf(TIntegerList);
+   var typsrc : Pointer = GetTypeBaseByTypeName('TIntegerList', true);
+   var pbuf : Pointer = val.cornPt;
+   MergeStreamTypeBase(fs, typdst, pbuf, 'cornPt', sm, true{useproc}, typsrc, cmp=1{compared});
+   
+   val.cells.Clear;
+   var i, count : Integer;
+   ReadInteger(fs, count);
+   for i := 0 to count-1 do
+   begin
+      var typdst : Pointer = PointerOf(TWallCell);
+      var typsrc : Pointer = GetTypeBaseByTypeName('TWallCell', true);
+      var pbuf : Pointer = val.AddCell;
+      MergeStreamTypeBase(fs, typdst, pbuf, 'cells', sm, true{useproc}, typsrc, cmp=1{compared});
+   end;
+   
+   ReadInteger(fs, val.lastX);
+   ReadInteger(fs, val.lastY);
+   ReadInteger(fs, val.finalX);
+   ReadInteger(fs, val.finalY);
+   ReadInteger(fs, val.plIndex);
+   ReadInteger(fs, val.cid);
+   ReadBoolean(fs, val.firstWall);
+   ReadBoolean(fs, val.buildWall);
+end;
+
+// _serial_WallClusterSize
+//
+procedure _serial_WallClusterSize(var res: Integer; var val: TWallCluster; var nam: String; const sm, tp: Integer);
+begin
+   res := SizeOf(Integer); // val.wallType
+   
+   var ptyp : Pointer = PointerOf(TIntegerList);
+   var pBuf : Pointer = val.cornPt;
+   res := res + GetStreamSizeTypeBase(ptyp, pbuf, 'cornPt', sm, true);
+   
+   res := res + SizeOf(Integer); // val.cells.GetCount
+   var count : Integer = val.cells.GetCount;
+   ptyp := PointerOf(TWallCell);
+   var i : Integer;
+   for i := 0 to count-1 do begin
+      pbuf := val.cells.GetPointer(i);
+      res := res + GetStreamSizeTypeBase(ptyp, pbuf, 'cells', sm, true);
+   end;
+   
+   res := res + SizeOf(Integer); // val.lastX
+   res := res + SizeOf(Integer); // val.lastY
+   res := res + SizeOf(Integer); // val.finalX
+   res := res + SizeOf(Integer); // val.finalY
+   res := res + SizeOf(Integer); // val.plIndex
+   res := res + SizeOf(Integer); // val.cid
+   res := res + SizeOf(Boolean); // val.firstWall
+   res := res + SizeOf(Boolean); // val.buildWall
+end;
+
+// _serial_WallClusterSeek
+//
+procedure _serial_WallClusterSeek(const fs: Integer; var nam: String; const sm, tp: Integer);
+begin
+   SeekInteger(fs); // val.wallType
+   
+   var ptyp : Pointer = GetTypeBaseByTypeName('TIntegerList', true);
+   SeekStreamTypeBase(fs, ptyp, 'cornPt', sm, true);
+   
+   var i, count : Integer;
+   ptyp := GetTypeBaseByTypeName('TWallCell', true);
+   ReadInteger(fs, count);
+   for i := 0 to count-1 do
+   SeekStreamTypeBase(fs, ptyp, 'cells', sm, true{useproc});
+   
+   SeekInteger(fs); // val.lastX
+   SeekInteger(fs); // val.lastY
+   SeekInteger(fs); // val.finalX
+   SeekInteger(fs); // val.finalY
+   SeekInteger(fs); // val.plIndex
+   SeekInteger(fs); // val.cid
+   SeekBoolean(fs); // val.firstWall
+   SeekBoolean(fs); // val.buildWall
+end;
+
+//
+// TWallCell
+//
+
+// _serial_WallCellWriter
+//
+procedure _serial_WallCellWriter(const fs: Integer; var val: TWallCell; var nam: String; const sm, tp: Integer);
+begin
+   WriteInteger(fs, val.fSprite);
+   WriteInteger(fs, val.x);
+   WriteInteger(fs, val.y);
+   WriteInteger(fs, val.wallType);
+   WriteInteger(fs, val.cid);
+   WriteBoolean(fs, val.visible);
+   WriteInteger(fs, GetGameObjectUniqueIdByHandle(val.goHnd));
+   WriteInteger(fs, val.plInd);
+end;
+
+// _serial_WallCellReader
+//
+procedure _serial_WallCellReader(const fs: Integer; var val: TWallCell; var nam: String; const sm, tpd, tps, cmp: Integer);
+begin
+   ReadInteger(fs, val.fSprite);
+   ReadInteger(fs, val.x);
+   ReadInteger(fs, val.y);
+   ReadInteger(fs, val.wallType);
+   ReadInteger(fs, val.cid);
+   ReadBoolean(fs, val.visible);
+   ReadInteger(fs, val.goHnd);
+   ReadInteger(fs, val.plInd);
+end;
+
+// _serial_WallCellSize
+//
+procedure _serial_WallCellSize(var res: Integer; var val: TWallCell; var nam: String; const sm, tp: Integer);
+begin
+   res := res + SizeOf(Integer); // val.fSprite
+   res := res + SizeOf(Integer); // val.x
+   res := res + SizeOf(Integer); // val.y
+   res := res + SizeOf(Integer); // val.wallType
+   res := res + SizeOf(Integer); // val.cid
+   res := res + SizeOf(Boolean); // val.visible
+   res := res + SizeOf(Integer); // val.goHnd
+   res := res + SizeOf(Integer); // val.plInd
+end;
+
+// _serial_WallCellPost
+//
+procedure _serial_WallCellPost(var val: TWallCell);
+begin
+   val.goHnd := GetGameObjectHandleByUniqueId(val.goHnd);
+end;
+
+// _serial_WallCellSeek
+//
+procedure _serial_WallCellSeek(const fs: Integer; var nam: String; const sm, tp: Integer);
+begin
+   SeekInteger(fs); // val.fSprite
+   SeekInteger(fs); // val.lastY
+   SeekInteger(fs); // val.finalX
+   SeekInteger(fs); // val.finalY
+   SeekInteger(fs); // val.plIndex
+   SeekInteger(fs); // val.cid
+   SeekBoolean(fs); // val.firstWall
+   SeekBoolean(fs); // val.buildWall
+end;

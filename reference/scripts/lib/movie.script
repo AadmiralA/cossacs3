@@ -1,0 +1,1183 @@
+const gc_movie_maxactions = 128;
+const gc_movie_maxlists = 48;
+const gc_movie_maxunits = 128;
+const gc_movie_maxsquads = 40;
+const gc_movie_camera_save = '@save';
+const gc_movie_gui_blackscreen = 'blackscreen';
+const gc_movie_stage_none = 0;
+const gc_movie_stage_startfadeinstart = 1;
+const gc_movie_stage_startfadefreeze = 2;
+const gc_movie_stage_startfadeoutstart = 3;
+const gc_movie_stage_startfadeoutstop = 4;
+const gc_movie_stage_finishfadeinstart = 5;
+const gc_movie_stage_finishfadefreeze = 6;
+const gc_movie_stage_finishfadeoutstart = 7;
+const gc_movie_stage_finishfadeoutstop = 8;
+
+type TMovieRestore = class
+   bfxaa : Boolean;
+   bssao : Boolean;
+   bculling : Boolean;
+   bbrush : Boolean;
+   bminimap : Boolean;
+   shadowsize : Integer;
+   lightdepth : Float;
+   timespeedfactor : Float;
+end;
+
+type TMovieAction = class
+   //starttime : Float;
+   bstarted : Boolean;
+end;
+
+type TMovieSquad = class
+   bexists : Boolean;
+   pl : Integer;
+   uid : Integer;
+end;
+
+type TMovieList = class
+   bexists : Boolean;
+   name : String;
+   unitslist : TIntegerList;
+end;
+
+type TMovie = class
+   bstarted : Boolean;
+   blockunits : Boolean;
+   bcapture : Boolean;
+   brestorecamera : Boolean;
+   startedtime : Float;
+   curtime : Float;
+   maxtime : Float;
+   addstarttime : Float;
+   addfinishtime : Float;
+   curname : String;
+   curaction : Integer;
+   timespeedfactor : Float;
+   fadetime : Float;
+   freezetime : Float;
+   stage : Integer;
+   actions : array [0..gc_movie_maxactions-1] of TMovieAction;
+   lists : array [0..gc_movie_maxlists-1] of TMovieList;
+   squads : array [0..gc_movie_maxsquads-1] of TMovieSquad;
+   restore : TMovieRestore;
+   bbrush : Boolean;
+end;
+
+global gMovie : TMovie;
+global gMovieIntegerList : TIntegerList;
+
+procedure _movie_SaveCamera(name : String);
+begin
+   var sname : String;
+   if (name='') then
+   sname := gc_movie_camera_save
+   else
+   sname := name;
+   
+   if (not GetCameraExist(sname)) then
+   AddCameraInfo(sname);
+   CameraInfoSaveFromCurrentView(sname);
+end;
+procedure _movie_LoadCamera(name : String);
+begin
+   var sname : String;
+   if (name='') then
+   sname := gc_movie_camera_save
+   else
+   sname := name;
+   if (GetCameraExist(sname)) then
+   begin
+      SetCameraInfoSmoothingChange(False);
+      CameraInfoLoadToCurrentView(sname);
+   end;
+end;
+procedure _movie_MoveCamera(fromCamera, toCamera : String; time : Float);
+begin
+   SetCameraMarkObjectByHandle(0);
+   SetCameraMoveToMarkObject(False);
+   if (fromCamera<>'') then
+   begin
+      SetCameraInfoSmoothingChange(False);
+      CameraInfoLoadToCurrentView(fromCamera);
+   end;
+   if (toCamera<>'') then
+   begin
+      if (time>0) then
+      begin
+         var maxtime : Float = gMovie.curtime+time+gMovie.freezetime+gMovie.fadetime*2;
+         if (maxtime>gMovie.maxtime) then
+         gMovie.maxtime := maxtime;
+      end;
+      SetCameraInfoSmoothingChange(time>0);
+      SetCameraInfoSmoothingTime(time*1000*(10/gMovie.timespeedfactor));
+      CameraInfoLoadToCurrentView(toCamera);
+   end;
+end;
+
+// _movie_StopMovie
+//
+procedure _movie_StopMovie(brestore, breset : Boolean);
+begin
+   EditorStopCapture;
+   if (brestore) then
+   begin
+      if (gMovie.bcapture) then
+      begin
+         SetObjectBasedVisibilityCulling(gMovie.restore.bculling);
+         SetVisibilityCulling(gMovie.restore.bculling);
+         SetShadowMapLightDepth(gMovie.restore.lightdepth);
+         SetShadowMapSize(gMovie.restore.shadowsize);
+         SetSSAOEnable(gMovie.restore.bssao);
+         SetFXAAEnable(gMovie.restore.bfxaa);
+      end;
+      if (gMovie.restore.timespeedfactor>0) then
+      SetTimeSpeedFactor(gMovie.restore.timespeedfactor);
+      
+      // hide/unhide brushes
+      var size, dirx, diry, dirz: Float; var texs: Integer; var scaling, visible: Boolean;
+      GetHighlightRenderSettings(size, dirx, diry, dirz, texs, scaling, visible);
+      if (visible<>gMovie.restore.bbrush) then
+      SetHighlightRenderSettings(size, dirx, diry, dirz, texs, scaling, gMovie.restore.bbrush);
+   end;
+   if (breset) then
+   begin
+      gMovie.bstarted := False;
+      gMovie.startedtime := 0;
+      gMovie.curtime := 0;
+      gMovie.maxtime := 0;
+      gMovie.addstarttime := 0;
+      gMovie.addfinishtime := 0;
+      gMovie.curname := '';
+      gMovie.curaction := 0;
+      gMovie.bcapture := False;
+      gMovie.stage := gc_movie_stage_none;
+      var i : Integer;
+      for i:=0 to gc_movie_maxactions-1 do
+      gMovie.actions[i].bstarted := False;
+   end;
+end;
+
+procedure _movie_FadeBlackScreen(fadetime, freezetime : Float);
+begin
+   var blackscreen : Integer = GetGUIElementIndexByNameParent(gc_movie_gui_blackscreen, _gui_GetTop);
+   if (blackscreen=0) then
+   blackscreen := _gui_CreateImageActive(gc_movie_gui_blackscreen, 0, gc_gui_material_black, gc_halLeft, gc_valTop, 0, 0, GetViewerWidth, GetViewerHeight, 0, '', '', True);
+   GUIElementBringToFront(blackscreen);
+   _gui_FadeElementExt(blackscreen, fadetime, fadetime, True, True);
+end;
+
+// _movie_ProcessMovie
+//
+procedure _movie_ProcessMovie();
+begin
+   if (gMovie.bstarted) then
+   begin
+      gMovie.curaction := 0;
+      gMovie.curtime := GetGameTime-gMovie.startedtime;
+      if (gMovie.stage=gc_movie_stage_startfadeinstart) and (gMovie.curtime>-gMovie.fadetime) then
+      begin
+         //Log('process : gc_movie_stage_startfadefreeze');
+         gMovie.stage := gc_movie_stage_startfadefreeze;
+         if (gMovie.bcapture) then
+         begin
+            gMovie.restore.bculling := GetObjectBasedVisibilityCulling;
+            gMovie.restore.bculling := GetVisibilityCulling;
+            gMovie.restore.lightdepth := GetShadowMapLightDepth;
+            gMovie.restore.shadowsize := GetShadowMapSize;
+            gMovie.restore.bfxaa := GetFXAAEnable;
+            gMovie.restore.bssao := GetSSAOEnable;
+            
+            SetObjectBasedVisibilityCulling(False);
+            SetVisibilityCulling(False);
+            SetShadowMapLightDepth(300);
+            SetShadowMapSize(4096);
+            SetSSAOEnable(True);
+            SetFXAAEnable(True);
+            EditorStartCapture;
+         end;
+         
+         var size, dirx, diry, dirz: Float; var texs: Integer; var scaling, visible: Boolean;
+         GetHighlightRenderSettings(size, dirx, diry, dirz, texs, scaling, visible);
+         gMovie.restore.bbrush := visible;
+         if (visible<>gMovie.bbrush) then
+         SetHighlightRenderSettings(size, dirx, diry, dirz, texs, scaling, gMovie.bbrush);
+      end
+      else
+      if (gMovie.stage=gc_movie_stage_finishfadeoutstart) and (gMovie.stage<gc_movie_stage_finishfadeoutstop) and (gMovie.curtime>(gMovie.maxtime+gMovie.addfinishtime)) then
+      begin
+         //Log('process : gc_movie_stage_finishfadeoutstop');
+         gMovie.stage := gc_movie_stage_finishfadeoutstop;
+         _misc_SetMinimapVisible(gMovie.restore.bminimap);
+         if (gMovie.brestorecamera) and (GetCameraExist(gc_movie_camera_save)) then
+         _movie_LoadCamera(gc_movie_camera_save);
+         _movie_StopMovie(True, True);
+         Log('--- MOVIE STOP ---');
+      end
+      else
+      begin
+         if (gMovie.stage=gc_movie_stage_finishfadeinstart) and (gMovie.curtime>(gMovie.maxtime+gMovie.addfinishtime-gMovie.fadetime)) then
+         begin
+            //Log('process : gc_movie_stage_finishfadefreeze');
+            gMovie.stage := gc_movie_stage_finishfadefreeze;
+            
+            var smHnd : Integer = GetTriggerManagerStateMachineHandle('trigger0');
+            if (smHnd<>0) then
+            StateMachineExecuteState(smHnd, gMovie.curname, 0);
+            
+            //Log('process : gc_movie_stage_finishfadeoutstart');
+            gMovie.stage := gc_movie_stage_finishfadeoutstart;
+            
+            if (gMovie.brestorecamera) and (GetCameraExist(gc_movie_camera_save)) then
+            _movie_LoadCamera(gc_movie_camera_save);
+            _movie_StopMovie(True, False);
+         end
+         else
+         begin
+            var smHnd : Integer = GetTriggerManagerStateMachineHandle('trigger0');
+            if (smHnd<>0) then
+            StateMachineExecuteState(smHnd, gMovie.curname, 0);
+            if (gMovie.stage<gc_movie_stage_finishfadeinstart) and (gMovie.curtime>(gMovie.maxtime+gMovie.addfinishtime-gMovie.fadetime*2-gMovie.freezetime)) then
+            begin
+               //Log('process : gc_movie_stage_finishfadeinstart');
+               gMovie.stage := gc_movie_stage_finishfadeinstart;
+               _movie_FadeBlackScreen(gMovie.fadetime*(10/gMovie.timespeedfactor), gMovie.freezetime*(10/gMovie.timespeedfactor));
+               //_movie_FadeBlackScreen(gMovie.fadetime, gMovie.freezetime);
+            end;
+         end;
+      end;
+   end;
+end;
+
+// _movie_StartMovie
+//
+procedure _movie_StartMovie(const name : String; timespeedfactor, addstarttime, addfinishtime : Float; bbrush, brestorecamera, baddfade, bcapture : Boolean);
+begin
+   _movie_SaveCamera(gc_movie_camera_save);
+   gMovie.brestorecamera := brestorecamera;
+   
+   // check sm exists
+   var smHnd : Integer = GetTriggerManagerStateMachineHandle('trigger0');
+   if (smHnd<>0) then
+   begin
+      const cMinAddFinishTime = 0.25;
+      
+      // init
+      _movie_StopMovie((gMovie.bstarted), True);
+      gMovie.bstarted := True;
+      
+      gMovie.timespeedfactor := MaxFloat(5, _misc_SwitchFloat(GetTimeSpeedFactor, timespeedfactor, (timespeedfactor>0)));
+      SetTimeSpeedFactor(gMovie.timespeedfactor);
+      if (baddfade) then
+      begin
+         gMovie.fadetime := 1;
+         gMovie.freezetime := 1;
+         gMovie.stage := gc_movie_stage_startfadeinstart;
+         //Log('gMovie.stage = '+IntToStr(gMovie.stage));
+         _movie_FadeBlackScreen(gMovie.fadetime*(10/gMovie.timespeedfactor), gMovie.freezetime*(10/gMovie.timespeedfactor));
+      end
+      else
+      begin
+         gMovie.fadetime := 0;
+         gMovie.freezetime := 0;
+      end;
+      
+      gMovie.startedtime := GetGameTime+gMovie.fadetime*2+gMovie.freezetime;
+      gMovie.bbrush := bbrush;
+      
+      // setup
+      gMovie.curname := name;
+      gMovie.addstarttime := addstarttime;
+      gMovie.addfinishtime := MaxFloat(cMinAddFinishTime, addfinishtime);
+      gMovie.bcapture := bcapture;
+      
+      gMovie.restore.timespeedfactor := GetTimeSpeedFactor;
+      gMovie.restore.bminimap := GetGUIMiniMapVisible;
+      
+      if (gMovie.timespeedfactor=0) then
+      gMovie.timespeedfactor := GetTimeSpeedFactor;
+      
+      _misc_SetMinimapVisible(False);
+      EditorStopCapture;
+      gMovie.stage := gc_movie_stage_startfadeinstart;
+      
+      _movie_ProcessMovie;
+      Log('--- MOVIE START ---');
+   end;
+end;
+
+// _movie_AddSquad
+//
+function _movie_AddSquad(const pl, uid : Integer) : Integer;
+begin
+   Result := -1;
+   var i : Integer;
+   for i:=0 to gc_movie_maxsquads-1 do
+   begin
+      if (gMovie.squads[i].bexists) and (gMovie.squads[i].pl=pl) and (gMovie.squads[i].uid=uid) then
+      begin
+         Result := i;
+         break;
+      end;
+   end;
+   if (Result=-1) then
+   for i:=0 to gc_movie_maxsquads-1 do
+   begin
+      if (not gMovie.squads[i].bexists) then
+      begin
+         gMovie.squads[i].bexists := True;
+         gMovie.squads[i].pl := pl;
+         gMovie.squads[i].uid := uid;
+         Result := i;
+         break;
+      end;
+   end;
+   if (Result=-1) then
+   begin
+      Result := gc_movie_maxsquads-1;
+      ErrorLog('_movie_AddSquad : squad index out of range');
+   end;
+end;
+
+// _movie_GetList
+//
+function _movie_GetList(name : String) : Integer;
+begin
+   Result := -1;
+   var i : Integer;
+   for i:=0 to gc_movie_maxlists-1 do
+   begin
+      if (gMovie.lists[i].bexists) and (gMovie.lists[i].name=name) then
+      begin
+         Result := i;
+         if (gMovie.lists[i].unitslist.GetCount<=0) then
+         ErrorLog('_movie_GetList name = '+name+' empty list');
+         break;
+      end;
+   end;
+   if (Result=-1) then
+   begin
+      Result := gc_movie_maxlists-1;
+      ErrorLog('_movie_GetList : name = '+name+' list not found');
+   end;
+end;
+
+// _movie_ConvertIntegerListHandleToUID
+//
+procedure _movie_ConvertIntegerListHandleToUID(var list : TIntegerList);
+begin
+   var i : Integer;
+   for i:=0 to list.GetCount-1 do
+   list.Set(GetGameObjectUniqueIdByHandle(list.Get(i)), i);
+end;
+
+// _movie_ConvertIntegerListUIDToHandle
+//
+procedure _movie_ConvertIntegerListUIDToHandle(var list : TIntegerList);
+begin
+   var i : Integer;
+   for i:=0 to list.GetCount-1 do
+   list.Set(GetGameObjectHandleByUniqueId(list.Get(i)), i);
+end;
+
+// _movie_AddList
+//
+function _movie_AddList(name : String; var list : TIntegerList) : Integer;
+begin
+   Result := _movie_GetList(name);
+   if Result=gc_movie_maxlists-1 then
+   begin
+      var i : Integer;
+      for i:=0 to gc_movie_maxlists-1 do
+      begin
+         if (not gMovie.lists[i].bexists) then
+         begin
+            Result := i;
+            break;
+         end;
+      end;
+   end;
+   if Result<gc_movie_maxlists-1 then
+   begin
+      gMovie.lists[Result].bexists := True;
+      gMovie.lists[Result].name := name;
+      gMovie.lists[Result].unitslist := list;
+   end
+   else
+   ErrorLog('_movie_AddList : list index out of range');
+end;
+
+// _movie_Phase
+//
+function _movie_Phase(time : Float) : Boolean;
+begin
+   var phasetime : Float = time+gMovie.addstarttime;
+   if (phasetime+gMovie.freezetime+gMovie.fadetime*2)>(gMovie.maxtime) then
+   gMovie.maxtime := phasetime+gMovie.freezetime+gMovie.fadetime*2;
+   Result := (gMovie.curaction<gc_movie_maxactions) and (not gMovie.actions[gMovie.curaction].bstarted) and (gMovie.curtime>phasetime);
+   if (Result) then
+   begin
+      gMovie.actions[gMovie.curaction].bstarted := True;
+      Log('Phase : '+FloatToStr(time));
+   end;
+   gMovie.curaction := gMovie.curaction+1;
+end;
+
+// _movie_PhaseZero
+//
+function _movie_PhaseZero() : Boolean;
+begin
+   var time : Float = -gMovie.freezetime-gMovie.addstarttime;
+   var phasetime : Float = time+gMovie.addstarttime;
+   Result := (gMovie.curaction<gc_movie_maxactions) and (not gMovie.actions[gMovie.curaction].bstarted) and (gMovie.curtime>phasetime);
+   if (Result) then
+   begin
+      gMovie.actions[gMovie.curaction].bstarted := True;
+      Log('PhaseZero');
+   end;
+   gMovie.curaction := gMovie.curaction+1;
+end;
+
+// _movie_PhaseBeforeEndFade
+//
+function _movie_PhaseBeforeEndFade() : Boolean;
+begin
+   var phasetime : Float = gMovie.maxtime-gMovie.freezetime-gMovie.fadetime*2;
+   Result := (gMovie.curaction<gc_movie_maxactions) and (not gMovie.actions[gMovie.curaction].bstarted) and (gMovie.curtime>phasetime);
+   if (Result) then
+   begin
+      gMovie.actions[gMovie.curaction].bstarted := True;
+      Log('PhaseBeforeEndFade');
+   end;
+   gMovie.curaction := gMovie.curaction+1;
+end;
+
+// _movie_PhaseEnd
+//
+function _movie_PhaseEnd() : Boolean;
+begin
+   Result := (gMovie.stage=gc_movie_stage_finishfadefreeze);
+   if (Result) then
+   begin
+      gMovie.actions[gMovie.curaction].bstarted := True;
+      Log('PhaseEnd');
+   end;
+   gMovie.curaction := gMovie.curaction+1;
+end;
+
+// _movie_SaveGroupsPositionToFile
+//
+procedure _movie_SaveGroupsPositionToFile(const filename : String);
+begin
+   var pParser : Integer = _parser_ParserTemporary(true);
+   ParserSetIntValueByKeyByHandle(pParser, 'version', 2);
+   var pplayers : Integer = ParserAddChildByIndex(pParser, 'Players');
+   var pobj : Pointer;
+   var goHnd, goUID : Integer;
+   var pl, i, j : Integer;
+   for pl:=0 to gc_MaxPlayerCount-1 do
+   begin
+      var pplayer, pgroups : Integer;
+      for i:=0 to 9 do
+      if (gCtrlGroups[pl][i].GetCount>0) then
+      begin
+         pplayer := ParserAddChildByIndex(pplayers, '*');
+         ParserSetIntValueByKeyByHandle(pplayer, 'player', pl);
+         pgroups := ParserAddChildByIndex(pplayer, 'Groups');
+         break;
+      end;
+      if (pplayer<>0) then
+      for i:=0 to 9 do
+      begin
+         if (gCtrlGroups[pl][i].GetCount>0) then
+         begin
+            var pgroup : Integer = ParserAddChildByIndex(pgroups, '*');
+            ParserSetIntValueByKeyByHandle(pgroup, 'index', i);
+            var punits : Integer = ParserAddChildByIndex(pgroup, 'units');
+            for j:=gCtrlGroups[pl][i].GetCount-1 downto 0 do
+            begin
+               goHnd := gCtrlGroups[pl][i].Get(j);
+               goUID := GetGameObjectUniqueIdByHandle(goHnd);
+               if (goUID<>0) then
+               begin
+                  var punit : Integer = ParserAddChildByIndex(punits, '*');
+                  ParserSetIntValueByKeyByHandle(punit, 'uid', goUID);
+                  
+                  var upx, upy, upz, dirx, diry, dirz : Float;
+                  GetGameObjectOrientationByHandle(goHnd, upx, upy, upz, dirx, diry, dirz);
+                  ParserSetFloatValueByKeyByHandle(punit, 'posx', GetGameObjectPositionXByHandle(goHnd));
+                  ParserSetFloatValueByKeyByHandle(punit, 'posz', GetGameObjectPositionZByHandle(goHnd));
+                  ParserSetFloatValueByKeyByHandle(punit, 'upx', upx);
+                  ParserSetFloatValueByKeyByHandle(punit, 'upy', upy);
+                  ParserSetFloatValueByKeyByHandle(punit, 'upz', upz);
+                  ParserSetFloatValueByKeyByHandle(punit, 'dirx', dirx);
+                  ParserSetFloatValueByKeyByHandle(punit, 'diry', diry);
+                  ParserSetFloatValueByKeyByHandle(punit, 'dirz', dirz);
+               end;
+            end;
+         end;
+      end;
+   end;
+   ParserSaveToFileByHandle(pParser, '.\movies\'+filename);
+end;
+
+// _movie_LoadGroupsPositionFromFile
+//
+procedure _movie_LoadGroupsPositionFromFile(const filename : String);
+begin
+   var sfilename : String = '.\movies\'+filename;
+   if (IsFileExists(sfilename)) then
+   begin
+      var pParser : Integer = _parser_ParserTemporary(true);
+      ParserLoadFromFileByHandle(pParser, sfilename);
+      var version : Integer = ParserGetIntValueByKeyByHandle(pParser, 'version');
+      var pobj : Pointer;
+      var goHnd, goUID : Integer;
+      var pl, i, j : Integer;
+      if (version=2) then
+      begin
+         var pPlayers : Integer = ParserSelectByHandleByKey(pParser, 'Players');
+         var k : Integer;
+         for k:=0 to ParserGetCountByHandle(pPlayers)-1 do
+         begin
+            var pPlayer : Integer = ParserSelectByHandleByIndex(pPlayers, k);
+            var pGroups : Integer = ParserSelectByHandleByKey(pPlayer, 'Groups');
+            var pl : Integer = ParserGetIntValueByKeyByHandle(pplayer, 'player');
+            for i:=0 to ParserGetCountByHandle(pGroups)-1 do
+            begin
+               var pgroup : Integer = ParserSelectByHandleByIndex(pGroups, i);
+               if (ParserGetCountByHandle(pgroup)>0) then
+               begin
+                  var index : Integer = ParserGetIntValueByKeyByHandle(pgroup, 'index');
+                  var punits : Integer = ParserSelectByHandleByKey(pgroup, 'units');
+                  for j:=ParserGetCountByHandle(punits)-1 downto 0 do
+                  begin
+                     var punit : Integer = ParserSelectByHandleByIndex(punits, j);
+                     goUID := ParserGetIntValueByKeyByHandle(punit, 'uid');
+                     goHnd := GetGameObjectHandleByUniqueId(goUID);
+                     if (goHnd<>0) then
+                     begin
+                        //SetGameObjectAnimationCyclesModeByHandle(goHnd, 'acmPlayOnce');
+                        //SetGameObjectAnimationModeByHandle(goHnd, 'aamPlayOnce');
+                        var pobj : Pointer = _unit_GetTObj(goHnd);
+                        if (pobj<>nil) and (TObj(pobj).hp<gPlayer[TObj(pobj).pl].objbase[TObj(pobj).cid][TObj(pobj).id].maxhp) then
+                        TObj(pobj).hp := gPlayer[TObj(pobj).pl].objbase[TObj(pobj).cid][TObj(pobj).id].maxhp;
+                        if (pobj<>nil) then
+                        begin
+                           var effhnd : Integer = GetEffectByKey(goHnd, 'death');
+                           if effhnd<>0 then
+                           EffectClear(goHnd);
+                           var chind : Integer;
+                           for chind:=0 to GetGameObjectCountChildByHandle(goHnd)-1 do
+                           begin
+                              var child : Integer =  GetGameObjectGOHandleChildByHandle(goHnd, chind);
+                              EffectClear(child);
+                           end;
+                           GameObjectCancelDelayExecuteStateByHandle(goHnd);
+                           if (TObj(pobj).bdead) then
+                           _unit_AddObjToPlayerCounters(goHnd, True, False, False);
+                           TObj(pobj).bdead := False;
+                           _unit_SetTagStates(goHnd, gc_statetag_essential_none or gc_statetag_move_idle);
+                        end;
+                        
+                        _unit_Stop(goHnd);
+                        GameObjectResetFrameAnimationBlend(goHnd);
+                        GameObjectSwitchToTreeAnimationCyclesBlendByHandle(goHnd, gc_anim_idle, False, True, False, False, 0, 0); // 0, 0 - to reset blend. needed to prevent 2 shooting animation effect
+                        SetGameObjectTargetRotatingModeByHandle(goHnd, 'trmNone');
+                        
+                        var posx : Float = ParserGetFloatValueByKeyByHandle(punit, 'posx');
+                        var posz : Float = ParserGetFloatValueByKeyByHandle(punit, 'posz');
+                        var upx : Float = ParserGetFloatValueByKeyByHandle(punit, 'upx');
+                        var upy : Float = ParserGetFloatValueByKeyByHandle(punit, 'upy');
+                        var upz : Float = ParserGetFloatValueByKeyByHandle(punit, 'upz');
+                        var dirx : Float = ParserGetFloatValueByKeyByHandle(punit, 'dirx');
+                        var diry : Float = ParserGetFloatValueByKeyByHandle(punit, 'diry');
+                        var dirz : Float = ParserGetFloatValueByKeyByHandle(punit, 'dirz');
+                        SetGameObjectPositionByHandle(goHnd, posx, 0, posz);
+                        SetGameObjectOrientationByHandle(goHnd, upx, upy, upz, dirx, diry, dirz);
+                        GameObjectDoRayCastTerrainByHandle(goHnd);
+                     end;
+                  end;
+               end;
+            end;
+         end;
+      end;
+   end;
+end;
+
+procedure _movie_RunConstructors();
+begin
+   var i : Integer;
+   for i:=0 to gc_movie_maxlists-1 do
+   gMovie.lists[i].unitslist.Create(SizeOf(Integer));
+   gMovieIntegerList.Create(SizeOf(Integer));
+end;
+
+function _movie_SquadToUnitsList(ind : Integer; var list : TIntegerList) : Boolean;
+begin
+   Result := False;
+   list.Clear;
+   var pSquad : Pointer = gPlayer[gMovie.squads[ind].pl].squads.GetByUID(gMovie.squads[ind].uid);
+   if (pSquad<>nil) then
+   begin
+      var i : Integer;
+      for i:=TSquad(pSquad).GetCount-1 downto 0 do
+      list.Add(TSquad(pSquad).Get(i));
+      Result := (list.GetCount>0);
+   end
+   else
+   ErrorLog('_movie_SquadToUnitsList : psquad = nil');
+end;
+procedure _movie_UnitPlayAnimation(hnd : Integer; anim : String; bOnce, bLoop, bBlend, bReset : Boolean);
+begin
+   if (bReset) then
+   begin
+      GameObjectSwitchToTreeAnimationCyclesBlendByHandle(hnd, '', False, True, False, False, 0, 0);
+      GameObjectSwitchToTreeAnimationCyclesBlendByHandle(hnd, gc_anim_idle, False, True, False, False, 0, 0);
+      SetGameObjectIntervalFactorByHandle(hnd, 1);
+      GameObjectResetFrameAnimationBlend(hnd);
+      GameObjectTrackPointClearByHandle(hnd);
+   end;
+   var bRandomFrame : Boolean = (not bOnce) and StrExists(anim, gc_anim_idle);
+   var maxblend : Integer;
+   if (bBlend) then
+   maxblend := 5;
+   GameObjectSwitchToTreeAnimationCyclesBlendByHandle(hnd, anim, False, bRandomFrame, False, False, 0, maxblend);
+   GameObjectTrackPointClearByHandle(hnd);
+   var acmode : String;
+   if (bOnce) then
+   acmode := 'acmPlayOnce'
+   else
+   if (bLoop) then
+   acmode := 'acmLoop'
+   else
+   acmode := 'acmNone';
+   SetGameObjectAnimationCyclesModeByHandle(hnd, acmode);
+   _unit_ManagePeasantAttach(hnd, anim);
+end;
+procedure _movie_UnitsPlayAnimation(var list : TIntegerList; anim : String; bOnce, bLoop, bBlend, bReset : Boolean);
+begin
+   var i : Integer;
+   for i:=list.GetCount-1 downto 0 do
+   _movie_UnitPlayAnimation(list.Get(i), anim, bOnce, bLoop, bBlend, bReset);
+end;
+procedure _movie_UnitMoveToPosition(hnd : Integer; px, pz, angle : Float; movemode : Integer; bDirection, bInstant, bClearOrders : Boolean);
+begin
+   if (bInstant) then
+   begin
+      _unit_ClearOrders(hnd);
+      _movie_UnitPlayAnimation(hnd, gc_anim_idle, False, True, False, True);
+      SetGameObjectPositionByHandle(hnd, px, 0, pz);
+      if (bDirection) then
+      begin
+         GameObjectResetAndPitchTurnRollByHandle(hnd, 90, -90, 0);
+         SetGameObjectRollAngleByHandle(hnd, -angle-90);
+      end;
+   end
+   else
+   begin
+      var dirx, diry, dirz : Float;
+      if (bDirection) then
+      begin
+         dirx := 1;
+         VectorRotateY(dirx, diry, dirz, -angle);
+      end
+      else
+      begin
+         dirx := px-GetGameObjectPositionXByHandle(hnd);
+         dirz := pz-GetGameObjectPositionZByHandle(hnd);
+         VectorNormalize(dirx, diry, dirz);
+      end;
+      if (bClearOrders) then
+      _unit_ClearOrders(hnd);
+      if VectorDistance(GetGameObjectPositionXByHandle(hnd), 0, GetGameObjectPositionZByHandle(hnd), px, 0, pz)>GetGameObjectEpsilonDistanceByHandle(hnd) then
+      _unit_OrderMove(hnd, px, pz, dirx, dirz, movemode, False)
+      else
+      if (bDirection) then
+      begin
+         SetGameObjectSTArrowAngleByHandle(hnd, -angle);
+         if _unit_NeedTurn(hnd) then
+         _unit_SetTagStates(hnd, gc_statetag_move_turn);
+      end;
+   end;
+end;
+procedure _movie_UnitsMoveToPosition(var list : TIntegerList; px, pz, angle : Float; movemode : Integer; bDirection, bInstant : Boolean);
+begin
+   if (list.GetCount>0) then
+   begin
+      var pobj : Pointer = _unit_GetTObj(list.Get(0));
+      if (pobj<>nil) then
+      begin
+         var dirx, diry, dirz : Float;
+         if (bDirection) then
+         begin
+            dirx := 1;
+            VectorRotateY(dirx, diry, dirz, -angle);
+         end
+         else
+         begin
+            var posx, posz : Float;
+            _misc_GetUnitsListCentralPos(list, posx, posz);
+            dirx := px-posx;
+            dirz := pz-posz;
+            VectorNormalize(dirx, diry, dirz);
+         end;
+         _player_SetUnitsPosition(TObj(pobj).pl, movemode, list, px, pz, dirx, dirz);
+      end;
+   end;
+end;
+procedure _movie_SquadMoveToPosition(ind : Integer; px, pz, angle : Float; movemode : Integer; bDirection : Boolean);
+begin
+   var plHnd : Integer = GetPlayerHandleByIndex(gMovie.squads[ind].pl);
+   var psquad : Pointer = gPlayer[gMovie.squads[ind].pl].squads.GetByUID(gMovie.squads[ind].uid);
+   if (psquad<>nil) then
+   begin
+      var ind : Integer = TSquad(psquad).fIndex;
+      var dirx, diry, dirz : Float;
+      if (bDirection) then
+      begin
+         dirx := 1;
+         VectorRotateY(dirx, diry, dirz, -angle);
+      end
+      else
+      begin
+         var curx, curz : Float;
+         _squad_GetSquadPosition(plHnd, psquad, curx, curz);
+         dirx := px-curx;
+         dirz := pz-curz;
+         VectorNormalize(dirx, diry, dirz);
+      end;
+      _player_SetSquadPosition(plHnd, ind, px, pz, dirx, dirz, false, false, movemode, True);
+   end
+   else
+   ErrorLog('_movie_SquadMoveToPositionDirection : psquad = nil');
+end;
+procedure _movie_UnitSetAttackGround(hnd : Integer; bEnabled : Boolean);
+begin
+   var pobj : Pointer = _unit_GetTObj(hnd);
+   if (pobj<>nil) then
+   gObjProp[TObj(pobj).cid][TObj(pobj).id].bartprepare := bEnabled;
+end;
+procedure _movie_UnitResetAttackDelay(hnd : Integer);
+begin
+   var pobj : Pointer = _unit_GetTObj(hnd);
+   if (pobj<>nil) then
+   TObj(pobj).attackdelay := 0;
+end;
+procedure _movie_UnitsResetAttackDelay(var list : TIntegerList);
+begin
+   var i : Integer;
+   for i:=list.GetCount-1 downto 0 do
+   _movie_UnitResetAttackDelay(list.Get(i));
+end;
+procedure _movie_SquadResetAttackDelay(ind : Integer);
+begin
+   if (_movie_SquadToUnitsList(ind, gMovieIntegerList)) then
+   _movie_UnitsResetAttackDelay(gMovieIntegerList);
+end;
+procedure _movie_UnitAttackGroundInFront(hnd : Integer; relmindist, relmaxdist : Float; bResetDelay : Boolean);
+begin
+   var pobj : Pointer = _unit_GetTObj(hnd);
+   if (pobj<>nil) then
+   begin
+      var rmindist, rmaxdist : Float;
+      if (relmindist<=0) and (relmaxdist<=0) then begin
+         rmindist := 0.5;
+         rmaxdist := 0.9;
+         end else begin
+         rmindist := relmindist;
+         rmaxdist := relmaxdist;
+      end;
+      var px : Float = GetGameObjectPositionXByHandle(hnd);
+      var pz : Float = GetGameObjectPositionZByHandle(hnd);
+      var dirX : Float = GetGameObjectTransformedVirtualDirectionXByHandle(hnd);
+      var dirY : Float;
+      var dirZ : Float = GetGameObjectTransformedVirtualDirectionZByHandle(hnd);
+      var maxdst : Float = _unit_GetMaxAttackRadius(hnd);
+      var angle : Float = _misc_GetDirAngleToXVector(dirX, dirZ);
+      var x : Float = maxdst*(rmindist+RandomExt*(rmaxdist-rmindist));
+      var y, z : Float;
+      VectorRotateY(x, y, z, angle);
+      var tx : Float = px+x;
+      var tz : Float = pz+z;
+      if (bResetDelay) then
+      _movie_UnitResetAttackDelay(hnd);
+      _unit_OrderAttackPoint(hnd, tx, tz, True, True);
+   end;
+end;
+procedure _movie_UnitsAttackGroundInFront(var list : TIntegerList; relmindist, relmaxdist : Float; bResetDelay : Boolean);
+begin
+   var i : Integer;
+   for i:=list.GetCount-1 downto 0 do
+   begin
+      var hnd : Integer = list.Get(i);
+      if (not _unit_IsOfficerOrDrummer(hnd)) then
+      _movie_UnitAttackGroundInFront(hnd, relmindist, relmaxdist, bResetDelay);
+   end;
+end;
+procedure _movie_SquadAttackGroundInFront(ind : Integer; relmindist, relmaxdist : Float; bResetDelay : Boolean);
+begin
+   if (_movie_SquadToUnitsList(ind, gMovieIntegerList)) then
+   _movie_UnitsAttackGroundInFront(gMovieIntegerList, relmindist, relmaxdist, bResetDelay);
+end;
+procedure _movie_UnitStop(hnd : Integer);
+begin
+   _unit_Stop(hnd);
+end;
+procedure _movie_UnitsStop(var list : TIntegerList);
+begin
+   var i : Integer;
+   for i:=list.GetCount-1 downto 0 do
+   _unit_Stop(list.Get(i));
+end;
+procedure _movie_SquadStop(ind : Integer);
+begin
+   if (_movie_SquadToUnitsList(ind, gMovieIntegerList)) then
+   _movie_UnitsStop(gMovieIntegerList);
+end;
+procedure _movie_UnitSetCollisionFactor(hnd : Integer; factor : Float);
+begin
+   SetGameObjectCIIntersectRadiusByHandle(hnd, gc_collision_radius_default*factor);
+end;
+procedure _movie_UnitsSetCollisionFactor(var list : TIntegerList; factor : Float);
+begin
+   var i : Integer;
+   for i:=list.GetCount-1 downto 0 do
+   SetGameObjectCIIntersectRadiusByHandle(list.Get(i), gc_collision_radius_default*factor);
+end;
+procedure _movie_SquadSetCollisionFactor(ind : Integer; factor : Float);
+begin
+   if (_movie_SquadToUnitsList(ind, gMovieIntegerList)) then
+   _movie_UnitsSetCollisionFactor(gMovieIntegerList, factor);
+end;
+function _movie_GetAnimationLength(hnd : Integer; anim : String) : Float;
+begin
+   var sf, ef : Integer;
+   GetGameObjectFrameAnimationDataByHandle(hnd, anim, sf, ef);
+   Result := ((ef-sf)/30);
+end;
+procedure _movie_SetBuildingStage(goHnd, essential, stage : Integer);
+begin
+   if (_misc_GetBaseObjID(goHnd)=gc_baseid_obj) {and (_unit_IsBuilding(goHnd) or _unit_IsWaterUnit(goHnd))} then
+   begin
+      if (essential<>gc_statetag_essential_death) then
+      begin
+         var actor : String = GameObjectGetActorNameByHandle(goHnd);
+         if StrExists(actor, '_death') then
+         begin
+            actor := StrReplace(actor, '_death1', '');
+            actor := StrReplace(actor, '_death2', '');
+            actor := StrReplace(actor, '.mesh', '');
+            SetGameObjectActorNameByHandle(goHnd, actor+'.mesh');
+            if (GetGameObjectCountChildByHandle(goHnd)>0) then
+            begin
+               var child : Integer = GetGameObjectGOHandleChildByHandle(goHnd, 0);
+               SetGameObjectActorNameByHandle(child, actor+'a.mesh');
+               SetGameObjectVisibleByHandle(child, True);
+               SetGameObjectMaterialNameByHandle(child, 'detail');
+               var i : Integer;
+               for i:=1 to GetGameObjectCountChildByHandle(goHnd)-1 do
+               begin
+                  var child : Integer = GetGameObjectGOHandleChildByHandle(goHnd, i);
+                  SetGameObjectVisibleByHandle(child, True);
+               end;
+            end;
+         end;
+      end;
+      var visual : Integer;
+      if (essential=gc_statetag_essential_birth) then
+      begin
+         stage := ClampInt(stage, 0, 3);
+         case stage of
+            0 : visual := gc_statetag_visual_stage_0;
+            1 : visual := gc_statetag_visual_stage_1;
+            2 : visual := gc_statetag_visual_stage_2;
+            3 : visual := gc_statetag_visual_stage_3;
+         end;
+         _unit_SetTagStates(goHnd, essential or visual);
+      end
+      else
+      if (essential=gc_statetag_essential_death) then
+      begin
+         stage := ClampInt(stage, 0, 1);
+         var actor : String = GetGameObjectLODActorNameByHandle(goHnd)+'_death'+IntToStr(stage+1);
+         SetGameObjectActorNameByHandle(goHnd, actor+'.mesh');
+         
+         if (GetGameObjectCountChildByHandle(goHnd)>0) then
+         begin
+            var child : Integer = GetGameObjectGOHandleChildByHandle(goHnd, 0);
+            SetGameObjectActorNameByHandle(child, actor+'a.mesh');
+            SetGameObjectMaterialNameByHandle(child, 'debris');
+            
+            var i : Integer;
+            for i:=1 to GetGameObjectCountChildByHandle(goHnd)-1 do
+            begin
+               var child : Integer = GetGameObjectGOHandleChildByHandle(goHnd, i);
+               SetGameObjectVisibleByHandle(child, False);
+            end;
+         end;
+      end
+      else
+      _unit_SetTagStates(goHnd, gc_statetag_essential_none or gc_statetag_visual_none);
+   end;
+end;
+
+// _movie_CalcNewPositionByOffsetAndAngle
+//
+procedure _movie_CalcNewPositionByOffsetAndAngle(var list : TIntegerList; length, angle : Float; var posx, posz : Float);
+begin
+   _misc_GetUnitsListCentralPos(list, posx, posz);
+   var trgx : Float = length;
+   var trgy, trgz : Float;
+   VectorRotateY(trgx, trgy, trgz, -angle);
+   posx := posx+trgx;
+   posz := posz+trgz;
+end;
+
+// _movie_LoadMovieListsFromFile
+//
+procedure _movie_LoadMovieListsFromFile(bRestorePos : Boolean);
+begin
+   var filename : String = '.\movies\movie.'+gMap.name;
+   if (IsFileExists(filename)) then
+   begin
+      var pParser : Integer = _parser_ParserTemporary(true);
+      ParserLoadFromFileByHandle(pParser, filename);
+      var pSquads : Integer = ParserSelectByHandleByKey(pParser, 'squads');
+      var pLists : Integer = ParserSelectByHandleByKey(pParser, 'lists');
+      var pSquadsLists : Integer = ParserSelectByHandleByKey(pParser, 'squadslists');
+      
+      var i, j : Integer;
+      for i:=0 to gc_movie_maxsquads-1 do
+      begin
+         gMovie.squads[i].bexists := False;
+         gMovie.squads[i].pl := 0;
+         gMovie.squads[i].uid := 0;
+      end;
+      for i:=0 to gc_movie_maxlists-1 do
+      begin
+         gMovie.lists[i].bexists := False;
+         gMovie.lists[i].name := '';
+         gMovie.lists[i].unitslist.Clear;
+      end;
+      
+      for i:=0 to ParserGetCountByHandle(pSquads)-1 do
+      begin
+         var pSquad : Integer = ParserSelectByHandleByIndex(pSquads, i);
+         var index : Integer = ParserGetIntValueByKeyByHandle(pSquad, 'index');
+         gMovie.squads[index].pl := ParserGetIntValueByKeyByHandle(pSquad, 'pl');
+         gMovie.squads[index].uid := ParserGetIntValueByKeyByHandle(pSquad, 'squid');
+         if (bRestorePos) then
+         begin
+            var listindex : Integer = -1;
+            for j:=0 to ParserGetCountByHandle(pSquadsLists)-1 do
+            begin
+               var pSquadList : Integer = ParserSelectByHandleByIndex(pSquadsLists, j);
+               var sqindex : Integer = ParserGetIntValueByKeyByHandle(pSquadList, 'index');
+               if (sqindex=index) then
+               begin
+                  listindex := j;
+                  break;
+               end;
+            end;
+            if (listindex>=0) then
+            begin
+               var pList : Integer = ParserSelectByHandleByIndex(pSquadsLists, listindex);
+               if (pList<>0) then
+               begin
+                  var pUnitsList : Integer = ParserSelectByHandleByKey(pList, 'unitslist');
+                  for j:=0 to ParserGetCountByHandle(pUnitsList)-1 do
+                  begin
+                     var punit : Integer = ParserSelectByHandleByIndex(pUnitsList, j);
+                     var uid : Integer = ParserGetIntValueByKeyByHandle(punit, 'uid');
+                     var hnd : Integer = GetGameObjectHandleByUniqueId(uid);
+                     if (hnd<>0) then
+                     begin
+                        var posx : Float = ParserGetFloatValueByKeyByHandle(punit, 'posx');
+                        var posz : Float = ParserGetFloatValueByKeyByHandle(punit, 'posz');
+                        var angle : Float = ParserGetFloatValueByKeyByHandle(punit, 'ang');
+                        var upx, upy, upz, dirx, diry, dirz : Float;
+                        if (angle=0) then
+                        begin
+                           upx := ParserGetFloatValueByKeyByHandle(punit, 'upx');
+                           upy := ParserGetFloatValueByKeyByHandle(punit, 'upy');
+                           upz := ParserGetFloatValueByKeyByHandle(punit, 'upz');
+                           dirx := ParserGetFloatValueByKeyByHandle(punit, 'dirx');
+                           diry := ParserGetFloatValueByKeyByHandle(punit, 'diry');
+                           dirz := ParserGetFloatValueByKeyByHandle(punit, 'dirz');
+                        end;
+                        if (dirx=0) and (diry=0) and (dirz=0) then
+                        begin
+                           upx := 1;
+                           upy := 0;
+                           upz := 0;
+                           dirx := 0;
+                           diry := 1;
+                           dirz := 0;
+                           VectorRotateY(upx, upy, upz, angle);
+                        end;
+                        _unit_Stop(hnd);
+                        GameObjectResetFrameAnimationBlend(hnd);
+                        GameObjectSwitchToTreeAnimationCyclesBlendByHandle(hnd, gc_anim_idle, False, True, False, False, 0, 0); // 0, 0 - to reset blend. needed to prevent 2 shooting animation effect
+                        SetGameObjectTargetRotatingModeByHandle(hnd, 'trmNone');
+                        
+                        SetGameObjectPositionByHandle(hnd, posx, 0, posz);
+                        SetGameObjectOrientationByHandle(hnd, upx, upy, upz, dirx, diry, dirz);
+                        GameObjectDoRayCastTerrainByHandle(hnd);
+                     end;
+                  end;
+               end;
+            end;
+         end;
+         for i:=0 to ParserGetCountByHandle(pLists)-1 do
+         begin
+            var pList : Integer = ParserSelectByHandleByIndex(pLists, i);
+            var index : Integer = ParserGetIntValueByKeyByHandle(pList, 'index');
+            var name : String = ParserGetValueByKeyByHandle(pList, 'name');
+            gMovie.lists[index].bexists := True;
+            gMovie.lists[index].name := name;
+            var pUnitsList : Integer = ParserSelectByHandleByKey(pList, 'unitslist');
+            for j:=0 to ParserGetCountByHandle(pUnitsList)-1 do
+            begin
+               var punit : Integer = ParserSelectByHandleByIndex(pUnitsList, j);
+               var uid : Integer = ParserGetIntValueByKeyByHandle(punit, 'uid');
+               var hnd : Integer = GetGameObjectHandleByUniqueId(uid);
+               if (hnd<>0) then
+               begin
+                  gMovie.lists[index].unitslist.Add(hnd);
+                  if (bRestorePos) then
+                  begin
+                     var posx : Float = ParserGetFloatValueByKeyByHandle(punit, 'posx');
+                     var posz : Float = ParserGetFloatValueByKeyByHandle(punit, 'posz');
+                     var angle : Float = ParserGetFloatValueByKeyByHandle(punit, 'ang');
+                     var upx, upy, upz, dirx, diry, dirz : Float;
+                     if (angle=0) then
+                     begin
+                        upx := ParserGetFloatValueByKeyByHandle(punit, 'upx');
+                        upy := ParserGetFloatValueByKeyByHandle(punit, 'upy');
+                        upz := ParserGetFloatValueByKeyByHandle(punit, 'upz');
+                        dirx := ParserGetFloatValueByKeyByHandle(punit, 'dirx');
+                        diry := ParserGetFloatValueByKeyByHandle(punit, 'diry');
+                        dirz := ParserGetFloatValueByKeyByHandle(punit, 'dirz');
+                     end;
+                     if (dirx=0) and (diry=0) and (dirz=0) then
+                     begin
+                        upx := 1;
+                        upy := 0;
+                        upz := 0;
+                        dirx := 0;
+                        diry := 1;
+                        dirz := 0;
+                        VectorRotateY(upx, upy, upz, angle);
+                     end;
+                     _unit_Stop(hnd);
+                     GameObjectResetFrameAnimationBlend(hnd);
+                     GameObjectSwitchToTreeAnimationCyclesBlendByHandle(hnd, gc_anim_idle, False, True, False, False, 0, 0); // 0, 0 - to reset blend. needed to prevent 2 shooting animation effect
+                     SetGameObjectTargetRotatingModeByHandle(hnd, 'trmNone');
+                     
+                     SetGameObjectPositionByHandle(hnd, posx, 0, posz);
+                     SetGameObjectOrientationByHandle(hnd, upx, upy, upz, dirx, diry, dirz);
+                     GameObjectDoRayCastTerrainByHandle(hnd);
+                  end;
+               end;
+            end;
+         end;
+      end;
+   end;
+end;
+
+// _movie_SaveMovieListsToFile
+//
+procedure _movie_SaveMovieListsToFile();
+begin
+   var pParser : Integer = _parser_ParserTemporary(true);
+   var pSquads : Integer = ParserAddChildByIndex(pParser, 'squads');
+   var pLists : Integer = ParserAddChildByIndex(pParser, 'lists');
+   var pSquadsLists : Integer = ParserAddChildByIndex(pParser, 'squadslists');
+   var i, j : Integer;
+   for i:=0 to gc_movie_maxsquads-1 do
+   begin
+      if (gMovie.squads[i].bexists) then
+      begin
+         var pSquad : Integer = ParserAddChildByIndex(pSquads, '*');
+         ParserSetIntValueByKeyByHandle(pSquad, 'index', i);
+         ParserSetIntValueByKeyByHandle(pSquad, 'pl', gMovie.squads[i].pl);
+         ParserSetIntValueByKeyByHandle(pSquad, 'squid', gMovie.squads[i].uid);
+         _movie_SquadToUnitsList(i, gIntegerList);
+         if (gIntegerList.GetCount>0) then
+         begin
+            var pList : Integer = ParserAddChildByIndex(pSquadsLists, '*');
+            ParserSetIntValueByKeyByHandle(pList, 'index', i);
+            ParserSetIntValueByKeyByHandle(pList, 'pl', gMovie.squads[i].pl);
+            ParserSetIntValueByKeyByHandle(pList, 'squid', gMovie.squads[i].uid);
+            var pUnitsList : Integer = ParserAddChildByIndex(pList, 'unitslist');
+            for j:=0 to gIntegerList.GetCount-1 do
+            begin
+               var punit : Integer = ParserAddChildByIndex(pUnitsList, '*');
+               var hnd : Integer = gIntegerList.Get(j);
+               var uid : Integer = GetGameObjectUniqueIdByHandle(hnd);
+               var upx, upy, upz, dirx, diry, dirz : Float;
+               GetGameObjectOrientationByHandle(hnd, upx, upy, upz, dirx, diry, dirz);
+               ParserSetIntValueByKeyByHandle(punit, 'uid', uid);
+               ParserSetFloatValueByKeyByHandle(punit, 'posx', GetGameObjectPositionXByHandle(hnd));
+               ParserSetFloatValueByKeyByHandle(punit, 'posz', GetGameObjectPositionZByHandle(hnd));
+               if (dirx<>0) or (diry<>1) or (dirz<>0) then
+               begin
+                  ParserSetFloatValueByKeyByHandle(punit, 'upx', upx);
+                  ParserSetFloatValueByKeyByHandle(punit, 'upy', upy);
+                  ParserSetFloatValueByKeyByHandle(punit, 'upz', upz);
+                  ParserSetFloatValueByKeyByHandle(punit, 'dirx', dirx);
+                  ParserSetFloatValueByKeyByHandle(punit, 'diry', diry);
+                  ParserSetFloatValueByKeyByHandle(punit, 'dirz', dirz);
+               end
+               else
+               begin
+                  var angle : Float = _misc_GetDirAngleToXVector(upx, upz);
+                  ParserSetFloatValueByKeyByHandle(punit, 'ang', angle);
+               end;
+            end;
+         end;
+      end;
+   end;
+   for i:=0 to gc_movie_maxlists-1 do
+   begin
+      if (gMovie.lists[i].bexists) and (gMovie.lists[i].name<>'') then
+      begin
+         var pList : Integer = ParserAddChildByIndex(pLists, '*');
+         ParserSetIntValueByKeyByHandle(pList, 'index', i);
+         ParserSetValueByKeyByHandle(pList, 'name', gMovie.lists[i].name);
+         var pUnitsList : Integer = ParserAddChildByIndex(pList, 'unitslist');
+         for j:=0 to gMovie.lists[i].unitslist.GetCount-1 do
+         begin
+            var punit : Integer = ParserAddChildByIndex(pUnitsList, '*');
+            var hnd : Integer = gMovie.lists[i].unitslist.Get(j);
+            var uid : Integer = GetGameObjectUniqueIdByHandle(hnd);
+            var upx, upy, upz, dirx, diry, dirz : Float;
+            GetGameObjectOrientationByHandle(hnd, upx, upy, upz, dirx, diry, dirz);
+            ParserSetIntValueByKeyByHandle(punit, 'uid', uid);
+            ParserSetFloatValueByKeyByHandle(punit, 'posx', GetGameObjectPositionXByHandle(hnd));
+            ParserSetFloatValueByKeyByHandle(punit, 'posz', GetGameObjectPositionZByHandle(hnd));
+            if (dirx<>0) or (diry<>1) or (dirz<>0) then
+            begin
+               ParserSetFloatValueByKeyByHandle(punit, 'upx', upx);
+               ParserSetFloatValueByKeyByHandle(punit, 'upy', upy);
+               ParserSetFloatValueByKeyByHandle(punit, 'upz', upz);
+               ParserSetFloatValueByKeyByHandle(punit, 'dirx', dirx);
+               ParserSetFloatValueByKeyByHandle(punit, 'diry', diry);
+               ParserSetFloatValueByKeyByHandle(punit, 'dirz', dirz);
+            end
+            else
+            begin
+               var angle : Float = _misc_GetDirAngleToXVector(upx, upz);
+               ParserSetFloatValueByKeyByHandle(punit, 'ang', angle);
+            end;
+         end;
+      end;
+   end;
+   var filename : String = '.\movies\movie.'+gMap.name;
+   if (gMap.name='') then filename := filename+'noname'+IntToStr(floor(Random*10000));
+   ParserSaveToFileByHandle(pParser, filename);
+end;
+
+_movie_RunConstructors;

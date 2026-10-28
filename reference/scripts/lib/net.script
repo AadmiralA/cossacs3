@@ -1,0 +1,198 @@
+// lmNone, lmClient, lmOpenServer, lmCloseServer
+
+global _net_debug_log: Boolean;
+global _net_debug_log_error: Boolean;
+global _net_debug_log_statestag: Boolean;
+global _net_debug_log_statestag_path: Boolean;
+global _net_debug_log_progress_path: Boolean;
+global _net_debug_log_new: Boolean;
+global _net_debug_log_free: Boolean;
+global _net_debug_log_player: Boolean;
+global _net_debug_log_rally: Boolean;
+global _net_debug_log_order: Boolean;
+global _net_debug_log_upgrade: Boolean;
+global _net_debug_log_produce: Boolean;
+global _net_debug_log_search: Boolean;
+global _net_debug_log_stand: Boolean;
+global _net_debug_log_squadnew: Boolean;
+global _net_debug_log_squaddisband: Boolean;
+global _net_debug_log_squadform: Boolean;
+global _net_debug_log_squadfill: Boolean;
+global _net_debug_log_squadsearch: Boolean;
+global _net_debug_log_squadstand: Boolean;
+global _net_debug_log_projfree: Boolean;
+global _net_debug_log_projnew: Boolean;
+global _net_debug_log_newp: Boolean;
+global _net_debug_log_death: Boolean;
+global _net_debug_log_construct: Boolean;
+global _net_debug_log_apply: Boolean;
+global _net_debug_log_res: Boolean;
+global _net_debug_log_trade: Boolean;
+global _net_debug_log_gate: Boolean;
+global _net_debug_log_size_writer: Boolean;
+global _net_debug_log_size_reader: Boolean;
+
+global _net_lanmode_last: Integer;
+global _net_intlist: TIntegerList;
+_net_intlist.Create(SizeOf(Integer));
+
+function _net_IsClient: Boolean;
+begin
+   result:=(GetLanMode=gc_lanmode_client) or (_net_lanmode_last=gc_lanmode_client);
+end;
+
+function _net_IsServer: Boolean;
+begin
+   result:=(GetLanMode>gc_lanmode_client);
+end;
+
+function _net_IsOffline: Boolean;
+begin
+   result:=(GetLanMode=0) and (_net_lanmode_last<>gc_lanmode_client);
+end;
+
+function _net_IsOnline: Boolean;
+begin
+   result:=(GetLanMode>0) or (_net_lanmode_last=gc_lanmode_client);
+end;
+
+function _net_IsRecord: Boolean;
+begin
+   result:=(GetRecordManagerGameMode=2) and (GetRecordEnabled or gbool_recordwascleared);
+end;
+
+function _net_IsReplay: Boolean;
+begin
+   result:=(GetRecordManagerGameMode=1);
+end;
+
+function _net_getRecord: Boolean;
+begin
+   result:=GetRecordEnabled;
+end;
+
+procedure _net_setRecord(const val: Boolean);
+begin
+   SetRecordEnabled(val);
+end;
+
+function _net_getInfoFromObj(const tagobj: Integer; var info: String): Boolean;
+begin
+   result:=true;
+   if IsGameObjectByHandle(tagobj) then
+   info:='uid('+IntToStr(GetGameObjectUniqueIdByHandle(tagobj))+') '+
+   'tag('+IntToStr(GetGameObjectPrevStatesTagByHandle(tagobj))+'->'+IntToStr(GetGameObjectStatesTagByHandle(tagobj))+') '+
+   'pos('+FloatToStr(GetGameObjectPositionXByHandle(tagobj))+';'+FloatToStr(GetGameObjectPositionZByHandle(tagobj))+') '+
+   'tar('+FloatToStr(GetGameObjectStateTargetPositionXByHandle(tagobj))+';'+FloatToStr(GetGameObjectStateTargetPositionZByHandle(tagobj))+') '+
+   'ang('+FloatToStr(GetGameObjectSTArrowAngleByHandle(tagobj))+')'
+   else if IsPlayerByHandle(tagobj) then info:='plr('+IntToStr(GetPlayerIndexByHandle(tagobj))+')'
+   else result:=false;
+end;
+
+procedure _net_ErrorLog(const msg: String);
+begin
+   if _net_debug_log_error then begin
+      var tagobj: Integer = GetTagObjectByStateMachine(GetCurrentStateMachineHandle);
+      var info: String;
+      _net_getInfoFromObj(tagobj, info);
+      ErrorLog(' :: NET ERROR :: '+GetCurrentStateName+' :: '+info+' :: '+msg);
+   end;
+end;
+
+procedure _net_Log(const msg: String);
+begin
+   if _net_debug_log then begin
+      var tagobj: Integer = GetTagObjectByStateMachine(GetCurrentStateMachineHandle);
+      var info: String;
+      _net_getInfoFromObj(tagobj, info);
+      Log(' :: NET :: '+GetCurrentStateName+' :: '+info+' :: '+msg);
+   end;
+end;
+
+procedure _net_Log_SizeWriter;
+begin
+   if _net_debug_log then
+   Log(' :: NET :: '+GetCurrentStateName+' :: SizeWriter = '+IntToStr(RecordCustomGetWritePackageSize));
+end;
+
+procedure _net_Log_SizeReader;
+begin
+   if _net_debug_log then
+   Log(' :: NET :: '+GetCurrentStateName+' :: SizeReader = '+IntToStr(RecordCustomGetReadPackageSize));
+end;
+
+procedure _net_DisableFullLog;
+begin
+   _net_debug_log:=false;
+   _net_debug_log_error:=false;
+   _net_debug_log_statestag:=false;
+   _net_debug_log_statestag_path:=false;
+   _net_debug_log_progress_path:=false;
+   _net_debug_log_new:=false;
+   _net_debug_log_free:=false;
+   _net_debug_log_player:=false;
+   _net_debug_log_rally:=false;
+   _net_debug_log_order:=false;
+   _net_debug_log_upgrade:=false;
+   _net_debug_log_produce:=false;
+   _net_debug_log_search:=false;
+   _net_debug_log_stand:=false;
+   _net_debug_log_squadnew:=false;
+   _net_debug_log_squaddisband:=false;
+   _net_debug_log_squadform:=false;
+   _net_debug_log_squadfill:=false;
+   _net_debug_log_squadsearch:=false;
+   _net_debug_log_squadstand:=false;
+   _net_debug_log_projfree:=false;
+   _net_debug_log_projnew:=false;
+   _net_debug_log_newp:=false;
+   _net_debug_log_death:=false;
+   _net_debug_log_construct:=false;
+   _net_debug_log_apply:=false;
+   _net_debug_log_size_writer:=false;
+   _net_debug_log_size_reader:=false;
+end;
+
+procedure _net_EnableDefLog;
+begin
+   _net_debug_log:=true;
+   _net_debug_log_error:=true;
+   _net_debug_log_statestag:=false;
+   _net_debug_log_statestag_path:=false;
+   _net_debug_log_progress_path:=false;
+   _net_debug_log_new:=true;
+   _net_debug_log_free:=true;
+   _net_debug_log_player:=true;
+   _net_debug_log_rally:=true;
+   _net_debug_log_order:=true;
+   _net_debug_log_upgrade:=true;
+   _net_debug_log_produce:=true;
+   _net_debug_log_search:=true;
+   _net_debug_log_stand:=true;
+   _net_debug_log_squadnew:=true;
+   _net_debug_log_squaddisband:=true;
+   _net_debug_log_squadform:=true;
+   _net_debug_log_squadfill:=true;
+   _net_debug_log_squadsearch:=true;
+   _net_debug_log_squadstand:=true;
+   _net_debug_log_projfree:=true;
+   _net_debug_log_projnew:=true;
+   _net_debug_log_newp:=true;
+   _net_debug_log_death:=true;
+   _net_debug_log_construct:=true;
+   _net_debug_log_apply:=true;
+   _net_debug_log_size_writer:=false;
+   _net_debug_log_size_reader:=false;
+end;
+
+procedure _net_EnableDevLog;
+begin
+   _net_DisableFullLog;
+   _net_debug_log:=true;
+   _net_debug_log_error:=true;
+end;
+
+//if IsEditor then
+//_net_EnableDefLog;
+
+_net_EnableDevLog;

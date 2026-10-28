@@ -1,0 +1,55 @@
+{refurl=.\data\objects\ref\refunit.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=mainproperty}
+   CustomName = peaukr
+   BaseName = peaukr
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=actorproperty}
+   LODActorName = peaukr
+   DefaultMeshName = peaukr.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = peaukr
+   Mesh[0].UseableMaterials[0] = peaukr
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=statemachineproperty}
+   StateMachineInterval = 135
+section.end
+
+autochildrenproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=autochildrenproperty}
+   Enabled = True
+   Mesh[0] : struct.begin
+      Children : struct.begin
+         [0] : struct.begin
+            BaseName = peaukr_tools
+            DefaultMeshName = peaukr_axe.mesh
+            Mesh : struct.begin
+               [0] = peaukr_axe.mesh
+               [1] = peaukr_bag.mesh
+               [2] = peaukr_cart.mesh
+               [3] = peaukr_hammer.mesh
+               [4] = peaukr_hoe.mesh
+               [5] = peaukr_lumber.mesh
+               [6] = peaukr_pick.mesh
+            struct.end
+            DefaultMaterialName = peaaustools
+            Materials : struct.begin
+               [0] = peaaustools
+               [1] = peaaustools
+               [2] = peaaustools
+               [3] = peaaustools
+               [4] = peaaustools
+               [5] = peaaustools
+               [6] = peaaustools
+            struct.end
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=frameanimationproperty}
+   FrameAnimationCyclesLibName = peaukr
+section.end

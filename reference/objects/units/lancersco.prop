@@ -1,0 +1,35 @@
+{refurl=.\data\objects\ref\refunithorse.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=mainproperty}
+   CustomName = lancersco
+   BaseName = lancersco
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=actorproperty}
+   LODActorName = lancersco
+   DefaultMeshName = lancersco.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = lancersco
+   Mesh[0].UseableMaterials[0] = lancersco
+section.end
+
+autochildrenproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=autochildrenproperty}
+   Enabled = True
+   Mesh[0] : struct.begin
+      Children : struct.begin
+         [0] : struct.begin
+            BaseName = lancersco_horse
+            DefaultMeshName = lancersco_horse.mesh
+            Mesh[*] = lancersco_horse.mesh
+            DefaultMaterialName = horseblack
+            Materials[*] = horseblack
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=frameanimationproperty}
+   FrameAnimationCyclesLibName = lancersco
+section.end

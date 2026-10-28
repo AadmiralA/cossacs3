@@ -1,0 +1,39 @@
+{refurl=.\data\objects\ref\refunitattach.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=mainproperty}
+   CustomName = fishboat_paddle_r
+   BaseName = fishboat_paddle_r
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=actorproperty}
+   LODActorName = fishboat_paddle_r
+   DefaultMeshName = fishboat_paddle_r.mesh
+   UseableMeshes : struct.begin
+      [0] = True
+   struct.end
+section.end
+
+stringproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=stringproperty}
+   StringTag = 105
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = fishboat
+   Mesh[0].UseableMaterials[0] = fishboat
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=frameanimationproperty}
+   ClassName = FrameAnimationProperty
+   FrameAnimationSynchronizeOption = fasoAnimation
+   RandomOffsetFrameAnimationCycles = False
+   RandomOffsetFrameAnimation = False
+   FrameAnimationCyclesLibName = shippaddle
+section.end
+
+designproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=designproperty}
+   Enabled = True
+   Static = True
+   ClassName = DesignProperty
+   VisibleAtDesignTime = True
+   DesignPriority = 100
+section.end

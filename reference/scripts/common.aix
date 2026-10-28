@@ -1,0 +1,129 @@
+section.begin
+   Name = InitMap
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\initmap.inc
+section.end
+
+section.begin
+   Name = OnInit
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\oninit.inc
+section.end
+
+section.begin
+   Name = OnSave
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\onsave.inc
+section.end
+
+section.begin
+   Name = OnLoad
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\onload.inc
+section.end
+
+section.begin
+   Name = OnLoadFull
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\onloadfull.inc
+section.end
+
+section.begin
+   Name = InitMapGen
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\initmapgen.inc
+section.end
+
+section.begin
+   Name = InitMapHistoricalBattle
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\initmaphistoricalbattle.inc
+section.end
+
+section.begin
+   Name = DoGenerate
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\dogenerate.inc
+section.end
+
+section.begin
+   Name = DoGenerateMissionMap
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\dogeneratemissionmap.inc
+section.end
+
+section.begin
+   Name = ---------------------------
+   UsedFileName = 
+section.end
+
+section.begin
+   Name = GenerateMap
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\generatemap.inc
+section.end
+
+section.begin
+   Name = PostProcess
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\postprocess.inc
+section.end
+
+section.begin
+   Name = TextureMap
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\texturemap.inc
+section.end
+
+section.begin
+   Name = LoadTextureTerrainFromBitmap
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\loadtextureterrainfrombitmap.inc
+section.end
+
+section.begin
+   Name = SaveEnvironmentToBitmap
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\saveenvironmenttobitmap.inc
+section.end
+
+section.begin
+   Name = LoadEnvironmentFromBitmap
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\loadenvironmentfrombitmap.inc
+section.end
+
+section.begin
+   Name = SmoothTiles
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\smoothtiles.inc
+section.end
+
+section.begin
+   Name = SmoothForestBorders
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\common.inc\smoothforestborders.inc
+section.end
+
+section.begin
+   CurrentState = OnLoadFull
+   SaveVariables = False
+section.end
+

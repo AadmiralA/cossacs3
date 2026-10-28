@@ -1,0 +1,64 @@
+{refurl=.\data\objects\ref\refbuilding.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=mainproperty}
+   CustomName = turswa_v2
+   BaseName = turswa_v2
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=actorproperty}
+   LODActorName = turswa_v2
+   DefaultMeshName = turswa_v2.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = turswa
+   Mesh[0].UseableMaterials[0] = turswa
+   Mesh[0].UseSeasonMaterial = True
+   Mesh[0].UseableSummerMaterials[0] = turswa
+   Mesh[0].UseableWinterMaterials[0] = turswaw
+   Mesh[1] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = turswa
+      UseableMaterials[0] = turswa
+   struct.end
+   Mesh[2] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = turswa
+      UseableMaterials[0] = turswa
+   struct.end
+section.end
+
+collisionmaskproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmaskproperty}
+   Priority = 95
+   Mask : struct.begin
+      [*] = 11
+      [*] = 11
+   struct.end
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmeshproperty}
+   Static = False
+   CustomBoundingAABBMin.X = -0.6
+   CustomBoundingAABBMin.Y = 0.00
+   CustomBoundingAABBMin.Z = -0.6
+   CustomBoundingAABBMax.X = 0.6
+   CustomBoundingAABBMax.Y = 1.65
+   CustomBoundingAABBMax.Z = 0.6
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.33333
+   DefaultScale.Y = 0.33333
+   DefaultScale.Z = 0.33333
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=directionupproperty}
+   DefaultRollAngle = 0
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmeshproperty}
+   CustomBoundingAABBMin.Y = 0
+   CustomBoundingAABBMax.Y = 1.5
+   CIEnabled = True
+   CIMovable = False
+   CIMass = 10000
+   CIIntersectRadius = 0.499
+section.end

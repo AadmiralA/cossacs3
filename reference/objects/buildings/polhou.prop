@@ -1,0 +1,117 @@
+{refurl=.\data\objects\ref\refbuilding.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=mainproperty}
+   CustomName = polhou
+   BaseName = polhou
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=actorproperty}
+   LODActorName = polhou
+   DefaultMeshName = polhou.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = polhou
+   Mesh[0].UseableMaterials[0] = polhou
+   Mesh[0].UseSeasonMaterial = True
+   Mesh[0].UseableSummerMaterials[0] = polhou
+   Mesh[0].UseableWinterMaterials[0] = polhouw
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = polhou
+      UseableMaterials[0] = polhou
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = polhou
+      UseableMaterials[0] = polhou
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = polhou
+      UseableMaterials[0] = polhou
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = polhou
+      UseableMaterials[0] = polhou
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = polhou
+      UseableMaterials[0] = polhou
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = polhou
+      UseableMaterials[0] = polhou
+   struct.end
+section.end
+
+collisionmaskproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmaskproperty}
+   Mask : struct.begin
+      [*] = 0000000000
+      [*] = 0001100000
+      [*] = 0011111100
+      [*] = 0111111111
+      [*] = 1111111111
+      [*] = 0111111111
+      [*] = 0011111110
+      [*] = 0001111100
+   struct.end
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmeshproperty}
+   CustomBoundingAABBMin.X = -1.20
+   CustomBoundingAABBMin.Y = -0.15
+   CustomBoundingAABBMin.Z = -1.40
+   CustomBoundingAABBMax.X = 1.80
+   CustomBoundingAABBMax.Y = 0.70
+   CustomBoundingAABBMax.Z = 2.35
+section.end
+
+autochildrenproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = AutoChildrenProperty
+   Custom = False
+   Mesh[0] : struct.begin
+      Enabled = True
+      Static = True
+      ClassName = MeshChildrenProperty
+      Children : struct.begin
+         [0] : struct.begin
+            Enabled = True
+            Static = True
+            ClassName = ChildProperty
+            BaseName = polhoua
+            RaceName = buildings
+            DefaultMeshName = polhoua.mesh
+            RandomMeshName = False
+            Mesh[0] = polhoua
+            Mesh[1] = polhou1a
+            Mesh[2] = polhou2a
+            Mesh[3] = polhou3a
+            Mesh[4] = polhou4a
+            Mesh[5] = polhou_death1a
+            Mesh[6] = polhou_death2a
+            DefaultMaterialName = scaffold
+            RandomMaterialName = False
+            Materials[0] = scaffold
+            Materials[1] = scaffold
+            Materials[2] = scaffold
+            Materials[3] = scaffold
+            Materials[4] = scaffold
+            Materials[5] = debris
+            Materials[6] = debris
+            Option = achildRequered
+            StartStateName = 
+            Useable = True
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.4585
+   DefaultScale.Y = 0.4585
+   DefaultScale.Z = 0.4585
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=directionupproperty}
+   DefaultRollAngle = 135
+section.end

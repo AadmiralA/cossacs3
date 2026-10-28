@@ -1,0 +1,78 @@
+{refurl=.\data\objects\ref\refbuilding.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=mainproperty}
+   CustomName = miscommandcenter
+   BaseName = miscommandcenter
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=actorproperty}
+   LODActorName = miscommandcenter
+   DefaultMeshName = miscommandcenter.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = miscommandcenter
+   Mesh[0].UseableMaterials[0] = miscommandcenter
+   Mesh[0].UseSeasonMaterial = True
+   Mesh[0].UseableSummerMaterials[0] = miscommandcenter
+   Mesh[0].UseableWinterMaterials[0] = miscommandcenterw
+   Mesh[1] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = miscommandcenter
+      UseableMaterials[0] = miscommandcenter
+   struct.end
+   Mesh[2] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = miscommandcenter
+      UseableMaterials[0] = miscommandcenter
+   struct.end
+   Mesh[3] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = miscommandcenter
+      UseableMaterials[0] = miscommandcenter
+   struct.end
+   Mesh[4] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = miscommandcenter
+      UseableMaterials[0] = miscommandcenter
+   struct.end
+   Mesh[5] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = miscommandcenter
+      UseableMaterials[0] = miscommandcenter
+   struct.end
+section.end
+
+collisionmaskproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmaskproperty}
+   Priority = 101
+   Mask : struct.begin
+      [*] = 000000000000000000
+      [*] = 000000000100000000
+      [*] = 000000001100000000
+      [*] = 000000011100000000
+      [*] = 000011111111100000
+      [*] = 001111111111110000
+      [*] = 111111111111111000
+      [*] = 111111111111111000
+      [*] = 111111111111111000
+      [*] = 011111111111111110
+      [*] = 001111111111111111
+      [*] = 000111111111111111
+      [*] = 000000000000011110
+      [*] = 000000000000001100
+   struct.end
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmeshproperty}
+   CustomBoundingAABBMin.X = -2.50
+   CustomBoundingAABBMin.Y = -0.45
+   CustomBoundingAABBMin.Z = -2.15
+   CustomBoundingAABBMax.X = 2.60
+   CustomBoundingAABBMax.Y = 0.30
+   CustomBoundingAABBMax.Z = 3.60
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.4948
+   DefaultScale.Y = 0.4948
+   DefaultScale.Z = 0.4948
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=directionupproperty}
+   DefaultRollAngle = 135
+section.end

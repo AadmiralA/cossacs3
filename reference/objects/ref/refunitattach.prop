@@ -1,0 +1,193 @@
+mainproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = MainProperty
+   CustomName = 
+   RaceName = units
+   BaseName = 
+   PlayerName = 
+   PlayerID = 0
+   Priority = 0
+   PlayableObject = False
+   StaticObject = True
+   TargetObject = False
+section.end
+
+debugproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = DebugProperty
+section.end
+
+designproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = DesignProperty
+   VisibleAtDesignTime = False
+section.end
+
+stringproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = StringProperty
+   CategorieName = units
+section.end
+
+collisionmaskproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = CollisionMaskProperty
+section.end
+
+collisionmeshproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = CollisionMeshProperty
+section.end
+
+actorproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = ActorProperty
+   LODActorName = 
+   RandomMeshName = False
+   DefaultMeshName = 
+   UseParentTLFToPosition = False
+   UseableMeshes : struct.begin
+      [0] = True
+   struct.end
+section.end
+
+materialproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = MaterialProperty
+   Mesh[0] : struct.begin
+      Enabled = False
+      Static = False
+      ClassName = MeshMaterialProperty
+      DefaultMaterialName = 
+      RandomMaterialName = False
+      UseableMaterials[0] = 
+      UseSeasonMaterial = False
+   struct.end
+section.end
+
+statemachineproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = StateMachineProperty
+   Active = False
+   //StateMachine.LoadFromFile = 
+   StateMachineProgressOption = smpoAlways
+   StateMachineProgressChildrenOption = smpcoNever
+   StateMachinePriority = 0
+   StateMachineInterval = 1000
+section.end
+
+moveproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = MoveProperty
+section.end
+
+rotateproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = RotateProperty
+section.end
+
+soundproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = SoundProperty
+section.end
+
+pfxproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = PFXProperty
+   BehavioursStored = False
+   EffectsStored = False
+section.end
+
+frameanimationproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = FrameAnimationProperty
+   DefaultFrameAnimationName = 
+   DefaultFrameAnimationMode = aamLoop
+   FrameAnimationSynchronizeOption = fasoInherited
+   FrameAnimationSwitchChildren = False
+   DefaultFrameAnimationCycles = 
+   FrameAnimationCyclesLibName = 
+   RandomOffsetFrameAnimationCycles = False
+   RandomOffsetFrameAnimation = False
+section.end
+
+scaleproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = ScaleProperty
+   DefaultScale : struct.begin
+      X = 0.5
+      Y = 0.5
+      Z = 0.5
+   struct.end
+   RandomScale = False
+   MinScaleFactor = 1
+   MaxScaleFactor = 1
+   DefaultScaleFactor = 1
+section.end
+
+directionupproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = DirectionUpProperty
+   DefaultDirection : struct.begin
+      X = 0
+      Y = 1
+      Z = 0
+   struct.end
+   DefaultUp : struct.begin
+      X = 1
+      Y = 0
+      Z = 0
+   struct.end
+section.end
+
+dispersitionproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = DispersitionProperty
+section.end
+
+offsetproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = OffsetProperty
+section.end
+
+autochildrenproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = AutoChildrenProperty
+section.end
+
+selectionproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = SelectionProperty
+section.end
+
+decalproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = DecalProperty
+section.end
+
+cmdsproperty : section.begin
+   Enabled = False
+   Static = False
+   ClassName = CmdsProperty
+section.end

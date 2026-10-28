@@ -1,0 +1,12 @@
+section.begin
+   Name = ResetDefaults
+   UsedFile = True
+   UsedFileName = .\data\scripts\user\user.inc\resetdefaults.inc
+section.end
+
+section.begin
+   CurrentState = 
+   SaveVariables = True
+   Variables : struct.begin
+   struct.end
+section.end

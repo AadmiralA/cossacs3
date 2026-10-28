@@ -1,0 +1,115 @@
+section.begin
+   Name = Initial
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\projectile.inc\initial.inc
+section.end
+
+section.begin
+   Name = Nothing
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\projectile.inc\nothing.inc
+section.end
+
+section.begin
+   Name = InitialEmpty
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\projectile.inc\initialempty.inc
+section.end
+
+section.begin
+   Name = NothingEmpty
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\projectile.inc\nothingempty.inc
+section.end
+
+section.begin
+   Name = FreeToPool
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\projectile.inc\freetopool.inc
+section.end
+
+section.begin
+   Name = FreeToPoolNext
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\projectile.inc\freetopoolnext.inc
+section.end
+
+section.begin
+   Name = OnCollide
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\projectile.inc\oncollide.inc
+section.end
+
+section.begin
+   Name = DoDestroy
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\projectile.inc\dodestroy.inc
+section.end
+
+section.begin
+   Name = OnTerrainCollide
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\projectile.inc\onterraincollide.inc
+section.end
+
+section.begin
+   Name = OnStopEvent
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\projectile.inc\onstopevent.inc
+section.end
+
+section.begin
+   Name = OnAfterLoad
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\projectile.inc\onafterload.inc
+section.end
+
+section.begin
+   Name = OnDestroy
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\projectile.inc\ondestroy.inc
+section.end
+
+section.begin
+   Name = -----------------------------
+   UsedFileName = 
+section.end
+
+section.begin
+   Name = DoDeath
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\projectile.inc\dodeath.inc
+section.end
+
+section.begin
+   Name = DoExplode
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\projectile.inc\doexplode.inc
+section.end
+
+section.begin
+   Name = DoExplodeCustom
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\projectile.inc\doexplodecustom.inc
+section.end
+
+section.begin
+   CurrentState = Nothing
+   SaveVariables = False
+section.end
+

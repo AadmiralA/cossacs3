@@ -1,0 +1,306 @@
+//
+// miscext3.script
+//
+
+// _misc_QuickPlayUnsign
+//
+procedure _misc_QuickPlayUnsign(bauto : Boolean);
+begin
+   Log('_misc_QuickPlay : Unsign');
+   gInternetShell.autosearchroomtime := 0;
+   gInternetShell.autosearchstarttime := 0;
+
+   if (not bauto) then
+   begin
+      gInternetShell.bautosearch := False;
+      gInternetShell.bcustomautosearch := False;
+      gInternetShell.autosearchtotaltime := 0;
+   end;
+
+   if gInternetShell.selsessionid<0 then
+   gInternetShell.selsessionid := 0;
+   gbool_gui_showinternetshell := True;
+   LanTerminateGame;
+end;
+
+// _misc_QuickPlayGetAntispamTime
+//
+function _misc_QuickPlayGetAntispamTime() : Integer;
+begin
+   Result := 2+Floor(random*1);
+end;
+
+// _misc_QuickPlaySign
+//
+procedure _misc_QuickPlaySign(time : Float);
+begin
+   log('_misc_QuickPlaySign');
+   gInternetShell.bautosearch := True;
+   gInternetShell.autosearchroomtime := 0;
+   gInternetShell.autosearchstarttime := _misc_GetRealTime;
+   gInternetShell.autosearchantispamlasttime := _misc_GetRealTime+_misc_QuickPlayGetAntispamTime;
+   gfloat_lan_quickplayautosearch_addtime := 0;
+
+   gfloat_gui_lanlastgametimesyncreceived := 0;
+   var i : Integer;
+   for i:=0 to gc_MaxPlayerCount-1 do
+   gfloat_gui_lanlastaliveeventreceived[i] := 0;
+
+   gbool_gui_showinternetshell := True;
+   
+   //gInternetShell.currentsessionid := LanMyInfoID;
+
+   var checksum : String;
+   if gbool_modsscript then
+   checksum := gstring_checksum
+   else
+   checksum := '0'+gstring_checksum;
+   var code : String;
+   if gInternetShell.qprankedgame then
+   code := 'qs='
+   else
+   code := 'qz=';
+   LanCreateGame('', code+IntToStr(LanMyInfoID)+'.'+IntToStr(round(time))+#9+gc_quickplay_roompass+#9+checksum, '0', 1);
+end;
+
+// _misc_ReconnectManagerStartSession
+//
+procedure _misc_ReconnectManagerStartSession();
+begin
+   Log('ReconnectManagerStartSession');
+   gReconnectManager.Init(False);
+   gReconnectManager.bsessionstarted := True;
+   gReconnectManager.sessionstarttime := _misc_GetRealTime;
+   gReconnectManager.bconnectedserver := True;
+   gReconnectManager.bconnectedroom := True;
+end;
+
+// _misc_ReconnectManagerTryReconnectServer
+//
+function _misc_ReconnectManagerTryReconnectServer() : Boolean;
+begin
+   Result := False;
+   if (not gReconnectManager.IsOnServer) then
+   begin
+      if ((gReconnectManager.lastattempttime+gc_ReconnectManager_AttemptTimeOut)<_misc_GetRealTime) then
+      begin
+         Log('TryReconnectServer : IsOnServer=False : GUI.DoConnectServer : attempt='+IntToStr(gReconnectManager.attempt));
+         gReconnectManager.lastattempttime := _misc_GetRealTime;
+         gReconnectManager.attempt := gReconnectManager.attempt+1;
+         GUIExecuteState('DoConnectServer');
+      end;
+   end;
+   if (not gReconnectManager.IsOnline) and (gReconnectManager.prevstate>=4) then
+   begin
+      if ((gReconnectManager.lastattempttime+gc_ReconnectManager_AttemptTimeOut)<_misc_GetRealTime) then
+      begin
+         Log('TryReconnectServer : IsOnline=False : gLanRecreate.brecreate := True; _misc_RepairSession() : attempt='+IntToStr(gReconnectManager.attempt));
+
+         gReconnectManager.lastattempttime := _misc_GetRealTime;
+         gReconnectManager.attempt := gReconnectManager.attempt+1;
+
+         // look for right room
+         var i : Integer;
+         for i:=gInternetShell.sessions.GetCount-1 downto 0 do
+         begin
+            var psession : Pointer = gInternetShell.sessions.Get(i);
+            if (psession<>nil) and (TInternetShellSession(psession).masterid=gLanRecreate.hostid) then
+            begin
+               if (not TInternetShellSession(psession).blocked) then
+               begin
+                  Log('Session:leShellSessionCreate idFrom=gLanRecreate.hostid='+IntToStr(gLanRecreate.hostid));
+                  gLanHostID := gLanRecreate.hostid;
+                  LanJoinGame('', IntToStr(gLanRecreate.hostid), False);
+                  var team : Integer = _misc_GetClLanTeamByLanID(LanMyInfoID);
+                  LanClSetMyTeam(team);
+                  Log('Session : leShellSessionCreate (ReHost) : LanClSetMyTeam('+IntToStr(team)+')');
+               end
+               else
+               Log('_misc_ReconnectManagerTryReconnectServer : TInternetShellSession(psession).blocked=true');
+            end;
+         end;
+      end;
+   end;
+end;
+
+// _misc_ReconnectManagerProgress
+//
+procedure _misc_ReconnectManagerProgress();
+begin
+   if (gReconnectManager.attempt>=gc_ReconnectManager_MaxAttemptsCount) then
+   gReconnectManager.bimpossibletoreconnect := True
+   else
+   if (gReconnectManager.bsessionstarted) and (not gReconnectManager.bimpossibletoreconnect) then
+   begin
+      if (not gReconnectManager.IsOnServer) then
+      gReconnectManager.bconnectedserver := False
+      else
+      if (not gReconnectManager.bconnectedserver) then
+      begin
+         gReconnectManager.bconnectedserver := True;
+         gReconnectManager.bsuccessreconnectserver := True;
+         gReconnectManager.attempt := 0;
+         gReconnectManager.lastattempttime := 0;
+      end;
+
+      if (not gReconnectManager.IsOnline) then
+      gReconnectManager.bconnectedroom := False
+      else
+      if (not gReconnectManager.bconnectedroom) then
+      begin
+         gReconnectManager.bconnectedroom := True;
+         gReconnectManager.bsuccessreconnectroom := True;
+         gReconnectManager.attempt := 0;
+         gReconnectManager.lastattempttime := 0;
+         gReconnectManager.btryreconnect := False;
+      end;
+
+      if (not gReconnectManager.bconnectedserver) or (not gReconnectManager.bconnectedroom) then
+      _misc_ReconnectManagerTryReconnectServer;
+   end;
+   if (not gReconnectManager.bsessionstarted) or (gReconnectManager.bimpossibletoreconnect) then
+   begin
+      gReconnectManager.Init(False);
+      {Log('_misc_ReconnectManagerProgress.Progress : ShutDown or Terminate');
+      if (not gReconnectManager.IsOnServer) then
+      LanShutDown
+      else
+      LanTerminateGame;}
+   end;
+end;
+
+// _misc_ReconnectManagerStartReconnectProcess
+//
+procedure _misc_ReconnectManagerStartReconnectProcess();
+begin
+   Log('_misc_ReconnectManagerStartReconnectProcess');
+
+   gMap.gamestage := gc_map_gamestage_waitingloading;
+   SetProgressingPauseMode(True);
+   GUIExecuteState('ShowPause');
+   
+   if (gReconnectManager.bsessionstarted) then
+   begin
+      if (gLanRecreate.hostid=0) then
+      gLanRecreate.hostid := gMap.players[0].lanid;
+      if (gLanRecreate.hostid<>0) then
+      begin
+         gLanRecreate.brecreate := True;
+         gLanRecreate.brecreatestarted := True;
+         gLanRecreate.brecreatefinished := False;
+
+         _misc_RepairSession(True, True, True, False);
+      end
+      else
+      begin
+         gReconnectManager.bimpossibletoreconnect := True;
+         Log('ReconnectManagerTryReconnectServer : IsOnline=False : gLanRecreate.hostid=0 : attempt='+IntToStr(gReconnectManager.attempt)+' : bimpossibletoreconnect := True');
+      end;
+   end;
+
+   gReconnectManager.Init(True);
+   gReconnectManager.btryreconnect := True;
+   if (not gReconnectManager.IsOnServer) then
+   gReconnectManager.prevstate := 1
+   else
+   if (not gReconnectManager.IsOnline) then
+   gReconnectManager.prevstate := 4;
+end;
+
+// _misc_InitCustomSessionRecreate
+//
+procedure _misc_InitCustomSessionRecreate();
+begin
+   var master : Integer = gLanRecreate.hostid;
+   if (master=0) then
+   master := gMap.players[0].lanid;
+
+   var clients : Integer;
+   var i : Integer;
+   for i:=0 to gc_MaxPlayerCount-1 do
+   begin
+      if (gMap.players[i].lanid>0) and (gMap.players[i].bloaded) and (not gMap.players[i].bleave) then
+      clients := clients+1;
+   end;
+
+   var pParser : Integer = _parser_ParserCustomSessionRehost(True);
+   ParserSetValueByKeyByHandle(pParser, 'gamename', gMap.name);
+   ParserSetValueByKeyByHandle(pParser, 'mapname', '');
+   ParserSetIntValueByKeyByHandle(pParser, 'master', master);
+   ParserSetIntValueByKeyByHandle(pParser, 'clients', clients);
+
+   gLanEvent := leSessionRecreate;
+   GUIExecuteState('OnLanEventSession');
+end;
+
+// _misc_LanCustErrCodeHandler
+//
+procedure _misc_LanCustErrCodeHandler();
+begin
+   if (LanGetCustErrHandler) then
+   begin
+      var socketerror : Integer = LanGetCustErrCode();
+      LanSetCustErrCode(0);
+      ErrorLog('socketerror = '+IntToStr(socketerror));
+      if (_misc_IsWindows) then
+      begin
+         case socketerror of
+            10050, 10051, 10052, 10053, 10054, 10057, 10058, 10060, 10061, 10064, 10065 : LanTerminateGame;
+            {
+            Windows Sockets Error Codes https://msdn.microsoft.com/en-us/library/windows/desktop/ms740668(v=vs.85).aspx
+            Return code/value
+            WSAENETDOWN=10050
+            WSAENETUNREACH=10051
+            WSAENETRESET=10052
+            WSAECONNABORTED=10053
+            WSAECONNRESET=10054
+            WSAENOTCONN=10057
+            WSAESHUTDOWN=10058
+            WSAETIMEDOUT=10060
+            WSAECONNREFUSED=10061
+            WSAEHOSTDOWN=10064
+            WSAEHOSTUNREACH=10065
+            }
+         end;
+      end
+      else
+      begin
+         case socketerror of
+            103, 111, 104, 112, 113, 100, 102, 101, 64, 107, 110 : LanTerminateGame;
+            {
+            Linux Sockets Error Codes
+            http://man7.org/linux/man-pages/man3/errno.3.html
+            errno.h - C Error Codes in Linux
+            http://www.virtsync.com/c-error-codes-include-errno
+            ECONNABORTED    Connection aborted (POSIX.1-2001).
+            ECONNREFUSED    Connection refused (POSIX.1-2001).
+            ECONNRESET      Connection reset (POSIX.1-2001).
+            EHOSTDOWN       Host is down.
+            EHOSTUNREACH    Host is unreachable (POSIX.1-2001).
+            ENETDOWN        Network is down (POSIX.1-2001).
+            ENETRESET       Connection aborted by network (POSIX.1-2001).
+            ENETUNREACH     Network unreachable (POSIX.1-2001).
+            ENONET          Machine is not on the network.
+            ENOTCONN        The socket is not connected (POSIX.1-2001).
+            ETIMEDOUT       Connection timed out (POSIX.1-2001).
+            }
+         end;
+      end;
+   end;
+end;
+procedure _misc_RemoveTextTagsFromString(var text, newtext : String);
+begin
+   if IsDelimiterCharExists(text, 37) then
+   begin
+      var i : Integer;
+      for i:=0 to GetDelimiterStringCount(text, 37, gc_gui_quotechar)-1 do
+      begin
+         var stmp : String = GetDelimiterStringByIndex(text, 37, gc_gui_quotechar, i);
+         if (StrPos('color(', stmp)=0) and (StrPos('include(', stmp)=0) and (StrPos('style(', stmp)=0) then
+         newtext := newtext+stmp;
+      end;
+      newtext := newtext+'_%req_rename%';
+   end
+   else
+   newtext := text;
+end;

@@ -1,0 +1,105 @@
+section.begin
+   Name = OnTagStates
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\building.inc\ontagstates.inc
+section.end
+
+section.begin
+   Name = SetTagStates
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\building.inc\settagstates.inc
+section.end
+
+section.begin
+   Name = Initial
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\building.inc\initial.inc
+section.end
+
+section.begin
+   Name = Nothing
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\building.inc\nothing.inc
+section.end
+
+section.begin
+   Name = ---------------------
+   UsedFileName = 
+section.end
+
+section.begin
+   Name = OnCollided
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\building.inc\oncollided.inc
+section.end
+
+section.begin
+   Name = OnUncollided
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\building.inc\onuncollided.inc
+section.end
+
+section.begin
+   Name = OnDestroy
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\building.inc\ondestroy.inc
+section.end
+
+section.begin
+   Name = OnDeath
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\building.inc\ondeath.inc
+section.end
+
+section.begin
+   Name = OnBeforeSave
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\building.inc\onbeforesave.inc
+section.end
+
+section.begin
+   Name = OnAfterLoad
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\building.inc\onafterload.inc
+section.end
+
+section.begin
+   Name = ---------------------
+   UsedFileName = 
+section.end
+
+section.begin
+   Name = DoProgressOrders
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\building.inc\doprogressorders.inc
+section.end
+
+section.begin
+   Name = DeathStage1
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\building.inc\deathstage1.inc
+section.end
+
+section.begin
+   Name = DeathStage2
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\building.inc\deathstage2.inc
+section.end
+
+section.begin
+   Name = DelayDestroy
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\building.inc\delaydestroy.inc
+section.end
+
+section.begin
+   CurrentState = Nothing
+   SaveVariables = False
+section.end
+

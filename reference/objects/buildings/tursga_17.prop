@@ -1,0 +1,64 @@
+{refurl=.\data\objects\ref\refbuilding.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=mainproperty}
+   CustomName = tursga_17
+   BaseName = tursga_17
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=actorproperty}
+   LODActorName = turswa_45gate
+   DefaultMeshName = turswa_45gate.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = turswa
+   Mesh[0].UseableMaterials[0] = turswa
+   Mesh[0].UseSeasonMaterial = True
+   Mesh[0].UseableSummerMaterials[0] = turswa
+   Mesh[0].UseableWinterMaterials[0] = turswaw
+   Mesh[1] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = turswa
+      UseableMaterials[0] = turswa
+   struct.end
+   Mesh[2] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = turswa
+      UseableMaterials[0] = turswa
+   struct.end
+section.end
+
+collisionmaskproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmaskproperty}
+   Priority = 101
+   Mask : struct.begin
+      [*] = 00000000
+      [*] = 11110000
+      [*] = 11110000
+      [*] = 11100000
+      [*] = 11000000
+      [*] = 00000000
+      [*] = 00000011
+      [*] = 00000111
+      [*] = 00000111
+      [*] = 00000111
+   struct.end
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmeshproperty}
+   RayCastIntersect = True
+   BVRayCastIntersect = True
+   CustomBoundingAABBMin.X = -1.1
+   CustomBoundingAABBMin.Y = 0.00
+   CustomBoundingAABBMin.Z = -0.6
+   CustomBoundingAABBMax.X = 1.1
+   CustomBoundingAABBMax.Y = 2.25
+   CustomBoundingAABBMax.Z = 0.6
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.33333
+   DefaultScale.Y = 0.33333
+   DefaultScale.Z = 0.33333
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=directionupproperty}
+   DefaultRollAngle = 45
+section.end

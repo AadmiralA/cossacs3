@@ -1,0 +1,76 @@
+{refurl=.\data\objects\ref\refmisc.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=mainproperty}
+   CustomName = gatecollision
+   BaseName = gatecollision
+section.end
+
+stringproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=stringproperty}
+   StringTag = 102
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=actorproperty}
+   Enabled = False
+   LODActorName = point
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = box
+   Mesh[0].UseableMaterials[0] = box
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=collisionmeshproperty}
+   Enabled = True
+   Static = True
+   ClassName = CollisionMeshProperty
+   Detection = True
+   RayCastIntersect = False
+   Priority = 0
+   BoundingMode = cbmAABB
+   BoundingData = cbdCustom
+   BoundingSpace = cbsProj
+   CustomBoundingAABBMin : struct.begin
+      X = -0.35
+      Y = 0
+      Z = -0.35
+   struct.end
+   CustomBoundingAABBMax : struct.begin
+      X = 0.35
+      Y = 0.5
+      Z = 0.35
+   struct.end
+   CustomBoundingSphere = 0.35
+   CollidedStateName = 
+   UncollidedStateName = 
+   UseCustAABBinSP = True
+   UseCustTransformed = False
+   UseCameraCollision = False
+   UseNoSPCull = False
+   UncollideDelta = 0.05
+   RayCastUsingTLF = False
+   RayCastNotifyState = 
+   CIEnabled = False
+   CIMovable = False
+   CIMass = 10000
+   CIIntersectRadius = 0.35
+   CIMaxDistKoef = 2
+   CIDeltaStep = 0.005
+   CIRotationSpeed = 5
+   CIStuckAngle = 5
+   CIEpsilonAngle = 4
+   CIEpsilonShift = 0.001
+   CIEpsilonMove = 0.02
+   CIDistExtPointEpsilon = 0.005
+   CIAvoidPointMaxAngle = 60
+   CIMaxCollideCounter = 7
+   BVTestEnabled = False
+   BVTestShpereRadius = 0
+   BVRayCastIntersect = False
+   BVUseTrackNode = False
+section.end
+
+offsetproperty : section.begin
+   Enabled = True
+   Static = False
+   ClassName = OffsetProperty
+section.end

@@ -1,0 +1,85 @@
+{refurl=.\data\objects\ref\refenv.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=mainproperty}
+   CustomName = christmastree
+   BaseName = christmastree
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=actorproperty}
+   LODActorName = christmastree
+   DefaultMeshName = christmastree.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=materialproperty}
+   Mesh : struct.begin      
+      [0] : struct.begin
+         Enabled = False
+         Static = False
+         ClassName = MeshMaterialProperty
+         DefaultMaterialName = christmastree
+         RandomMaterialName = False
+         UseableMaterials[0] = christmastree
+         UseSeasonMaterial = False
+      struct.end
+   struct.end
+section.end
+
+autochildrenproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = AutoChildrenProperty
+   Custom = False
+   Mesh[0] : struct.begin
+      Enabled = True
+      Static = True
+      ClassName = MeshChildrenProperty
+      Children : struct.begin
+         [0] : struct.begin
+            Enabled = True
+            Static = True
+            ClassName = ChildProperty
+            BaseName = christmastreea
+            RaceName = env
+            DefaultMeshName = christmastreea.mesh
+            RandomMeshName = False
+            Mesh[0] = christmastreea
+            DefaultMaterialName = christmastreea
+            RandomMaterialName = False
+            Materials[0] = christmastreea
+            Option = achildRequered
+            StartStateName = 
+            Useable = True
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=statemachineproperty}
+   ClassName = StateMachineProperty
+   DefaultInitStateName = InitialDecor
+section.end
+
+stringproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=stringproperty}
+   CategorieName = decor
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.5
+   DefaultScale.Y = 0.5
+   DefaultScale.Z = 0.5
+   RandomScale = True
+   MinScaleFactor = 0.85
+   MaxScaleFactor = 1.15
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=directionupproperty}
+   DefaultRollAngle = 270
+   RandomRollAngle = False
+section.end
+
+decalproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=decalproperty}
+   Enabled = True
+   Static = True
+   DefaultDecalName = christmastreed
+   AutoDestroyDecal = False
+section.end

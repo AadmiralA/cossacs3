@@ -1,0 +1,104 @@
+{refurl=.\data\objects\ref\refunit.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=mainproperty}
+   CustomName = fishboat
+   BaseName = fishboat
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=actorproperty}
+   LODActorName = fishboat
+   DefaultMeshName = fishboat.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = fishboat
+   Mesh[0].UseableMaterials[0] = fishboat
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = fishboat
+      UseableMaterials[0] = fishboat
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = fishboat
+      UseableMaterials[0] = fishboat
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = fishboat
+      UseableMaterials[0] = fishboat
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = fishboat
+      UseableMaterials[0] = fishboat
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = fishboat
+      UseableMaterials[0] = fishboat
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = fishboat
+      UseableMaterials[0] = fishboat
+   struct.end
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=statemachineproperty}
+   StateMachineInterval = 60
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=collisionmeshproperty}
+   UseCustTransformed = True
+   CustomBoundingAABBMin.X = -0.75
+   CustomBoundingAABBMin.Y = -0.1
+   CustomBoundingAABBMin.Z = -0.25
+   CustomBoundingAABBMax.X = 0.75
+   CustomBoundingAABBMax.Y = 0.3
+   CustomBoundingAABBMax.Z = 0.25
+section.end
+
+autochildrenproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = AutoChildrenProperty
+   Custom = False
+   Mesh[0] : struct.begin
+      Enabled = True
+      Static = True
+      ClassName = MeshChildrenProperty
+      Children : struct.begin
+         [0] : struct.begin
+            Enabled = True
+            Static = True
+            ClassName = ChildProperty
+            BaseName = fishboata
+            RaceName = units
+            DefaultMeshName = fishboata.mesh
+            RandomMeshName = False
+            Mesh[0] = fishboata
+            Mesh[1] = fishboat1a
+            Mesh[2] = fishboat2a
+            Mesh[3] = fishboat3a
+            Mesh[4] = fishboat4a
+            Mesh[5] = fishboat_death1a
+            Mesh[6] = fishboat_death2a
+            DefaultMaterialName = xebeca
+            RandomMaterialName = False
+            Materials[0] = xebeca
+            Materials[1] = xebeca
+            Materials[2] = xebeca
+            Materials[3] = xebeca
+            Materials[4] = xebeca
+            Materials[5] = xebeca
+            Materials[6] = xebeca
+            Option = achildRequered
+            StartStateName = 
+            Useable = True
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=frameanimationproperty}
+   FrameAnimationCyclesLibName = fishboat
+section.end
+
+offsetproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=offsetproperty}
+   OffsetCollideOption = ocoTerrainWater
+section.end

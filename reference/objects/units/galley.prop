@@ -1,0 +1,104 @@
+{refurl=.\data\objects\ref\refunit.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=mainproperty}
+   CustomName = galley
+   BaseName = galley
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=actorproperty}
+   LODActorName = galley
+   DefaultMeshName = galley.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = galley
+   Mesh[0].UseableMaterials[0] = galley
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = galley
+      UseableMaterials[0] = galley
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = galley
+      UseableMaterials[0] = galley
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = galley
+      UseableMaterials[0] = galley
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = galley
+      UseableMaterials[0] = galley
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = galley
+      UseableMaterials[0] = galley
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = galley
+      UseableMaterials[0] = galley
+   struct.end
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=statemachineproperty}
+   StateMachineInterval = 60
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=collisionmeshproperty}
+   UseCustTransformed = True
+   CustomBoundingAABBMin.X = -0.6
+   CustomBoundingAABBMin.Y = -0.2
+   CustomBoundingAABBMin.Z = -2
+   CustomBoundingAABBMax.X = 0.6
+   CustomBoundingAABBMax.Y = 1
+   CustomBoundingAABBMax.Z = 3
+section.end
+
+autochildrenproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = AutoChildrenProperty
+   Custom = False
+   Mesh[0] : struct.begin
+      Enabled = True
+      Static = True
+      ClassName = MeshChildrenProperty
+      Children : struct.begin
+         [0] : struct.begin
+            Enabled = True
+            Static = True
+            ClassName = ChildProperty
+            BaseName = galleya
+            RaceName = units
+            DefaultMeshName = galleya.mesh
+            RandomMeshName = False
+            Mesh[0] = galleya
+            Mesh[1] = galley1a
+            Mesh[2] = galley2a
+            Mesh[3] = galley3a
+            Mesh[4] = galley4a
+            Mesh[5] = galley_death1a
+            Mesh[6] = galley_death2a
+            DefaultMaterialName = xebeca
+            RandomMaterialName = False
+            Materials[0] = galley
+            Materials[1] = galley
+            Materials[2] = galley
+            Materials[3] = xebeca
+            Materials[4] = xebeca
+            Materials[5] = xebeca
+            Materials[6] = xebeca
+            Option = achildRequered
+            StartStateName = 
+            Useable = True
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=frameanimationproperty}
+   FrameAnimationCyclesLibName = galley
+section.end
+
+offsetproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=offsetproperty}
+   OffsetCollideOption = ocoTerrainWater
+section.end

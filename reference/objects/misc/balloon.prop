@@ -1,0 +1,75 @@
+{refurl=.\data\objects\ref\refmisc.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=mainproperty}
+   CustomName = balloon
+   BaseName = balloon
+   PlayableObject = False
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=actorproperty}
+   LODActorName = balloon
+   DefaultMeshName = balloon.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = balloon
+   Mesh[0].UseableMaterials[0] = balloon
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=statemachineproperty}
+   Enabled = True
+   Static = False
+   ClassName = StateMachineProperty
+   Active = True
+   StateMachine.LoadFromFile = .\data\scripts\misc\ballon.aix
+   DefaultInitStateName = Initial
+   DestroyStateName = 
+   AfterLoadStateName = OnAfterLoad
+   BeforeSaveStateName = OnBeforeSave
+   InLoadStateName = 
+   TagStatesChangedStateName = OnTagStates
+   StateMachineInterval = 100
+section.end
+
+pfxproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=pfxproperty}
+   Enabled = True
+   Static = True
+   ClassName = PFXProperty
+   BehavioursStored = True
+   EffectsStored = True
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=frameanimationproperty}
+   FrameAnimationCyclesLibName = balloon
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.2
+   DefaultScale.Y = 0.2
+   DefaultScale.Z = 0.2
+section.end
+
+offsetproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=offsetproperty}
+   Enabled = False
+   Static = False
+   ClassName = OffsetProperty
+   AutoOffset = False
+section.end
+
+autochildrenproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=autochildrenproperty}
+   Enabled = True
+   ClassName = AutoChildrenProperty
+   Mesh[0] : struct.begin
+      Children : struct.begin
+         [0] : struct.begin
+            BaseName = balloona
+            RaceName = misc
+            DefaultMeshName = balloona.mesh
+            Mesh[0] = balloona
+            DefaultMaterialName = balloon
+            Materials[0] = balloon
+            Useable = True
+         struct.end
+      struct.end
+   struct.end
+section.end

@@ -1,0 +1,55 @@
+{refurl=.\data\objects\ref\refunit.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=mainproperty}
+   CustomName = howitzer
+   BaseName = howitzer
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=actorproperty}
+   LODActorName = howitzer
+   DefaultMeshName = howitzer.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = howitzer
+   Mesh[0].UseableMaterials[0] = howitzer
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=statemachineproperty}
+   StateMachineInterval = 60
+section.end
+
+autochildrenproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=autochildrenproperty}
+   Enabled = True
+   Mesh[0] : struct.begin
+      Children : struct.begin
+         [0] : struct.begin
+            BaseName = howitzer_wheel_left
+            DefaultMeshName = howitzer_wheel_left.mesh
+            Mesh[*] = howitzer_wheel_left.mesh
+            DefaultMaterialName = howitzer
+            Materials[*] = howitzer
+         struct.end
+         [1] : struct.begin {refkey=autochildrenproperty.Mesh[0].Children[0]}
+            BaseName = howitzer_wheel_right
+            DefaultMeshName = howitzer_wheel_right.mesh
+            Mesh[*] = howitzer_wheel_right.mesh
+            DefaultMaterialName = howitzer
+            Materials[*] = howitzer
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=frameanimationproperty}
+   FrameAnimationCyclesLibName = howitzer
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=collisionmeshproperty}
+   CustomBoundingAABBMin.X = -0.35
+   CustomBoundingAABBMin.Y = 0
+   CustomBoundingAABBMin.Z = -0.35
+   CustomBoundingAABBMax.X = 0.35
+   CustomBoundingAABBMax.Y = 0.7
+   CustomBoundingAABBMax.Z = 0.35
+section.end

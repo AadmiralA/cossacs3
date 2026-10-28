@@ -1,0 +1,337 @@
+//
+// map.script
+//
+
+// _map_Init
+//
+procedure _map_Init(); //bFirstTime : Boolean
+begin
+   // сброс/инициализация регистров
+   // установка воды
+   // разброс стартовых паттернов ресурсов, вокруг точек старта
+   // разброс паттернов по карте
+   // генерация декоративных дорог (если нужно)
+   // расчет карты проходимости и генерация графа путей
+   // инициализация звуков окружения (разброс звуковых пространств)
+   // инициализация освещения
+   // расстановка тучь/теней от тучь (если нужно)
+   // создание камер
+   // создание плееров и их инициализация
+   // расстановка стартовых юнитов
+   //// применение lowest настроек графики (если нужно)
+   //// инициализация торговли
+end;
+
+// _map_CreateStartPointDebug
+//
+procedure _map_CreateStartPointDebug(plInd : Integer; pointx, pointy : Float);
+begin
+   const cBaseNamePeasant = 'peapol';
+   var plHnd : Integer = GetPlayerHandleByIndex(plInd);
+   var goHnd : Integer = CreatePlayerGameObjectHandleByHandle(plHnd, gc_racename_units, cBaseNamePeasant, pointx, 0, pointy);
+end;
+
+// _map_CreateStartPoint
+//
+procedure _map_CreateStartPoint(plInd : Integer; pointx, pointy : Float);
+begin
+   const cBaseNamePeasant = 'peapol';
+   var plHnd : Integer = GetPlayerHandleByIndex(plInd);
+   var px, py, pz : Float;
+   var count : Integer = 18;
+   var i : Integer;
+   for i:=0 to count-1 do
+   begin
+      px := pointx-3+(i div 3)*0.75+(0.5-random)*0.25;
+      pz := pointy-3+(i mod 3)*0.75+(0.5-random)*0.25;
+      var goHnd : Integer = CreatePlayerGameObjectHandleByHandle(plHnd, gc_racename_units, cBaseNamePeasant, px, py, pz);
+      SetGameObjectRollAngleByHandle(goHnd, 180);
+   end;
+   if (GetCountOfPlayers>=gc_playerind_env) then
+   begin
+      var envPlHnd : Integer = GetPlayerHandleByIndex(gc_playerind_env);
+      StandPattern(envPlHnd, 'tls_5', pointx, pointy, 0);
+      StandPattern(envPlHnd, 'tls_2', pointx+21, pointy-1, 0);
+      StandPattern(envPlHnd, 'str_7', pointx-8, pointy-17, 0);
+      StandPattern(envPlHnd, 'stn_5', pointx-17, pointy-8, 0);
+      StandPattern(envPlHnd, 'stn_4', pointx+4, pointy+9, 0);
+      StandPattern(envPlHnd, 'mnc1', pointx+14, pointy-10, 0);
+      StandPattern(envPlHnd, 'mni1', pointx+4, pointy-16, 0);
+      StandPattern(envPlHnd, 'mng1', pointx+12, pointy+5, 0);
+      StandPattern(envPlHnd, 'frt_big2', pointx-8, pointy+29, 0);
+      if (plInd=0) then
+      begin
+         StandPattern(envPlHnd, 'mnt5', -4, -36, 0);
+         StandPattern(envPlHnd, 'plt3', -7, 18, 0);
+      end;
+   end;
+end;
+
+// _map_CreateStartPoint2
+//
+procedure _map_CreateStartPoint2(plInd : Integer; pointx, pointy : Float);
+begin
+   var ccsid : String = 'swe';
+   var ccid : Integer = 7;//swe
+   //var ccid : Integer = 8;//pru
+   gPlayer[plInd].csid := ccsid;
+   gPlayer[plInd].cid := ccid;
+   
+   const cBaseNamePeasant = 'peaeng';
+   var plHnd : Integer = GetPlayerHandleByIndex(plInd);
+   var px, py, pz : Float;
+   var count : Integer = 18;
+   var i, j : Integer;
+   for i:=0 to count-1 do
+   begin
+      px := pointx-3+(i div 3)*0.75+(0.5-random)*0.25;
+      pz := pointy-3+(i mod 3)*0.75+(0.5-random)*0.25;
+      var goHnd : Integer = CreatePlayerGameObjectHandleByHandle(plHnd, gc_racename_units, cBaseNamePeasant, px, py, pz);
+      SetGameObjectRollAngleByHandle(goHnd, 180);
+   end;
+   var envPlHnd : Integer = GetPlayerHandleByIndex(gc_playerind_env);
+   for i:=0 to 4 do
+   for j:=0 to 4 do
+   StandPattern(envPlHnd, 'tls_'+IntToStr(floor(1+random*(6))), pointx+(i-2)*16, pointy+(j-2)*16, 0);
+   
+   if (GetCountOfPlayers>=gc_playerind_env) then
+   begin
+      StandPattern(envPlHnd, 'a_str_3', pointx-18, pointy-27, 0);
+      StandPattern(envPlHnd, 'a_str_7', pointx-8, pointy-17, 0);
+      StandPattern(envPlHnd, 'a_stn_1', pointx-17, pointy-8, 0);
+      StandPattern(envPlHnd, 'a_stn_2', pointx-21, pointy-2, 0);
+      StandPattern(envPlHnd, 'a_stn_4', pointx+2, pointy+12, 0);
+      StandPattern(envPlHnd, 'mnc3', pointx+14, pointy-10, 0);
+      StandPattern(envPlHnd, 'mni3', pointx+4, pointy-16, 0);
+      StandPattern(envPlHnd, 'mng3', pointx+12, pointy+5, 0);
+      StandPattern(envPlHnd, 'a_frt_b_p_3', pointx-12, pointy+16, 0);
+      StandPattern(envPlHnd, 'a_frt_b_p_1', pointx+6, pointy+28, 0);
+      StandPattern(envPlHnd, 'a_frt_b_p_5', pointx+28, pointy-4, 0);
+      if (plInd=0) then
+      begin
+         StandPattern(envPlHnd, 'plt2', pointx-4+32+18, pointy-36+14-8, 0);
+         StandPattern(envPlHnd, 'plt2', pointx-7+32+8, pointy+18+14+8, 0);
+      end;
+   end;
+end;
+
+procedure _map_ResetMapPlayer(var mapplayer : TMapPlayer; ind : Integer; bQuickPlay : Boolean);
+begin
+   var tmp : TMapPlayer;
+   mapplayer := tmp;
+   mapplayer.id := ind;
+   mapplayer.color := ind;
+   var totalplayers : Integer;
+   var i : Integer;
+   for i:=0 to gc_MaxPlayerCount-1 do
+   begin
+      if (gMap.players[i].bexists) and (gMap.players[i].cid<>gc_spectator_countryid) then
+      totalplayers := totalplayers+1;
+   end;
+   // it checks existing players, so we need to check if we have 8 players already
+   if (totalplayers>=gc_MaxNonSpectatorsCount) then
+   mapplayer.cid := gc_spectator_countryid
+   else
+   mapplayer.cid := gc_MaxCountryCount;
+   if (ind=gc_player_mercenaryind) then
+   mapplayer.color := gc_MaxColorCount-1;
+   if (bQuickPlay) then
+   begin
+      if ind>=gint_quickplay_countofplayers then
+      begin
+         mapplayer.team := 0;
+         if (ind<(gc_MaxPlayerCount-1)) then
+         mapplayer.bclosed := True;
+      end
+      else
+      if ind<(gint_quickplay_countofplayers div 2) then
+      mapplayer.team := 1
+      else
+      mapplayer.team := 2;
+   end;
+end;
+
+// _map_ResetMapSettings
+//
+procedure _map_ResetMapSettings(var map : TMap; bSingleplayer, bLoadFromProfile, bDefault, bQuickPlay, bRating, bMirrorMatch : Boolean);
+begin
+   function _hard_IsCountryAvailable(cid : Integer) : Boolean;
+   begin
+      procedure _hard_GetSIDByID(id : Integer; var sid : String);
+      begin
+         case id of
+            -2 : sid := 'spe';
+            0 : sid := 'aus';
+            1 : sid := 'fra';
+            2 : sid := 'eng';
+            3 : sid := 'spa';
+            4 : sid := 'rus';
+            5 : sid := 'ukr';
+            6 : sid := 'pol';
+            7 : sid := 'swe';
+            8 : sid := 'pru';
+            9 : sid := 'ven';
+            10 : sid := 'tur';
+            11 : sid := 'alg';
+            12 : sid := 'mis';
+            13 : sid := 'net';
+            14 : sid := 'den';
+            15 : sid := 'por';
+            16 : sid := 'pie';
+            17 : sid := 'sax';
+            18 : sid := 'bav';
+            19 : sid := 'hun';
+            20 : sid := 'swi';
+            21 : sid := 'sco';
+            22 : sid := 'tat';
+            23 : sid := 'lit';
+            else
+            begin
+               sid := '';
+               ErrorLog('_country_GetSIDByID : unknown nation index');
+            end;
+         end;
+      end;
+
+      Result := False;
+      var csid : String;
+      if (cid>=0) and (cid<gc_MaxCountryCount) then
+      begin
+         if (cid<>gc_country_ind_mis) then
+         begin
+            if (cid<gc_MaxCountryCountRelease) then
+            Result := True
+            else
+            begin
+               _hard_GetSIDByID(cid, csid);
+               case csid of
+                  'net', 'den', 'sax', 'bav', 'por', 'hun', 'sco', 'pie', 'swi' : Result := True; // all nations in mirror match exists
+               end;
+            end;
+         end
+      end;
+   end;
+
+   var tmp : TMap;
+   map := tmp;
+   
+   var bLoaded : Boolean;
+   var i : Integer;
+   if (bLoadFromProfile) and (gProfileUserStruct.custommap.players[0].bexists) then
+   begin
+      bLoaded := True;
+      map := gProfileUserStruct.custommap;
+      for i:=0 to gc_MaxPlayerCount-1 do
+      if (map.players[i].lanid<>0) or (not bSingleplayer) then
+      _map_ResetMapPlayer(map.players[i], i, bQuickPlay)
+      else
+      if (bSingleplayer) and (i>7) then
+      _map_ResetMapPlayer(map.players[i], i, bQuickPlay);
+   end
+   else
+   for i:=0 to gc_MaxPlayerCount-1 do
+   _map_ResetMapPlayer(map.players[i], i, bQuickPlay);
+   
+   if {(not bQuickPlay) and }(bSingleplayer) then
+   begin
+      map.players[0].bexists := True;
+      map.players[0].name := gProfile.name;
+      map.players[0].bhuman := True;
+      if (not bLoaded) and (bSingleplayer) then
+      begin
+         map.players[1].bexists := True;
+         map.players[1].bai := True;
+         map.players[1].aidifficulty := gc_player_difficulty_easy;
+      end;
+   end;
+   
+   if (bQuickPlay) or (bDefault) or (bLoadFromProfile and (not bLoaded)) then
+   begin
+      map.settings.gen.season := 0;
+      map.settings.gen.relieftype := 3;
+      map.settings.gen.resourcestart := 2;
+      map.settings.gen.resourcemines := 1;
+      map.settings.additional.teams := 1;
+   end;
+   //Log('bQuickPlay = '+BoolToStr(bQuickPlay)+' bMirrorMatch = '+BoolToStr(bMirrorMatch));
+   if bQuickPlay then
+   begin
+      for i:=0 to gc_MaxPlayerCount-2 do
+      begin
+         if i>=gint_quickplay_countofplayers then
+         begin
+            map.players[i].team := 0;
+            map.players[i].bclosed := True;
+         end
+         else
+         if i<(gint_quickplay_countofplayers div 2) then
+         map.players[i].team := 1
+         else
+         map.players[i].team := 2;
+      end;
+      if bRating then
+      begin
+         //map.settings.additional.peacetime := gc_mapsettings_peacetime_default;
+         map.settings.additional.peacetime := gc_mapsettings_peacetime_15;
+         map.settings.additional.capture := gc_mapsettings_capture_nopeasants;
+         map.settings.additional.adviserassistant := gc_mapsettings_adviserassistant_without;
+      end
+      else
+      begin
+         //map.settings.additional.peacetime := gc_mapsettings_peacetime_default; //gc_mapsettings_peacetime_10;
+         map.settings.additional.peacetime := gc_mapsettings_peacetime_15;
+         map.settings.additional.capture := gc_mapsettings_capture_nopeasants;
+         map.settings.additional.adviserassistant := gc_mapsettings_adviserassistant_default;
+      end;
+      if bMirrorMatch then
+      begin
+         var availcountry : TIntegerList;
+         var i : Integer;
+         for i:=0 to gc_MaxCountryCount-1 do
+         begin
+            if (_hard_IsCountryAvailable(i)) then
+            availcountry.Add(i);
+         end;
+         if (gint_quickplay_countofplayers=gc_quickplay_countofplayers4) then
+         begin
+            var rndcountry1 : Integer = availcountry.Get(floor(RandomExt*(availcountry.GetCount)));
+            var rndcountry2 : Integer = availcountry.Get(floor(RandomExt*(availcountry.GetCount)));
+            map.players[0].cid := rndcountry1;
+            map.players[1].cid := rndcountry2;
+            map.players[2].cid := rndcountry1;
+            map.players[3].cid := rndcountry2;
+         end
+         else
+         begin
+            var rndcountry : Integer = availcountry.Get(floor(RandomExt*(availcountry.GetCount)));
+            for i:=0 to gc_MaxPlayerCount-2 do
+            begin
+               if (not map.players[i].bclosed) then
+               map.players[i].cid := rndcountry;
+            end;
+         end;
+      end;
+   end
+   else
+   if (not bSinglePlayer) and (not bRating) then
+   begin
+      for i:= gc_MaxNonSpectatorsCount to gc_MaxPlayerCount-1 do
+      _map_ResetMapPlayer(map.players[i], i, true);
+   end;
+
+   GenerateMapRandKey(map.settings.gen.randkey0, map.settings.gen.randkey1);
+   
+   map.settings.additional.activeoption := 0;
+   if bSinglePlayer then
+   map.settings.additional.gamespeed := gProfile.igamespeed
+   else
+   map.settings.additional.gamespeed := 2;
+   
+   if (not bSinglePlayer) and (not bQuickPlay) and (not bRating) then
+   begin
+      for i:= gc_MaxNonSpectatorsCount to gc_MaxPlayerCount-1 do
+      _map_ResetMapPlayer(map.players[i], i, true);
+   end;
+   
+   map.gamestage := gc_map_gamestage_none;
+end;

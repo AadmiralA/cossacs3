@@ -1,0 +1,187 @@
+//
+// group.script
+//
+
+// _group_IsStand
+//
+function _group_IsStand(grHnd : Integer) : Boolean;
+begin
+   Result := (GetGroupMovementGameObjectsCountByHandle(grHnd)=0);
+end;
+
+// _group_AddOrder
+//
+procedure _group_AddOrder(grHnd, {uid, next,} itype{, priority}, itrghnd : Integer; ix, iy, idx, idy, idir, iz : Float; iupgradeid : Integer; iproduceid, irestype, iamount, iprogress : Integer; bClearOrders, bDoFirst : Boolean);
+begin
+   // добавление приказа всем юнитам группы
+   var i : Integer;
+   for i:=0 to GetGroupCountGameObjectsByHandle(grHnd)-1 do
+   begin
+      var goHnd : Integer = GetGroupGOHandleByGOIndexByHandle(grHnd, i);
+      _unit_AddOrder(goHnd, itype, itrghnd, ix, iy, idx, idy, idir, iz, iupgradeid, iproduceid, irestype, iamount, iprogress, bClearOrders, bDoFirst);
+   end;
+end;
+
+// _group_GetMaxUnitRadius
+//
+function _group_GetMaxUnitRadius(grHnd : Integer) : Float;
+begin
+   Result := 0;
+   var goCount : Integer = GetGroupCountGameObjectsByHandle(grHnd);
+   var i : Integer;
+   for i := 0 to goCount-1 do
+   begin
+      var goHnd : Integer = GetGroupGOHandleByGOIndexByHandle(grHnd, i);
+      var pobjprop : Pointer = _unit_GetObjProp(goHnd);
+      if (pobjprop<>nil) and TObjProp(pobjprop).radius > Result then
+      Result := TObjProp(pobjprop).radius;
+   end;
+end;
+
+// _group_CalcColsRows
+//
+procedure _group_CalcColsRows(grHnd : Integer; var cols, rows : Integer);
+begin
+   var goCount : Integer = GetGroupCountGameObjectsByHandle(grHnd);
+   var Lx : Integer = floor(sqrt(goCount));
+   var Ly : Integer = Lx shl 1;
+   Lx := Lx shr 1;
+   if (goCount<4) then
+   begin
+      Lx := 1;
+      Ly := goCount;
+   end;
+   var i : Integer;
+   for i := 0 to 1 do
+   begin
+      var nn : Integer = Lx*Ly;
+      if (nn<goCount) then
+      begin
+         if (nn+Lx>=goCount) then
+         Ly := Ly+1
+         else
+         if (nn+Ly>=goCount) then
+         Lx := Lx+1
+         else
+         begin
+            Lx := Lx+1;
+            Ly := Ly+1;
+         end;
+      end
+      else
+      break;
+   end;
+   
+   for i := 0 to 3 do
+   begin
+      if Lx*(Ly-1) >= goCount then
+      Ly := Ly-1
+      else
+      if (Lx-1)*Ly >= goCount then
+      Lx := Lx-1
+      else
+      break;
+   end;
+   
+   cols := Ly;
+   rows := Lx;
+end;
+
+// _group_AddUnitsFromSquad
+//
+procedure _group_AddUnitsFromSquad(grHnd : Integer; pSquad : Pointer);
+begin
+   if (grHnd <> 0) and (pSquad <> nil) then
+   begin
+      var goCount : Integer = TSquad(pSquad).GetCount;
+      GroupClearGameObjectsByHandle(grHnd);
+      
+      var i : Integer;
+      for i := 0 to goCount-1 do
+      begin
+         var goHnd : Integer = TSquad(pSquad).Get(i);
+         GroupAddGameObjectByHandle(grHnd, goHnd);
+      end;
+   end;
+end;
+
+// _group_Initialize
+//
+procedure _group_Initialize(grHnd : Integer; pSquad : Pointer);
+begin
+   var goCount : Integer = GetGroupCountGameObjectsByHandle(grHnd);
+   var formInd : Integer = -1;
+   if pSquad <> nil then
+   formInd := TSquad(pSquad).fFormation;
+   
+   if (goCount<=0) then
+   SetGroupEnabledByHandle(grHnd, False)
+   else
+   begin
+      SetGroupEnabledByHandle(grHnd, true);
+      
+      var unitRadius : Float = _group_GetMaxUnitRadius(grHnd);
+      var dispRadius : Float = unitRadius;
+      
+      var cols, rows : Integer;
+      if pSquad = nil then
+      _group_CalcColsRows(grHnd, cols, rows)
+      else
+      begin
+         // in C1, cavalry use same unitRadius in formation as infantry, but this looks bad in c3, so we use other unitRadius
+         //unitRadius := _misc_PixelsToTiles(gc_obj_radius_formation_default); //unitRadius*0.8; even for cavalry
+         //if (unitRadius<=_misc_PixelsToTiles(gc_obj_radius_default)) then
+         unitRadius := unitRadius*0.8;
+         dispRadius := unitRadius*0.5;
+         
+         cols := TSquad(pSquad).fWidth;
+         rows := TSquad(pSquad).fHeight;
+      end;
+      
+      GroupSetMinXByHandle(grHnd, unitRadius*4);
+      GroupSetMinYByHandle(grHnd, unitRadius*4);
+      GroupSetOffsetXByHandle(grHnd, dispRadius);
+      GroupSetOffsetYByHandle(grHnd, dispRadius);
+      
+      GroupGameObjectsGridSetColumnsByHandle(grHnd, cols);
+      SetPlayerStretchBrushGroupCols(grHnd, cols);
+      SetMinMaxGridCols(grHnd, cols, cols);
+      
+      if pSquad = nil then
+      GroupGameObjectsGridRebuildExtDefaultByHandle(grHnd)
+      else
+      begin
+         GroupGameObjectsGridInitialize(grHnd, rows, cols);
+         
+         var i, j : Integer;
+         for i := 0 to cols-1 do
+         for j := 0 to rows-1 do
+         begin
+            var goHnd : Integer = TSquad(pSquad).arGrid[j, i];
+            if goHnd <> 0 then
+            GroupGameObjectsGridSetGameObjectHandlePosition(goHnd, i, j);
+         end;
+      end;
+   end;
+end;
+
+// _group_GetShiftByDir
+//
+procedure _group_GetShiftByDir(grHnd : Integer; dirX, dirY : Float; var xShift, yShift : Float);
+begin
+   if grHnd <> 0 then
+   begin
+      var rCount : Float = GetPlayerStretchBrushGroupRows(grHnd);
+      var cCount : Float = GetPlayerStretchBrushGroupCols(grHnd);
+      var minX : Float = GroupGetMinXByHandle(grHnd);
+      var minY : Float = GroupGetMinYByHandle(grHnd);
+      
+      xShift := dirX * cCount * minX / 2;
+      yShift := dirY * rCount * minY / 2;
+   end
+   else
+   begin
+      xShift := 0;
+      yShift := 0;
+   end;
+end;

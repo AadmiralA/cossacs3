@@ -1,0 +1,47 @@
+{refurl=.\data\objects\ref\refbuildingattach.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuildingattach.prop; refkey=mainproperty}
+   CustomName = eurdoor45
+   BaseName = eurdoor45
+section.end
+
+stringproperty : section.begin {refurl=.\data\objects\ref\refbuildingattach.prop; refkey=stringproperty}
+   StringTag = 103
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refbuildingattach.prop; refkey=actorproperty}
+   LODActorName = eurdoor45
+   DefaultMeshName = eurdoor45.mesh
+   UseableMeshes : struct.begin
+      [0] = True
+   struct.end
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuildingattach.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = eurswa
+   Mesh[0].UseableMaterials[0] = eurswa
+   Mesh[0].UseSeasonMaterial = True
+   Mesh[0].UseableSummerMaterials[0] = eurswa
+   Mesh[0].UseableWinterMaterials[0] = eurswaw
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refbuildingattach.prop; refkey=frameanimationproperty}
+   Enabled = True
+   Static = True
+   ClassName = FrameAnimationProperty
+   DefaultFrameAnimationName = idle
+   DefaultFrameAnimationMode = aamPlayOnce
+   FrameAnimationSynchronizeOption = fasoNone
+   FrameAnimationSwitchChildren = False
+   DefaultFrameAnimationCycles = 
+   FrameAnimationCyclesLibName = 
+   RandomOffsetFrameAnimationCycles = acsaDefault
+   RandomOffsetFrameAnimation = acsaDefault
+section.end
+
+designproperty : section.begin {refurl=.\data\objects\ref\refbuildingattach.prop; refkey=designproperty}
+   Enabled = True
+   Static = True
+   ClassName = DesignProperty
+   VisibleAtDesignTime = True
+section.end

@@ -1,0 +1,586 @@
+//
+// sound.script
+//
+
+type TSoundLibraryGroups = class
+   mincount : Integer;
+   maxcount : Integer;
+   sndind : Integer;
+   loudness : Float;
+end;
+
+type TSoundLibrary = class
+   loudness : Float;
+   count : Integer;
+   sndfreq : Integer;
+   groupscount : Integer;
+   list : array [0..gc_soundlibrary_sounds_maxcount-1] of String;
+   groups : array [0..gc_soundlibrary_soundgroups_maxcount-1] of TSoundLibraryGroups;
+end;
+
+global gSoundLibrary : array [0..gc_soundlibrary_maxcount-1] of TSoundLibrary;
+
+// _sound_GetIndexesByTag
+//
+procedure _sound_GetIndexesByTag(const tag : Integer; var sndlibindex, sndindex : Integer);
+begin
+   sndlibindex := tag div gc_soundlibrary_sounds_maxcount;
+   sndindex := tag mod gc_soundlibrary_sounds_maxcount;
+end;
+
+// _sound_GetTagByIndexes
+//
+function _sound_GetTagByIndexes(const sndlibindex, sndindex : Integer) : Integer;
+begin
+   Result := (sndlibindex*gc_soundlibrary_sounds_maxcount)+sndindex;
+end;
+
+// _sound_AddSoundToSoundLibrary
+//
+procedure _sound_AddSoundToSoundLibrary(const sndlibindex : Integer; const sound : String; const loudness : Float; const sndfreq : Integer);
+begin
+   var ind : Integer = gSoundLibrary[sndlibindex].count;
+   if (ind<gc_soundlibrary_sounds_maxcount) then
+   begin
+      gSoundLibrary[sndlibindex].list[ind] := sound;
+      //var tag : Integer = _sound_GetTagByIndexes(sndlibindex, ind);
+      //SndGetOrCreateSound(tag, 'units', GetSoundManagerListenerHandle);
+      gSoundLibrary[sndlibindex].count := ind+1;
+      gSoundLibrary[sndlibindex].loudness := loudness;
+      gSoundLibrary[sndlibindex].sndfreq := sndfreq;
+   end
+   else
+   ErrorLog('sound : AddSoundToSoundLibrary count out of bounds');
+end;
+
+// _sound_AddSoundToSoundLibraryGroup
+//
+procedure _sound_AddSoundToSoundLibraryGroup(const sndlibindex, sndgrouplibindex, mincount, maxcount, loudness : Integer);
+begin
+   if (gSoundLibrary[sndlibindex].groupscount<(gc_soundlibrary_soundgroups_maxcount-1)) then
+   begin
+      gSoundLibrary[sndlibindex].groups[gSoundLibrary[sndlibindex].groupscount].sndind := sndgrouplibindex;
+      gSoundLibrary[sndlibindex].groups[gSoundLibrary[sndlibindex].groupscount].mincount := mincount;
+      gSoundLibrary[sndlibindex].groups[gSoundLibrary[sndlibindex].groupscount].maxcount := maxcount;
+      gSoundLibrary[sndlibindex].groups[gSoundLibrary[sndlibindex].groupscount].loudness := loudness;
+      gSoundLibrary[sndlibindex].groupscount := gSoundLibrary[sndlibindex].groupscount+1;
+   end;
+end;
+
+// _sound_ClearSoundLibrary
+//
+procedure _sound_ClearSoundLibrary();
+begin
+   var i, j : Integer;
+   for i:=0 to gc_soundlibrary_maxcount-1 do
+   begin
+      gSoundLibrary[i].count := 0;
+      gSoundLibrary[i].groupscount := 0;
+      gSoundLibrary[i].loudness := 0;
+      for j:=0 to gc_soundlibrary_sounds_maxcount-1 do
+      gSoundLibrary[i].list[j] := '';
+      for j:=0 to gc_soundlibrary_soundgroups_maxcount-1 do
+      begin
+         gSoundLibrary[i].groups[j].mincount := 0;
+         gSoundLibrary[i].groups[j].maxcount := 0;
+         gSoundLibrary[i].groups[j].sndind := 0;
+         gSoundLibrary[i].groups[j].loudness := 0;
+      end;
+   end;
+end;
+
+// _sound_InitSoundLibrary
+//
+procedure _sound_InitSoundLibrary();
+begin
+   _sound_ClearSoundLibrary;
+   var i, dubl : Integer;
+   const cLoudFull = 8000;
+   const cLoudSmall = 20;
+   const cLoudMedium = 40;
+   const cLoudLarge = 60;
+   const cLoudHuge = 80;
+   
+   const cFreqFull = 0;
+   const cFreqHigh = 0;
+   const cFreqMedium = 1;
+   const cFreqLow = 2;
+   
+   for i:=1 to 15 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_musket, 'musket'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 11 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_sabre, 'sabre'+IntToStr(i), cLoudMedium, cFreqMedium);
+   for i:=1 to 7 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_pike, 'bayonetbloodhit'+IntToStr(i), cLoudMedium, cFreqMedium);
+   for i:=1 to 7 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_bayonete, 'bayonetbloodhit'+IntToStr(i), cLoudMedium, cFreqMedium);
+   for i:=1 to 11 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_cavsword, 'sabre'+IntToStr(i), cLoudMedium, cFreqMedium);
+   for i:=1 to 7 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_arrow, 'arrow'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 8 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_firearrow, 'firearrow'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 8 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_arrowimpact, 'arrowimpact'+IntToStr(i), cLoudLarge, cFreqFull);
+   
+   for i:=1 to 2 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_deathart, 'deathart'+IntToStr(i), cLoudMedium, cFreqLow);
+   for i:=1 to 2 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_deathbld, 'deathbuilding'+IntToStr(i), cLoudMedium, cFreqLow);
+   for i:=1 to 6 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_deathinf, 'deathinf'+IntToStr(i), cLoudMedium, cFreqLow);
+   for i:=1 to 6 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_deathcav, 'deathcav'+IntToStr(i), cLoudMedium, cFreqLow);
+   
+   for dubl:=1 to 3 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_deathship, 'deathship', cLoudMedium, cFreqLow);
+   
+   for i:=1 to 7 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_burn, 'burn'+IntToStr(i), cLoudLarge, cFreqFull);
+   
+   for i:=1 to 3 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_explcannon, 'cannonexpl'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 3 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_explhowitzer, 'cannonexpl'+IntToStr(i), cLoudLarge, cFreqFull);
+   
+   for i:=1 to 4 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_shotcannon, 'shotcannon'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 4 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_shotcannoncannister, 'shotcannoncannister'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 4 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_shothowitzer, 'shothowitzer'+IntToStr(i), cLoudLarge, cFreqFull);
+   for dubl:=1 to 2 do
+   for i:=1 to 4 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_shotmulticannon, 'shotmulticannon'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 4 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_shotmortar, 'shotmortar'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 4 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_shotship, 'shotship'+IntToStr(i), cLoudLarge, cFreqFull);
+   
+   for i:=1 to 5 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkpea, 'walkpea'+IntToStr(i), cLoudSmall, cFreqFull);
+   for i:=1 to 9 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkpeastone, 'walkpeastone'+IntToStr(i), cLoudSmall, cFreqFull);
+   for i:=1 to 8 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkinfcloth, 'walkinfcloth'+IntToStr(i), cLoudSmall, cFreqFull);
+   for i:=1 to 8 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkinfmetal, 'walkinfmetal'+IntToStr(i), cLoudSmall, cFreqFull);
+   for i:=1 to 12 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkcavfast, 'walkcavfast'+IntToStr(i), cLoudSmall, cFreqFull);
+   for i:=1 to 11 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkcavslow, 'walkcavslow'+IntToStr(i), cLoudSmall, cFreqFull);
+   for i:=1 to 10 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkartmortar, 'walkartmortar'+IntToStr(i), cLoudSmall, cFreqFull);
+   for i:=1 to 9 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkartwheels, 'walkartwheels'+IntToStr(i), cLoudSmall, cFreqFull);
+   for i:=1 to 12 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkboat, 'walkboat'+IntToStr(i), cLoudSmall, cFreqFull);
+   for i:=1 to 14 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkship, 'walkship'+IntToStr(i), cLoudSmall, cFreqFull);
+   
+   for i:=1 to 6 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_watersplash, 'watersplash'+IntToStr(i), cLoudSmall, cFreqFull);
+   
+   //for i:=1 to 11 do
+   for i:=1 to 7 do // less variations to clearer sound
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_workstone, 'workstone'+IntToStr(i), cLoudSmall, cFreqMedium);
+   for i:=1 to 9 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_workwood, 'workwood'+IntToStr(i), cLoudSmall, cFreqMedium);
+   for i:=1 to 12 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_workconstruct, 'workconstruct'+IntToStr(i), cLoudSmall, cFreqMedium);
+   
+   for i:=1 to 2 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_cannonballhitbuilding, 'cannonballhitbuilding'+IntToStr(i), cLoudLarge, cFreqFull);
+   
+   // gc_snd_ind_cannonballhitship start
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_cannonballhitship, 'cannonballhitship', cLoudLarge, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_cannonballhitship, 'cannonballhitbuilding2', cLoudLarge, cFreqFull);
+   for i:=1 to 3 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_cannonballhitship, 'cannonexpl'+IntToStr(i), cLoudLarge, cFreqFull);
+   // gc_snd_ind_cannonballhitship finish
+   
+   
+   for dubl:=1 to 4 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_mortarballhitground, 'mortarballhitground', cLoudLarge, cFreqFull);
+   
+   for i:=1 to 6 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_selectpeasant, 'selectpeasant'+IntToStr(i), cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_selectship, 'selectship', cLoudFull, cFreqFull);
+   
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_drummer, 'drummer', cLoudHuge, cFreqLow);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_bagpiper, 'bagpiper', cLoudHuge, cFreqLow);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_officer, 'officer1', cLoudHuge, cFreqLow);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_officer, 'officer2', cLoudHuge, cFreqLow);
+   
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_construct, 'construct', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_cancel, 'cancel', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_btnclick, 'btnclick', cLoudFull, cFreqFull);
+   
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgcen, 'upgcen', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgaca, 'upgaca', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgbar, 'upgbar', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgba2, 'upgba2', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgsta, 'upgsta', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgbla, 'upgbla', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgtow, 'upgtow', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgart, 'upgart', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgmil, 'upgmil', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgpor, 'upgpor', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgmine, 'upgmine', cLoudFull, cFreqFull);
+   
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_alarm, 'alarm', cLoudFull, cFreqFull);
+   
+   // interface
+   {for i:=1 to 6 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_peasant, 'selectunit'+IntToStr(i), cLoudFull, cFreqFull);
+   if False then // say: will be done
+   begin
+      for i:=5 to 9 do
+      begin
+         var name : String = 'orderwork'+IntToStr(i);
+         _sound_AddSoundToSoundLibrary(gc_snd_ind_ordermove, name, cLoudFull, cFreqFull);
+         _sound_AddSoundToSoundLibrary(gc_snd_ind_orderbuild, name, cLoudFull, cFreqFull);
+         _sound_AddSoundToSoundLibrary(gc_snd_ind_orderattack, name, cLoudFull, cFreqFull);
+         _sound_AddSoundToSoundLibrary(gc_snd_ind_orderfood, name, cLoudFull, cFreqFull);
+         _sound_AddSoundToSoundLibrary(gc_snd_ind_orderwood, name, cLoudFull, cFreqFull);
+         _sound_AddSoundToSoundLibrary(gc_snd_ind_orderstone, name, cLoudFull, cFreqFull);
+         _sound_AddSoundToSoundLibrary(gc_snd_ind_ordergoinside, name, cLoudFull, cFreqFull);
+         _sound_AddSoundToSoundLibrary(gc_snd_ind_orderrally, name, cLoudFull, cFreqFull);
+      end;
+   end;
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_construct, 'construct', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_cancel, 'cancel', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_btnclick, 'btnclick', cLoudFull, cFreqFull);
+   
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgcen, 'upgcen', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgaca, 'upgaca', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgbar, 'upgbar', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgba2, 'upgba2', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgsta, 'upgsta', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgbla, 'upgbla', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgtow, 'upgtow', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgart, 'upgart', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgmil, 'upgmil', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgpor, 'upgpor', cLoudFull, cFreqFull);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_upgmine, 'upgmine', cLoudFull, cFreqFull);
+   
+   // units
+   // musket
+   const cSuffixGroupLarge = 'grouplarge';
+   const cSuffixGroupMedium = 'groupmedium';
+   var name : String = 'musket';
+   for i:=1 to 15 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_musket, 'musket'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 15 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_musket, 'musket'+IntToStr(i), cLoudLarge, cFreqFull);
+   
+   for i:=1 to 7 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_arrow, 'arrow'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 7 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_firearrow, 'arrow'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 9 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_firearrow, 'firearrow'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 12 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_cannon, 'cannon'+IntToStr(i), cLoudLarge, cFreqFull);
+   //for i:=1 to 5 do
+   //_sound_AddSoundToSoundLibrary(gc_snd_ind_cannoncannister, 'cannon'{'cannoncannister'}{+IntToStr(i), cLoudLarge, cFreqFull);
+   //for i:=1 to 5 do
+   //_sound_AddSoundToSoundLibrary(gc_snd_ind_howitzer, 'cannon'{'howitzer'}{+IntToStr(i), cLoudLarge, cFreqFull);
+   //for i:=1 to 5 do
+   //_sound_AddSoundToSoundLibrary(gc_snd_ind_mortar, 'cannon'{'mortar'}{+IntToStr(i), cLoudLarge, cFreqFull);
+   //for i:=1 to 5 do
+   //_sound_AddSoundToSoundLibrary(gc_snd_ind_multicannon, 'cannon'{'multicannon'}{+IntToStr(i), cLoudLarge, cFreqFull);
+   {for i:=1 to 5 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_cannonexpl, 'cannonexpl'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 5 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_howitzerexpl, 'howitzerexpl'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 5 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_mortarexpl, 'mortarexpl'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 1 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_cannonfakeexpl, 'cannonfakeexpl'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 5 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_waterexpl, 'waterexpl'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 5 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_dustexpl, 'dustexpl'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 8 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_arrowimpact, 'arrowimpact'+IntToStr(i), cLoudLarge, cFreqFull);
+   for i:=1 to 1 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_blddestruct, 'blddestruct'+IntToStr(i), cLoudLarge, cFreqFull);
+   
+   for i:=1 to 3 do
+   begin
+      _sound_AddSoundToSoundLibrary(gc_snd_ind_group_musket_small, 'musketgroupsmall'+IntToStr(i), cLoudLarge, cFreqFull);
+      _sound_AddSoundToSoundLibrary(gc_snd_ind_group_musket_medium, 'musketgroupmedium'+IntToStr(i), cLoudLarge, cFreqFull);
+      _sound_AddSoundToSoundLibrary(gc_snd_ind_group_musket_large, 'musketgrouplarge'+IntToStr(i), cLoudLarge, cFreqFull);
+   end;
+   _sound_AddSoundToSoundLibraryGroup(gc_snd_ind_musket, gc_snd_ind_group_musket_small, 3, 5, cLoudLarge);
+   _sound_AddSoundToSoundLibraryGroup(gc_snd_ind_musket, gc_snd_ind_group_musket_medium, 6, 9, cLoudLarge);
+   _sound_AddSoundToSoundLibraryGroup(gc_snd_ind_musket, gc_snd_ind_group_musket_large, 10, 100, cLoudLarge);
+   {for i:=1 to 12 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_group_musket_large, 'musketgrouplarge'+IntToStr(i));
+   for i:=1 to 10 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_group_musket_medium, 'musketgroupmedium'+IntToStr(i));
+   _sound_AddSoundToSoundLibraryGroup(gc_snd_ind_musket, gc_snd_ind_group_musket_medium, 5, 7);
+   _sound_AddSoundToSoundLibraryGroup(gc_snd_ind_musket, gc_snd_ind_group_musket_large, 8, 100);}
+   
+   // sabre
+   {for i:=1 to 11 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_sabre, 'sabre'+IntToStr(i), cLoudMedium, cFreqMedium);
+   for i:=1 to 7 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_bayonete, 'bayonetbloodhit'+IntToStr(i), cLoudMedium, cFreqMedium);
+   for i:=1 to 7 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_pike, 'bayonetbloodhit'+IntToStr(i), cLoudMedium, cFreqMedium);
+   for i:=1 to 13 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_cavsword, 'sabre'+IntToStr(i), cLoudMedium, cFreqMedium);
+   for i:=1 to 4 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_group_sabre_large, name+cSuffixGroupLarge+IntToStr(i), cLoudMedium, cFreqFull);
+   for i:=1 to 4 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_group_sabre_medium, name+cSuffixGroupMedium+IntToStr(i), cLoudMedium, cFreqFull);
+   //_sound_AddSoundToSoundLibraryGroup(gc_snd_ind_sabre, gc_snd_ind_group_sabre_medium, 12, 20);
+   
+   //_sound_AddSoundToSoundLibraryGroup(gc_snd_ind_sabre, gc_snd_ind_group_sabre_large, 12, 1000);
+   for i:=1 to 6 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_deathinf, 'deathinf'+IntToStr(i), cLoudMedium, cFreqLow);
+   for i:=1 to 8 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkinfcloth, 'walkinfcloth'+IntToStr(i), cLoudSmall, cFreqFull);
+   for i:=1 to 8 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkinfmetal, 'walkinfmetal'+IntToStr(i), cLoudSmall, cFreqFull);
+   for i:=1 to 12 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkcavfast, 'walkcavfast'+IntToStr(i), cLoudSmall, cFreqFull);
+   for i:=1 to 10 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkartmortar, 'walkartmortar'+IntToStr(i), cLoudSmall, cFreqFull);
+   for i:=1 to 9 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkartwheels, 'walkartwheels'+IntToStr(i), cLoudSmall, cFreqFull);
+   for i:=1 to 11 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkcavslow, 'walkcavslow'+IntToStr(i), cLoudSmall, cFreqFull);
+   for i:=1 to 9 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkpeastone, 'walkpeastone'+IntToStr(i), cLoudSmall, cFreqFull);
+   for i:=1 to 6 do
+   begin
+      _sound_AddSoundToSoundLibrary(gc_snd_ind_deathcav, 'deathinf'+IntToStr(i), cLoudMedium, cFreqLow);
+      _sound_AddSoundToSoundLibrary(gc_snd_ind_deathart, 'deathinf'+IntToStr(i), cLoudMedium, cFreqLow);
+   end;
+   
+   for i:=1 to 5 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_walkpea, 'walkpea'+IntToStr(i), cLoudSmall, cFreqFull);
+   //_sound_AddSoundToSoundLibrary(gc_snd_ind_walkstone, 'walkstone1', cLoudSmall);
+   {_sound_AddSoundToSoundLibrary(gc_snd_ind_workwoodend, 'workwoodend1', cLoudSmall);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_workfoodend, 'workfoodend1', cLoudSmall);
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_workstoneend, 'workstoneend1', cLoudSmall);}
+   {for i:=1 to 14 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_workfood, 'workfood'+IntToStr(i), cLoudSmall, cFreqMedium);
+   for i:=1 to 11 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_workstone, 'workstone'+IntToStr(i), cLoudSmall, cFreqMedium);
+   for i:=1 to 9 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_workwood, 'workwood'+IntToStr(i), cLoudSmall, cFreqMedium);
+   
+   // same sounds for constuct
+   {for i:=1 to 11 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_workconstruct, 'workstone'+IntToStr(i));
+   for i:=1 to 9 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_workconstruct, 'workwood'+IntToStr(i));}
+   {for i:=1 to 12 do
+   _sound_AddSoundToSoundLibrary(gc_snd_ind_workconstruct, 'workconstruct'+IntToStr(i), cLoudSmall, cFreqMedium);}
+end;
+
+// _sound_EmitterPlaySound
+//
+function _sound_EmitterPlaySound(const emitterHnd : Integer; const libind, sndlibind : Integer; bplayuniq : Boolean) : Integer;
+begin
+   if (emitterHnd<>0) then
+   begin
+      var newind : Integer;
+      var rndind : Integer;
+      var maxind : Integer = gSoundLibrary[sndlibind].count-1;
+      if (maxind>0) then
+      rndind := floor(random*(maxind+1));
+      var i : Integer;
+      for i:=0 to maxind do
+      begin
+         newind := rndind+i;
+         if (newind>maxind) then
+         newind := newind-maxind-1;
+         var libname : String;
+         case libind of
+            gc_sndlib_ind_units : libname := 'units';
+            gc_sndlib_ind_interface : libname := 'interface';
+            gc_sndlib_ind_ambient : libname := 'ambient';
+         end;
+         var sndTag : Integer;
+         if (not bplayuniq) then
+         sndtag := _sound_GetTagByIndexes(sndlibind, newind)
+         else
+         sndtag := 1000000+sndlibind;
+         //var sndtag : Integer = floor(random*1000000);
+         Result := sndtag;
+         //SndRemoveSound(sndtag, emitterHnd);
+         
+         var sndHnd : Integer = SndGetOrCreateSound(sndtag, libname, emitterHnd);
+         if (not GetSndSoundPlaying(sndHnd)) then
+         begin
+            gint_dbg_logsoundcount := gint_dbg_logsoundcount+1;
+            SetSndSoundSourceName(gSoundLibrary[sndlibind].list[newind], sndHnd);
+            //if (not gbool_profiler_enabled) then
+            //log('_sound_EmitterPlaySound : '+gSoundLibrary[sndlibind].list[newind]);
+            SetSndSoundRadius({40}8000, sndHnd); //80 - for 3D sound, 8000 for isometric sound
+            //SetSndSoundRadiuses(10, 60, sndHnd);
+            SetSndSoundPlaying(True, sndHnd);
+            break;
+         end;
+      end;
+   end
+   else
+   Result := 0;
+end;
+
+// _sound_EmitterFadeSound
+//
+function _sound_EmitterFadeSound(const emitterHnd : Integer; const libind, sndlibind : Integer; bplayuniq, fadein : Boolean; fadetime : Float; bloop : Boolean) : Integer;
+begin
+   if (emitterHnd<>0) then
+   begin
+      var newind : Integer;
+      var rndind : Integer;
+      var maxind : Integer = gSoundLibrary[sndlibind].count-1;
+      if (maxind>0) then
+      rndind := floor(random*(maxind+1));
+      var i : Integer;
+      for i:=0 to maxind do
+      begin
+         newind := rndind+i;
+         if (newind>maxind) then
+         newind := newind-maxind-1;
+         var libname : String;
+         case libind of
+            gc_sndlib_ind_units : libname := 'units';
+            gc_sndlib_ind_interface : libname := 'interface';
+            gc_sndlib_ind_ambient : libname := 'ambient';
+         end;
+         var sndTag : Integer;
+         if (not bplayuniq) then
+         sndtag := _sound_GetTagByIndexes(sndlibind, newind)
+         else
+         sndtag := 1000000+sndlibind;
+         //var sndtag : Integer = floor(random*1000000);
+         Result := sndtag;
+         //SndRemoveSound(sndtag, emitterHnd);
+         
+         var sndHnd : Integer = SndGetOrCreateSound(sndtag, libname, emitterHnd);
+         //SetSndSoundPlaying(False, sndHnd);
+         var bPlaying : Boolean = GetSndSoundPlaying(sndHnd);
+         if ((fadein) and (not bPlaying)) or ((not fadein) and (bPlaying)) then
+         begin
+            //if (not gbool_profiler_enabled) then
+            //log('_sound_EmitterFadeSound : fadein='+BoolToStr(fadein)+' '+gSoundLibrary[sndlibind].list[newind]);
+            SetSndSoundSourceName(gSoundLibrary[sndlibind].list[newind], sndHnd);
+            SetSndSoundRandomOffset(0, sndHnd);
+            SetSndSoundRadius(8000, sndHnd); //80 - for 3D sound, 8000 for isometric sound
+            SetSndSoundMaxRadius(0, sndHnd);
+            SetSndSoundLoop(bloop, sndHnd);
+            if (fadetime=0) then
+            SetSndSoundPlaying(fadein, sndHnd)
+            else
+            SetSndSoundFadePlaying(fadein, fadetime, sndHnd);
+            break;
+         end;
+      end;
+   end
+   else
+   Result := 0;
+end;
+
+// _sound_PlaySound
+//
+function _sound_PlaySound(const libind, sndlibind : Integer) : Boolean;
+begin
+   Result := False;
+   var newind : Integer;
+   var rndind : Integer;
+   var maxind : Integer = gSoundLibrary[sndlibind].count-1;
+   if (maxind>0) then
+   rndind := floor(random*(maxind+1));
+   var i : Integer;
+   for i:=0 to maxind do
+   begin
+      newind := rndind+i;
+      if (newind>maxind) then
+      newind := newind-maxind-1;
+      var sndTag : Integer = _sound_GetTagByIndexes(sndlibind, newind);
+      var libname : String;
+      case libind of
+         gc_sndlib_ind_units : libname := 'units';
+         gc_sndlib_ind_interface : libname := 'interface';
+         gc_sndlib_ind_ambient : libname := 'ambient';
+      end;
+      var sndHnd : Integer = SndGetOrCreateSound(sndTag, libname, GetSoundManagerListenerHandle);
+      if (not GetSndSoundPlaying(sndHnd)) then
+      begin
+         Result := True;
+         gint_dbg_logsoundcount := gint_dbg_logsoundcount+1;
+         SetSndSoundSourceName(gSoundLibrary[sndlibind].list[newind], sndHnd);
+         if (False) then
+         log('units'+' ind='+IntToStr(sndlibind)+' snd='+gSoundLibrary[sndlibind].list[newind]);
+         SetSndSoundRandomOffset(0, sndHnd);
+         SetSndSoundRadius(8000, sndHnd); //80 - for 3D sound, 8000 for isometric sound
+         SetSndSoundMaxRadius(0, sndHnd);
+         SetSndSoundPlaying(True, sndHnd);
+         break;
+      end;
+   end;
+end;
+
+// _sound_RequestPlaySound
+//
+procedure _sound_RequestPlaySound(const libind, sndlibind : Integer; const posx, posz : Float);
+begin
+   var gridx, gridy : Integer;
+   if (_misc_PosToSoundGridIndices(posx, posz, gridx, gridy)) then
+   begin
+      gint_dbg_logrequestsoundcount := gint_dbg_logrequestsoundcount+1;
+      var psoundgrid : Pointer = gSoundGrid[gridx, gridy];
+      TSoundGrid(psoundgrid).sndrequests[sndlibind] := TSoundGrid(psoundgrid).sndrequests[sndlibind]+1;
+      TSoundGrid(psoundgrid).bsndrequestexist := True;
+   end;
+end;
+
+// _sound_MusicSwitchToBattle
+//
+procedure _sound_MusicSwitchToBattle();
+begin
+   var musthread : Integer = GetSndAmbientThreadHandleByName('music');
+   var batthread : Integer = GetSndAmbientThreadHandleByName('battle');
+   if (not GetSndAmbientThreadSetPlaying(batthread)) then
+   begin
+      //SetSndAmbientThreadLoop(False, musthread);
+      SetSndAmbientThreadSetPlayingFade(musthread, False, 3);
+      
+      SetSndAmbientThreadSetPlayingFade(batthread, True, 5);
+      SetSndAmbientThreadResetCurrentDelay(batthread);
+      
+      gfloat_gui_musiclastbattletimestart := GetCurrentTime;
+      gfloat_gui_musiclastnationaltimeend := GetCurrentTime;
+      Log('Music Switch To Battle : time = '+FloatToStr(GetCurrentTime));
+   end;
+end;
+
+// _sound_MusicSwitchToNational
+//
+procedure _sound_MusicSwitchToNational();
+begin
+   var musthread : Integer = GetSndAmbientThreadHandleByName('music');
+   var batthread : Integer = GetSndAmbientThreadHandleByName('battle');
+   if (not GetSndAmbientThreadSetPlaying(musthread)) then
+   begin
+      //SetSndAmbientThreadLoop(False, batthread);
+      SetSndAmbientThreadSetPlayingFade(batthread, False, 3);
+      
+      SetSndAmbientThreadSetPlayingFade(musthread, True, 5);
+      SetSndAmbientThreadResetCurrentDelay(musthread);
+      
+      gfloat_gui_musiclastnationaltimestart := GetCurrentTime;
+      gfloat_gui_musiclastbattletimeend := GetCurrentTime;
+      Log('Music Switch To National : time = '+FloatToStr(GetCurrentTime));
+   end;
+end;
+
+_sound_InitSoundLibrary;

@@ -1,0 +1,99 @@
+//
+// parser.script
+//
+
+// _parser_EmptyParser
+//
+function _parser_ParserEmpty() : Integer;
+begin
+   var name : String = gc_parsername_empty;
+   Result := ParserSelectByKey(name);
+   if (Result=0) then
+   Result := ParserCreate(name)
+   else
+   ParserClearByHandle(Result);
+end;
+
+// _parser_ParserTemporary
+//
+function _parser_ParserTemporary(bClear : Boolean) : Integer;
+begin
+   var name : String = gc_parsername_tmp;
+   Result := ParserSelectByKey(name);
+   if (Result=0) then
+   Result := ParserCreate(name)
+   else
+   if (bClear) then
+   ParserClearByHandle(Result);
+end;
+
+// _parser_ParserGenerator
+//
+function _parser_ParserGenerator(bClear : Boolean) : Integer;
+begin
+   var name : String = gc_parsername_generator;
+   Result := ParserSelectByKey(name);
+   if (Result=0) then
+   Result := ParserCreate(name)
+   else
+   if (bClear) then
+   ParserClearByHandle(Result);
+end;
+
+//_parser_ParserCustomSessionRehost
+//
+function _parser_ParserCustomSessionRehost(bClear : Boolean) : Integer;
+begin
+   var name : String = gc_parsername_customsessionrehost;
+   Result := ParserSelectByKey(name);
+   if (Result=0) then
+   Result := ParserCreate(name)
+   else
+   if (bClear) then
+   ParserClearByHandle(Result);
+end;
+
+// _parser_ParserModsSync
+//
+function _parser_ParserModsSync(bClear : Boolean) : Integer;
+begin
+   var name : String = gc_parsername_modssync;
+   Result := ParserSelectByKey(name);
+   if (Result=0) then
+   Result := ParserCreate(name)
+   else
+   if (bClear) then
+   ParserClearByHandle(Result);
+end;
+
+// _parser_ParserTopUsers
+//
+function _parser_ParserTopUsers(bClear : Boolean) : Integer;
+begin
+   var name : String = gc_parsername_topusers;
+   Result := ParserSelectByKey(name);
+   if (Result=0) then
+   Result := ParserCreate(name)
+   else
+   if (bClear) then
+   ParserClearByHandle(Result);
+end;
+
+// _parser_ParserBattles
+//
+function _parser_ParserBattles(bClear : Boolean) : Integer;
+begin
+   var name : String = gc_parsername_battles;
+   Result := ParserSelectByKey(name);
+   if (Result=0) then
+   begin
+      Result := ParserCreate(name);
+      ParserLoadFromFileByHandle(Result, gc_filepath_battles);
+   end
+   else
+   if (bClear) then
+   begin
+      ParserClearByHandle(Result);
+      ParserLoadFromFileByHandle(Result, gc_filepath_battles);
+   end;
+end;

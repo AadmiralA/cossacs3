@@ -1,0 +1,106 @@
+{refurl=.\data\objects\ref\refunit.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=mainproperty}
+   CustomName = battleship
+   BaseName = battleship
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=actorproperty}
+   LODActorName = battleship
+   DefaultMeshName = battleship.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = battleship
+   Mesh[0].UseableMaterials[0] = battleship
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = battleship
+      UseableMaterials[0] = battleship
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = battleship
+      UseableMaterials[0] = battleship
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = battleship
+      UseableMaterials[0] = battleship
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = battleship
+      UseableMaterials[0] = battleship
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = battleship
+      UseableMaterials[0] = battleship
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = battleship
+      UseableMaterials[0] = battleship
+   struct.end
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=statemachineproperty}
+   StateMachineInterval = 60
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=collisionmeshproperty}
+   UseCustTransformed = True
+   CustomBoundingAABBMin.X = -0.95
+   CustomBoundingAABBMin.Y = -0.6
+   CustomBoundingAABBMin.Z = -3.0
+   CustomBoundingAABBMax.X = 0.95
+   CustomBoundingAABBMax.Y = 1.1
+   CustomBoundingAABBMax.Z = 3.5
+section.end
+
+autochildrenproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = AutoChildrenProperty
+   Custom = False
+   Mesh[0] : struct.begin
+      Enabled = True
+      Static = True
+      ClassName = MeshChildrenProperty
+      Children : struct.begin
+         [0] : struct.begin
+            Enabled = True
+            Static = True
+            ClassName = ChildProperty
+            BaseName = battleshipa
+            RaceName = units
+            DefaultMeshName = battleshipa.mesh
+            RandomMeshName = False
+            Mesh[0] = battleshipa
+            Mesh[1] = battleship1a
+            Mesh[2] = battleship2a
+            Mesh[3] = battleship3a
+            Mesh[4] = battleship4a
+            Mesh[5] = battleship_death1a
+            Mesh[6] = battleship_death2a
+            DefaultMaterialName = xebeca
+            RandomMaterialName = False
+            Materials[0] = battleship
+            Materials[1] = battleship
+            Materials[2] = battleship
+            Materials[3] = battleshipa
+            Materials[4] = battleshipa
+            Materials[5] = battleshipa
+            Materials[6] = battleshipa
+            Option = achildRequered
+            StartStateName = 
+            Useable = True
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=frameanimationproperty}
+   FrameAnimationCyclesLibName = battleship
+   FrameAnimationSynchronizeOption = fasoNone
+   FrameAnimationSwitchChildren = False
+section.end
+
+offsetproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=offsetproperty}
+   OffsetCollideOption = ocoTerrainWater
+section.end

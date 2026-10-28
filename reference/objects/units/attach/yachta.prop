@@ -1,0 +1,51 @@
+{refurl=.\data\objects\ref\refunitattach.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=mainproperty}
+   CustomName = yachta
+   BaseName = yachta
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=actorproperty}
+   LODActorName = yachta
+   DefaultMeshName = yachta.mesh
+   UseableMeshes : struct.begin
+      [0] = True
+      [1] = True
+      [2] = True
+      [3] = True
+      [4] = True
+      [5] = True
+      [6] = True
+   struct.end
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = xebeca
+   Mesh[0].UseableMaterials[0] = xebeca
+   Mesh[1].DefaultMaterialName = xebeca
+   Mesh[1].UseableMaterials[0] = xebeca
+   Mesh[2].DefaultMaterialName = xebeca
+   Mesh[2].UseableMaterials[0] = xebeca
+   Mesh[3].DefaultMaterialName = xebeca
+   Mesh[3].UseableMaterials[0] = xebeca
+   Mesh[4].DefaultMaterialName = xebeca
+   Mesh[4].UseableMaterials[0] = xebeca
+   Mesh[5].DefaultMaterialName = xebeca
+   Mesh[5].UseableMaterials[0] = xebeca
+   Mesh[6].DefaultMaterialName = xebeca
+   Mesh[6].UseableMaterials[0] = xebeca
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=frameanimationproperty}
+   Enabled = True
+   Static = True
+   ClassName = FrameAnimationProperty
+   DefaultFrameAnimationName = 
+   DefaultFrameAnimationMode = aamNone
+   FrameAnimationSynchronizeOption = fasoInherited
+   FrameAnimationSwitchChildren = False
+   DefaultFrameAnimationCycles = 
+   FrameAnimationCyclesLibName = 
+   RandomOffsetFrameAnimationCycles = True
+   RandomOffsetFrameAnimation = True
+section.end

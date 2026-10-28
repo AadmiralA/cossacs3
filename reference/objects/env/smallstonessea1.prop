@@ -1,0 +1,117 @@
+{refurl=.\data\objects\ref\refenv.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=mainproperty}
+   CustomName = smallstonessea.1
+   BaseName = smallstonessea.1
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=collisionmeshproperty}
+   Enabled = False
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=actorproperty}
+   LODActorName = smallstonessea
+   DefaultMeshName = smallstonessea1.mesh
+   RandomMeshName = False
+   UseableMeshes : struct.begin
+      [0] = True
+      [1] = True
+      [2] = True
+      [3] = True
+      [4] = True
+      [5] = True
+   struct.end
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=materialproperty}
+   Mesh : struct.begin
+      [0] : struct.begin
+         Enabled = False
+         Static = False
+         ClassName = MeshMaterialProperty
+         DefaultMaterialName = smallstonessea
+         RandomMaterialName = False
+         UseableMaterials[0] = smallstonessea
+         UseSeasonMaterial = True
+         UseableSummerMaterials[0] = smallstonessea
+         UseableWinterMaterials[0] = smallstonesseaw
+      struct.end
+      [1] : struct.begin {refkey=materialproperty.Mesh[0]}
+         Enabled = False
+         Static = False
+         ClassName = MeshMaterialProperty
+         DefaultMaterialName = smallstonessea
+         RandomMaterialName = False
+         UseableMaterials[0] = smallstonessea
+         UseSeasonMaterial = True
+         UseableSummerMaterials[0] = smallstonessea
+         UseableWinterMaterials[0] = smallstonesseaw
+      struct.end
+      [2] : struct.begin {refkey=materialproperty.Mesh[0]}
+         Enabled = False
+         Static = False
+         ClassName = MeshMaterialProperty
+         DefaultMaterialName = smallstonessea
+         RandomMaterialName = False
+         UseableMaterials[0] = smallstonessea
+         UseSeasonMaterial = True
+         UseableSummerMaterials[0] = smallstonessea
+         UseableWinterMaterials[0] = smallstonesseaw
+      struct.end
+      [3] : struct.begin {refkey=materialproperty.Mesh[0]}
+         Enabled = False
+         Static = False
+         ClassName = MeshMaterialProperty
+         DefaultMaterialName = smallstonessea
+         RandomMaterialName = False
+         UseableMaterials[0] = smallstonessea
+         UseSeasonMaterial = True
+         UseableSummerMaterials[0] = smallstonessea
+         UseableWinterMaterials[0] = smallstonesseaw
+      struct.end
+      [4] : struct.begin {refkey=materialproperty.Mesh[0]}
+         Enabled = False
+         Static = False
+         ClassName = MeshMaterialProperty
+         DefaultMaterialName = smallstonessea
+         RandomMaterialName = False
+         UseableMaterials[0] = smallstonessea
+         UseSeasonMaterial = True
+         UseableSummerMaterials[0] = smallstonessea
+         UseableWinterMaterials[0] = smallstonesseaw
+      struct.end
+      [5] : struct.begin {refkey=materialproperty.Mesh[0]}
+         Enabled = False
+         Static = False
+         ClassName = MeshMaterialProperty
+         DefaultMaterialName = smallstonessea
+         RandomMaterialName = False
+         UseableMaterials[0] = smallstonessea
+         UseSeasonMaterial = True
+         UseableSummerMaterials[0] = smallstonessea
+         UseableWinterMaterials[0] = smallstonesseaw
+      struct.end
+   struct.end
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=statemachineproperty}
+   ClassName = StateMachineProperty
+   DefaultInitStateName = InitialDecor
+section.end
+
+stringproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=stringproperty}
+   CategorieName = decor
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=scaleproperty}
+   DefaultScale : struct.begin
+      X = 0.209
+      Y = 0.209
+      Z = 0.209
+   struct.end
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=directionupproperty}
+   RandomRollAngle = True
+   DeltaRollAngle = 1	
+section.end

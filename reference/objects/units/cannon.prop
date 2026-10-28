@@ -1,0 +1,55 @@
+{refurl=.\data\objects\ref\refunit.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=mainproperty}
+   CustomName = cannon
+   BaseName = cannon
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=actorproperty}
+   LODActorName = cannon
+   DefaultMeshName = cannon.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = cannon
+   Mesh[0].UseableMaterials[0] = cannon
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=statemachineproperty}
+   StateMachineInterval = 60
+section.end
+
+autochildrenproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=autochildrenproperty}
+   Enabled = True
+   Mesh[0] : struct.begin
+      Children : struct.begin
+         [0] : struct.begin
+            BaseName = cannon_wheel_left
+            DefaultMeshName = cannon_wheel_left.mesh
+            Mesh[*] = cannon_wheel_left.mesh
+            DefaultMaterialName = cannon
+            Materials[*] = cannon
+         struct.end
+         [1] : struct.begin {refkey=autochildrenproperty.Mesh[0].Children[0]}
+            BaseName = cannon_wheel_right
+            DefaultMeshName = cannon_wheel_right.mesh
+            Mesh[*] = cannon_wheel_right.mesh
+            DefaultMaterialName = cannon
+            Materials[*] = cannon
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=frameanimationproperty}
+   FrameAnimationCyclesLibName = cannon
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=collisionmeshproperty}
+   CustomBoundingAABBMin.X = -0.35
+   CustomBoundingAABBMin.Y = 0.1
+   CustomBoundingAABBMin.Z = -0.35
+   CustomBoundingAABBMax.X = 0.35
+   CustomBoundingAABBMax.Y = 0.6
+   CustomBoundingAABBMax.Z = 0.35
+section.end

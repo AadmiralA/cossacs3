@@ -1,0 +1,41 @@
+section.begin
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\box.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\box_calign.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\point.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\sphere.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\testroof.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\constructiondummy.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\rallypoint.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\movearrow.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\projectile.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\soundemitter.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\collision.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\gatecollision.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\decal.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\ptborder.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\ptborderwater.prop
+
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\pfx\projarrow.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\pfx\projcannonball.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\pfx\projgrenade.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\pfx\projhowitzerball.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\pfx\projhowitzerballfragment.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\pfx\projmortarball.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\pfx\debris_stone.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\pfx\debris_wood.prop
+
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\balloon.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\balloona.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\collision2x2.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\fogreveal.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\bui.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\misflag.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\miscircle.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\misattention.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\misarrowdown.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\miscrown.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\miscrown2.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\misshield.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\misshield2.prop
+   ObjectItems[*].PropertiesFileName=.\data\objects\misc\misround.prop
+section.end

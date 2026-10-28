@@ -1,0 +1,49 @@
+{refurl=.\data\objects\ref\refmisc.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=mainproperty}
+   CustomName = movearrow
+   BaseName = movearrow
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=actorproperty}
+   LODActorName = movearrow
+   DefaultMeshName = movearrow.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = movearrow
+   Mesh[0].UseableMaterials[0] = movearrow
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=frameanimationproperty}
+   Enabled = True
+   Static = True
+   DefaultFrameAnimationName = idle
+   DefaultFrameAnimationMode = aamPlayOnce
+   FrameAnimationSynchronizeOption = fasoInherited
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=statemachineproperty}
+   Enabled = True
+   Static = False
+   ClassName = StateMachineProperty
+   Active = True
+   StateMachine.LoadFromFile = .\data\scripts\misc\movearrow.aix
+   DefaultInitStateName = Initial
+   DestroyStateName = 
+   DefaultRunStateName = 
+   DesignTimeInitStateName = 
+   DesignTimeRunStateName = 
+   AfterLoadStateName = OnAfterLoad
+   BeforeSaveStateName = 
+   InLoadStateName = 
+   TagStatesChangedStateName = 
+   StateMachineProgressOption = smpoAlways
+   StateMachineProgressChildrenOption = smpcoNever
+   StateMachinePriority = 0
+   StateMachineInterval = 1000
+section.end
+
+offsetproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=offsetproperty}
+   OffsetCollideOption = ocoTerrainWater
+section.end

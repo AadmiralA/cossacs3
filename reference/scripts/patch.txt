@@ -1,0 +1,121 @@
+// this file contains information on changed scripts files for modders
+// if your mod use scripts this updates may make your mod uncompatible or contain fixed bugs
+// to keep your mod up to date you have to merge your mod scripts with our changes
+// you can use free merge tools like WinMerge, WinDiff or paid one like Araxis Merge or similar
+// files relative to scripts have extension *.inc, *.script, *.aix
+// special files that define some globals vars, consts and framework .\data\scripts\dmscript.global, .\data\scripts\dmscript.source
+// folders containing scripts .\data\scripts\, .\data\gui\
+// you can find current game version in main menu
+
+// file is outdated, please use the tips above.
+
+1.4.5.69.4993
+\data\gui\menu.inc\docreate.inc
+\data\gui\menu.inc\doprogress.inc
+\data\gui\menu.inc\eventcreatejoinroom.inc
+\data\gui\menu.inc\eventcustomgame.inc
+\data\gui\menu.inc\eventinternetshell.inc
+\data\gui\menu.inc\eventmainmenu.inc
+\data\gui\menu.inc\eventmultiplayerchat.inc
+\data\gui\menu.inc\onlanevent.inc
+\data\gui\menu.inc\onlaneventsession.inc
+\data\gui\menu.inc\showcreatejoinroom.inc
+\data\gui\menu.inc\showcustomgame.inc
+\data\gui\menu.inc\showinternetshell.inc
+\data\gui\menu.inc\showmainmenu.inc
+\data\scripts\lib\classes.script
+\data\scripts\lib\country.script
+\data\scripts\lib\map.script
+\data\scripts\lib\misc.script
+\data\scripts\lib\miscext2.script
+\data\scripts\lib\miscext3.script
+\data\scripts\lib\serial.script
+\data\scripts\lib\unit.script
+\data\scripts\progress\progress.inc\nothing.inc
+\data\scripts\units\global.inc\progress.inc
+\data\scripts\units\unit.inc\initial.inc
+\data\scripts\units\unit.inc\ontagstates.inc
+\data\scripts\dmscript.global
+
+1.4.2.66.4913
+\data\gui\menu.inc\doprogress.inc
+\data\gui\menu.inc\showeditorinfo.inc
+\data\gui\menu.inc\showinternetshell.inc
+\data\scripts\common.inc\dogenerate.inc
+\data\scripts\lib\map.script
+\data\scripts\lib\miscext2.script
+\data\scripts\lib\serial.script
+\data\scripts\lib\weapon.script
+
+1.4.0.64.4910
+\data\scripts\units\global.inc\writeupgrade.inc
+
+1.3.9.64.4908
+\data\gui\menu.inc\docreate.inc
+\data\gui\menu.inc\doprogress.inc
+\data\gui\menu.inc\eventcreatejoinroom.inc
+\data\gui\menu.inc\eventcustomgame.inc
+\data\gui\menu.inc\eventinternetshell.inc
+\data\gui\menu.inc\eventmainmenu.inc
+\data\gui\menu.inc\eventmultiplayerlogin.inc
+\data\gui\menu.inc\onlanevent.inc
+\data\gui\menu.inc\onlaneventsession.inc
+\data\gui\menu.inc\showcreatejoinroom.inc
+\data\gui\menu.inc\showcustomgame.inc
+\data\gui\menu.inc\showeditorinfo.inc
+\data\gui\menu.inc\showinternetshell.inc
+\data\scripts\common.inc\initmap.inc
+\data\scripts\lib\classes.script
+\data\scripts\lib\init.script
+\data\scripts\lib\map.script
+\data\scripts\lib\misc.script
+\data\scripts\lib\miscext.script
+\data\scripts\lib\miscext2.script
+\data\scripts\lib\unit.script
+\data\scripts\progress\progress.inc\nothing.inc
+\data\scripts\units\unit.inc\initial.inc
+\data\scripts\units\unit.inc\nothing.inc
+\data\scripts\units\unit.inc\onafterload.inc
+\data\scripts\units\unit.inc\onendpointreached.inc
+\data\scripts\dmscript.global
+\data\scripts\dmscript.source
+
+1.3.6.63.* - Release of Cossacks 3 : Rise to Glory
+check all script files
+.\data\scripts\*
+.\data\gui\*
+*.inc, *.script, *.aix
+
+1.3.5.62.4625
+.\data\scripts\units\unit.inc\nothing.inc
+
+1.3.4.62.4623
+.\data\scripts\dmscript.global
+.\data\scripts\lib\miscext.script
+.\data\scripts\lib\miscext2.script
+.\data\scripts\lib\movie.script
+.\data\scripts\lib\player.script
+.\data\scripts\lib\profile.script
+.\data\scripts\lib\serial.script
+.\data\scripts\lib\unit.script
+.\data\scripts\units\unit.inc\onendpointreached.inc
+.\data\scripts\common.inc\dogenerate.inc
+.\data\gui\menu.inc\onshortcut1.inc
+.\data\gui\menu.inc\showeditorcontrol.inc
+.\data\gui\menu.inc\showscenariohelper.inc
+.\data\gui\menu.inc\showscenariotriggereditor.inc
+.\data\gui\menu.inc\showunitcontrol.inc
+
+1.3.3.61.4607
+.\data\scripts\patch.txt - this file is added to help with keeping mods up to date and in working status
+.\data\scripts\lib\weapon.script
+
+1.3.3.61.4595
+.\data\scripts\dmscript.global
+.\data\scripts\lib\miscext.script
+.\data\scripts\lib\profile.script
+.\data\scripts\lib\steam.script
+.\data\scripts\lib\unit.script 
+.\data\gui\menu.inc\docreate.inc
+.\data\gui\menu.inc\eventmodalmessage.inc
+.\data\gui\menu.inc\eventsettings.inc

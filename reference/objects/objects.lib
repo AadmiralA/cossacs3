@@ -1,0 +1,65 @@
+section.begin
+   Name=units
+   Description[0]=
+   Priority=100
+   Enabled=True
+   GlobalStateMachine.LoadFromFile=.\data\scripts\units\global.aix
+   GroupsStateMachine.LoadFromFile=.\data\scripts\units\group.aix
+   GlobalStateMachineEnabled=True
+   GroupsStateMachineEnabled=True
+   GlobalStateMachineInterval=20
+   GroupsStateMachineInterval=20
+   ObjectCollection.LoadFromFile=.\data\objects\units\units.objects
+   Tag=10
+section.end
+
+section.begin
+   Name=buildings
+   Description[0]=
+   Priority=100
+   Enabled=True
+   GlobalStateMachineEnabled=False
+   GroupsStateMachineEnabled=False
+   GlobalStateMachineInterval=
+   GroupsStateMachineInterval=
+   ObjectCollection.LoadFromFile=.\data\objects\buildings\buildings.objects
+   Tag=20
+section.end
+
+section.begin
+   Name=misc
+   Description[0]=
+   Priority=100
+   Enabled=True
+   GlobalStateMachineEnabled=False
+   GroupsStateMachineEnabled=False
+   GlobalStateMachineInterval=
+   GroupsStateMachineInterval=
+   ObjectCollection.LoadFromFile=.\data\objects\misc\misc.objects
+   Tag=30
+section.end
+
+section.begin
+   Name=env
+   Description[0]=
+   Priority=100
+   Enabled=True
+   GlobalStateMachineEnabled=False
+   GroupsStateMachineEnabled=False
+   GlobalStateMachineInterval=
+   GroupsStateMachineInterval=
+   ObjectCollection.LoadFromFile=.\data\objects\env\env.objects
+   Tag=40
+section.end
+
+section.begin
+   Name=progress
+   Description[0]=
+   Priority=100
+   Enabled=True
+   GlobalStateMachine.LoadFromFile=.\data\scripts\progress\progress.aix
+   GlobalStateMachineEnabled=True
+   GroupsStateMachineEnabled=False
+   GlobalStateMachineInterval=20
+   Tag=50
+section.end

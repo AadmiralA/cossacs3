@@ -1,0 +1,60 @@
+{refurl=.\data\objects\ref\refbuilding.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=mainproperty}
+   CustomName = ukrwga_15
+   BaseName = ukrwga_15
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=actorproperty}
+   LODActorName = ukrwwa_gate
+   DefaultMeshName = ukrwwa_gate.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = ukrwwa
+   Mesh[0].UseableMaterials[0] = ukrwwa
+   Mesh[0].UseSeasonMaterial = True
+   Mesh[0].UseableSummerMaterials[0] = ukrwwa
+   Mesh[0].UseableWinterMaterials[0] = ukrwwaw
+   Mesh[1] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = ukrwwa
+      UseableMaterials[0] = ukrwwa
+   struct.end
+   Mesh[2] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = ukrwwa
+      UseableMaterials[0] = ukrwwa
+   struct.end
+section.end
+
+collisionmaskproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmaskproperty}
+   Priority = 101
+   Mask : struct.begin
+      [*] = 11
+      [*] = 00
+      [*] = 00
+      [*] = 00
+      [*] = 00
+      [*] = 11
+   struct.end
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmeshproperty}
+   RayCastIntersect = True
+   BVRayCastIntersect = True
+   CustomBoundingAABBMin.X = -1.1
+   CustomBoundingAABBMin.Y = 0.00
+   CustomBoundingAABBMin.Z = -0.6
+   CustomBoundingAABBMax.X = 1.1
+   CustomBoundingAABBMax.Y = 2.25
+   CustomBoundingAABBMax.Z = 0.6
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.33333
+   DefaultScale.Y = 0.33333
+   DefaultScale.Z = 0.33333
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=directionupproperty}
+   DefaultRollAngle = 0
+section.end

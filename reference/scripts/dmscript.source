@@ -1,0 +1,558 @@
+section.begin
+   Code : struct.begin
+      [*] = ;// init variables
+      [*] = ;gbool_gui_mapgenerationfinished := False;
+      [*] = ;gbool_gui_newmapfinished := False;
+      [*] = ;gbool_gui_shifticonsselection := False;
+      [*] = ;gbool_editor_peacemode := True;
+      [*] = ;gbool_editor_fogofwar := True;
+      [*] = ;gbool_editor_placeunits := False;
+      [*] = ;gbool_editor_placeunitsmaximized := False;
+      [*] = ;gstring_editor_selectedcountrysid := '';
+      [*] = ;gstring_editor_selectedunitsid := '';
+      [*] = ;gint_editor_selectedcountryid := 0;
+      [*] = ;gint_editor_selectedunitid := 0;
+      [*] = ;gint_gui_progresstick := 0;
+      [*] = ;gint_gui_progresstickeditor := 0;
+      [*] = ;gbool_gui_update_editorinfo := False;
+      [*] = ;gbool_gui_update_unitcontrol := False;
+      [*] = ;gbool_gui_update_rallypoints := False;
+      [*] = ;gbool_gui_update_cursor := False;
+      [*] = ;gbool_gui_updateprogress_unitcontrol := False;
+      [*] = ;gbool_gui_debug := True;
+      [*] = ;gbool_gui_maxcameradist := True;
+      [*] = ;gint_internetshell_toppanelvisible := 1;
+      [*] = ;gint_unit_tagstate := 0;
+      [*] = ;gint_unit_parentcid := -1;
+      [*] = ;gint_gui_prevelementundermouse := 0;
+      [*] = ;gint_gui_prevelementpressed := 0;
+      [*] = ;gint_gui_prevundercursoruid := 0;
+      [*] = ;gint_gui_unitcontroluid := 0;
+      [*] = ;gint_gui_unitcontrolsquadind := -1;
+      [*] = ;gint_gui_pickedbldhnd := 0;
+      [*] = ;gint_gui_pickedbldcid := -1;
+      [*] = ;gbool_gui_screenshotcamera := False;
+      [*] = ;gbool_gui_goinattackmode := False;
+      [*] = ;gbool_gui_guardmode := False;
+      [*] = ;gbool_gui_attackpointmode := False;
+      [*] = ;gbool_gui_patrolmode := False;
+      [*] = ;gbool_gui_setrallypointmode := False;
+      [*] = ;gbool_profiler_enabled := False;
+      [*] = ;gFloat_test_minX := 100000;
+      [*] = ;gFloat_test_maxX := -100000;
+      [*] = ;gFloat_test_minY := 100000;
+      [*] = ;gFloat_test_maxY := -100000;
+      [*] = ;gfloat_gui_movearrowx := 0;
+      [*] = ;gfloat_gui_movearrowz := 0;
+      [*] = ;gfloat_gui_screenshotcamerafov := 0;
+      [*] = ;gfloat_gui_prevmouseworldcoordx := 0;
+      [*] = ;gfloat_gui_prevmouseworldcoordy := 0;
+      [*] = ;gfloat_gui_prevmouseworldcoordz := 0;
+      [*] = ;gint_gui_prevshowunitcontrolunituid := 0;
+      [*] = ;gint_gui_officer_selectedformation := -1;
+      [*] = ;gint_gui_officer_formationsizedecrease := 0;
+      [*] = ;gint_gui_officer_formationsizedecreasemax := 0;
+      [*] = ;gint_gui_market_sellrestype := gc_resource_type_none;
+      [*] = ;gint_gui_market_buyrestype := gc_resource_type_none;
+      [*] = ;gint_gui_market_resamount := 0;
+      [*] = ;gbool_gui_progressoneventflag := True;
+      [*] = ;gstring_gui_eventpressstate := '';
+      [*] = ;gConnectIPIndex := -1;
+      [*] = ;gConnectIPCount := 0;
+      [*] = ;gConnectHost := '';
+      [*] = ;gLanMyID := 0;
+      [*] = ;gLanGameMode := 0;
+      [*] = ;gInetEventLock := 0;
+      [*] = ;gInterface.gamemode := gc_gamemode_mainmenu;
+      [*] = ;gRecordGeneratorVersion := 0;
+      [*] = ;gbool_use_collision := True;
+      [*] = ;gbool_use_nomeleeminradius := True;
+   struct.end
+   Files : struct.begin
+      [*] = .\data\scripts\lib\classes.script
+      [*] = .\data\scripts\lib\parser.script
+      [*] = .\data\scripts\lib\init.script
+      [*] = .\data\scripts\lib\map.script
+      [*] = .\data\scripts\lib\net.script
+      [*] = .\data\scripts\lib\pfx.script
+      [*] = .\data\scripts\lib\misc.script
+      [*] = .\data\scripts\lib\profile.script
+      [*] = .\data\scripts\lib\res.script
+      [*] = .\data\scripts\lib\country.script
+      [*] = .\data\scripts\lib\sound.script
+      [*] = .\data\scripts\lib\weapon.script
+      [*] = .\data\scripts\lib\unit.script
+      [*] = .\data\scripts\lib\group.script
+      [*] = .\data\scripts\lib\squad.script
+      [*] = .\data\scripts\lib\player.script
+      [*] = .\data\scripts\lib\miscext.script
+      [*] = .\data\scripts\lib\gui.script
+      [*] = .\data\scripts\lib\control.script
+      [*] = .\data\scripts\lib\ai.script
+      [*] = .\data\scripts\lib\ui.script
+      [*] = .\data\scripts\lib\scenarioeditor.script
+      [*] = .\data\scripts\lib\scenario.script
+      [*] = .\data\scripts\lib\serial.script
+      [*] = .\data\scripts\lib\miscext2.script
+      [*] = .\data\scripts\lib\movie.script
+      [*] = .\data\scripts\lib\steam.script
+      [*] = .\data\scripts\lib\miscext3.script
+   struct.end
+   protected : struct.begin
+      [*] = _init_InitializeFormations
+      [*] = _gui_CheckMaterialWidthHeight
+   struct.end
+   private : struct.begin
+      [*] = gbool_gui_donewgamerestart
+      [*] = gbool_gui_mapgenerationfinished
+      [*] = gbool_gui_newmapfinished
+      [*] = gbool_gui_shifticonsselection
+      [*] = gbool_editor_peacemode
+      [*] = gbool_editor_fogofwar
+      [*] = gbool_editor_placeunits
+      [*] = gbool_editor_placeunitsmaximized
+      [*] = gstring_editor_selectedcountrysid
+      [*] = gstring_editor_selectedunitsid
+      [*] = gstring_editor_lastgenbitmapname
+      [*] = gstring_editor_lastgenmapname
+      [*] = gint_gui_progresstick
+      [*] = gint_gui_progresstickeditor
+      [*] = gint_editor_selectedcountryid
+      [*] = gint_editor_selectedunitid
+      [*] = gbool_gui_update_editorinfo
+      [*] = gbool_gui_update_unitcontrol
+      [*] = gbool_gui_update_rallypoints
+      [*] = gbool_gui_updateprogress_unitcontrol
+      [*] = gbool_gui_debug
+      [*] = gbool_gui_maxcameradist
+      [*] = gbool_gui_goinattackmode
+      [*] = gbool_gui_guardmode
+      [*] = gbool_gui_attackpointmode
+      [*] = gbool_gui_patrolmode
+      [*] = gbool_gui_firstonresize
+      [*] = gbool_gui_isfileexists_checked_campaigns
+      [*] = gbool_gui_isfileexists_campaigns
+      [*] = gint_gui_prevelementundermouse
+      [*] = gint_gui_prevelementpressed
+      [*] = gint_gui_prevundercursoruid
+      [*] = gint_gui_unitcontroluid
+      [*] = gint_gui_unitcontrolsquadind
+      [*] = gint_gui_pickedbldhnd
+      [*] = gint_gui_pickedbldcid
+      [*] = gbool_gui_screenshotcamera
+      [*] = gfloat_gui_movearrowx
+      [*] = gfloat_gui_movearrowz
+      [*] = gbool_gui_doalarm
+      [*] = gint_gui_alarmevent
+      [*] = gfloat_gui_musiclastbattletimestart
+      [*] = gfloat_gui_musiclastbattletimeend
+      [*] = gfloat_gui_musiclastnationaltimestart
+      [*] = gfloat_gui_musiclastnationaltimeend
+      [*] = gfloat_gui_lanlastgametimesync
+      [*] = gfloat_gui_alarmx
+      [*] = gfloat_gui_alarmz
+      [*] = gfloat_gui_screenshotcamerafov
+      [*] = gfloat_gui_videoscreenshottimer
+      [*] = gint_gui_videoscreenshotphase
+      [*] = gfloat_gui_prevmouseworldcoordx
+      [*] = gfloat_gui_prevmouseworldcoordy
+      [*] = gfloat_gui_prevmouseworldcoordz
+      [*] = gint_unit_tagstate
+      [*] = gint_unit_parentcid
+      [*] = gbool_unit_isshipdummy
+      [*] = gbool_profiler_enabled
+      [*] = gFloat_test_minX
+      [*] = gFloat_test_maxX
+      [*] = gFloat_test_minY
+      [*] = gFloat_test_maxY
+      [*] = gbool_gui_update_cursor
+      [*] = gbool_gui_setrallypointmode
+      [*] = gbool_gui_progressoneventflag
+      [*] = gbool_gui_peasantselected
+      [*] = gbool_gui_drummerselected
+      [*] = gbool_gui_officerselected
+      [*] = gbool_gui_bagpiperselected
+      [*] = gbool_gui_waterselection
+      [*] = gbool_gui_requestsoundonunitcontrol
+      [*] = gstring_gui_eventpressstate
+      [*] = gint_gui_market_sellrestype
+      [*] = gint_gui_market_buyrestype
+      [*] = gint_gui_market_resamount
+      [*] = gint_gui_prevshowunitcontrolunituid
+      [*] = gint_gui_officer_selectedformation
+      [*] = gint_gui_officer_formationsizedecrease
+      [*] = gint_gui_officer_formationsizedecreasemax
+      [*] = gint_campaign_selectedcampaign
+      [*] = gint_campaign_selectedmission
+      [*] = gstring_campaign_lastmissionname
+      [*] = gstring_campaign_selcampaignname
+      [*] = gstring_campaign_selmissionname
+      [*] = gint_gui_chatmessagemode
+      [*] = gint_gui_sliderhnd
+      [*] = gint_gui_sliderdragx
+      [*] = gint_gui_sliderdragy
+      [*] = gint_gui_changeresolutionmode
+      [*] = gint_gui_changeresolutionstage
+      [*] = gint_gui_revertresolutiontimer
+      [*] = gint_dbg_logsoundcount
+      [*] = gint_dbg_logrequestsoundcount
+      [*] = gfloat_dbg_logsoundtime
+      [*] = gstring_gui_lastguisoundname
+      [*] = gfloat_gui_lastguisoundtime
+      [*] = gint_gui_soundtag
+      [*] = gbool_net_forcesyncres
+      [*] = gbool_gui_saving
+      [*] = gstring_gui_saving
+      [*] = gbool_gui_pausestate
+      [*] = gbool_gui_quicksave
+      [*] = gbool_gui_gatefinished
+      [*] = gbool_gui_querywindow
+      [*] = gbool_scenario_startneeded
+      [*] = gbool_gui_showannouncementclosed
+      [*] = gbool_gui_firstdocreate
+      [*] = gint_gui_lastprogressach
+      [*] = gbool_gui_achupdated
+      [*] = gint_gui_achwinlose
+      [*] = gint_gui_saveload_ind
+      [*] = gint_gui_saveload_enum
+      [*] = gint_gui_saveload_mode
+      [*] = gint_searchenemy_count
+      [*] = gfloat_searchenemygridcachetime
+      [*] = gfloat_searchenemy_mid
+      [*] = gint_searchenemy_progress
+      [*] = gint_searchenemy_skiptickcount
+      [*] = gint_gui_lansendreadytries
+      [*] = gint_gui_lansendstarttries
+      [*] = gint_gui_updateclientlist
+      [*] = gint_gui_updatesessionlist
+      [*] = gbool_gui_landoreadysent
+      [*] = gbool_gui_setshellchatinputfocused
+      [*] = gbool_gui_refreshcurrentsession
+      [*] = gbool_gui_updatecurrentsessionname
+      [*] = gbool_gui_showcustomgame
+      [*] = gbool_gui_showinternetshell
+      [*] = gbool_gui_senddatasyncparser
+      [*] = gbool_gui_sendadviserchangeparser
+      [*] = gint_gui_connectserverstate
+      [*] = gbool_progress_usewritenewrequestlist
+      [*] = gfloat_lan_lastsyncrestime
+      [*] = gfloat_lan_lastsyncstatstime
+      [*] = gfloat_lan_lastsyncdatatime
+      [*] = gfloat_gui_interfacescale
+      [*] = gstring_gui_connectserver
+      [*] = gstring_gui_saveload_name
+      [*] = gRecordGeneratorVersion
+      [*] = gCanPlaceBuildingWalls
+      [*] = dbgx
+      [*] = dbgy
+      [*] = dbgz
+      [*] = dbgprevx
+      [*] = dbgprevy
+      [*] = dbgprevz
+      [*] = dbgstatename
+      [*] = gSelection
+      [*] = gProfile
+      [*] = gLogMessages
+      [*] = gChatMessages
+      [*] = gProfileTmp
+      [*] = gProfileUserStruct
+      [*] = gProfileUserStructTmp
+      [*] = gConnectIPList
+      [*] = gConnectIPIndex
+      [*] = gConnectIPCount
+      [*] = gConnectHost
+      [*] = gLanMyID
+      [*] = gLanHostID
+      [*] = gLanRecreate
+      [*] = gLanGameMode
+      [*] = gInetEventLock
+      [*] = gProgress
+      [*] = gInterface
+      [*] = gSoundGrid
+      [*] = gConnectState
+      [*] = gConnectModal
+      [*] = gConnectTimer
+      [*] = gConnectLoginState
+      [*] = WallGd8
+      [*] = WallDx8
+      [*] = WallDy8
+      [*] = gIntegerList
+      [*] = gUnderCursorList
+      [*] = gDoRoundDamageList
+      [*] = gDestructListBuilding
+      [*] = gDestructListShip
+      [*] = gPrimitives
+      [*] = gTmpIntList
+      [*] = gTmpIntListFindUnits
+      [*] = gTmpIntListFillSquad
+      [*] = gTmpIntListUpgrades
+      [*] = gTmpIntListMembers
+      [*] = gTmpIntListGetBuildPoints
+      [*] = gTmpIntListObjectsInRadius
+      [*] = gTmpIntListOnSelection
+      [*] = gTmpIntListGUIInsideList
+      [*] = gTmpIntListGUIDrummerList
+      [*] = gTmpIntListGUISquadList
+      [*] = gShellSortOnlineMarked
+      [*] = gShellSortOnline
+      [*] = gShellSortPlayMarked
+      [*] = gShellSortPlay
+      [*] = gOrderUnitsList
+      [*] = gOrderUnitsListTmp
+      [*] = gGuiUpdateHighlights
+      [*] = gGuiSelectionHelper
+      [*] = gMapMask
+      [*] = gPatternMask
+      [*] = gCustomObjPoints
+      [*] = gCustomBuildPointsWall
+      [*] = gWeapons
+      [*] = gSettings
+      [*] = gSettingsTmp
+      [*] = gInternetShell
+      [*] = gInternetShellTmp
+      [*] = gPtrList
+      [*] = gUIConst
+      [*] = gConst
+      [*] = gAIConst
+      [*] = gKeyColor
+      [*] = gWallCluster
+      [*] = gUpdateAreas
+      [*] = gAchLastUpgrades
+      [*] = gfloat_gui_lasttimemusiccrossfade
+      [*] = gbool_use_collision
+      [*] = gbool_use_nomeleeminradius
+      [*] = gbool_issteam
+      [*] = gbool_isgog
+      [*] = gint_quickplay_countofplayers
+      [*] = gbool_gui_updateadviser
+      [*] = gbool_gui_updateadviseradvice
+      [*] = gbool_gui_recheckadviseradvice
+      [*] = gint_gui_adviserwidth
+      [*] = gbool_gui_keephint
+      [*] = gbool_lan_changeprofile
+      [*] = gfloat_gui_lanlasteventreceived
+      [*] = gfloat_gui_lanlastaliveevent
+      [*] = gfloat_gui_lanlastaliveeventreceived
+   struct.end
+   serialized : struct.begin
+      [*] = gEconomy
+      [*] = gMap
+      [*] = gGOPathList
+      [*] = gWaterPathList
+      [*] = gPlayer
+      [*] = gEnemyInfoList
+      [*] = gCtrlGroups
+      [*] = gSelectedObjects
+      [*] = gScanGrid
+      [*] = gResGrid
+      [*] = gInterface
+      [*] = gScenario
+      [*] = gWallSystem
+      [*] = gIslands
+      [*] = gbool_editor_peacemode
+      [*] = gfloat_peacetime
+      [*] = gbool_peacemode
+      [*] = gWriteNewRequestList
+      [*] = gbool_recordwascleared
+   struct.end
+   serialproc : struct.begin
+      [*] : struct.begin
+         type = TPlayerArgs
+         serproc = _serial_PlayerArgsWriter
+         unsproc = _serial_PlayerArgsReader
+         sizproc = _serial_PlayerArgsSize
+         postproc = _serial_PlayerArgsPost
+         seekproc = _serial_PlayerArgsSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TIntegerList
+         serproc = _serial_IntegerListWriter
+         unsproc = _serial_IntegerListReader
+         sizproc = _serial_IntegerListSize
+         postproc = _serial_IntegerListPost
+         seekproc = _serial_IntegerListSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TPtrList
+         serproc = _serial_PtrListWriter
+         unsproc = _serial_PtrListReader
+         sizproc = _serial_PtrListSize
+         postproc = _serial_PtrListPost
+         seekproc = _serial_PtrListSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TObj
+         serproc = _serial_ObjWriter
+         unsproc = _serial_ObjReader
+         sizproc = _serial_ObjSize
+         postproc = _serial_ObjPost
+         seekproc = _serial_ObjSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TOrderInfo
+         serproc = _serial_OrderInfoWriter
+         unsproc = _serial_OrderInfoReader
+         sizproc = _serial_OrderInfoSize
+         postproc = _serial_OrderInfoPost
+         seekproc = _serial_OrderInfoSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TSquadList
+         serproc = _serial_SquadListWriter
+         unsproc = _serial_SquadListReader
+         sizproc = _serial_SquadListSize
+         postproc = _serial_SquadListPost
+         seekproc = _serial_SquadListSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TAIBuildingProject
+         serproc = _serial_AIBuildingProjectWriter
+         unsproc = _serial_AIBuildingProjectReader
+         sizproc = _serial_AIBuildingProjectSize
+         postproc = _serial_AIBuildingProjectPost
+         seekproc = _serial_AIBuildingProjectSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TArmyList
+         serproc = _serial_ArmyListWriter
+         unsproc = _serial_ArmyListReader
+         sizproc = _serial_ArmyListSize
+         postproc = _serial_ArmyListPost
+         seekproc = _serial_ArmyListSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TAiProtectedBuildingList
+         serproc = _serial_AiProtectedBuildingListWriter
+         unsproc = _serial_AiProtectedBuildingListReader
+         sizproc = _serial_AiProtectedBuildingListSize
+         postproc = _serial_AiProtectedBuildingListPost
+         seekproc = _serial_AiProtectedBuildingListSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TAiData
+         serproc = _serial_AiDataWriter
+         unsproc = _serial_AiDataReader
+         sizproc = _serial_AiDataSize
+         postproc = 
+         seekproc = _serial_AiDataSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TPlayer
+         serproc = 
+         unsproc = 
+         sizproc = 
+         postproc = _serial_PlayerPost
+         seekproc = 
+         over = False
+      struct.end
+      [*] : struct.begin
+         type = TTower
+         serproc = _serial_TowerWriter
+         unsproc = _serial_TowerReader
+         sizproc = _serial_TowerSize
+         postproc = _serial_TowerPost
+         seekproc = _serial_TowerSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TEnemyInfoList
+         serproc = _serial_EnemyInfoListWriter
+         unsproc = _serial_EnemyInfoListReader
+         sizproc = _serial_EnemyInfoListSize
+         postproc = 
+         seekproc = _serial_EnemyInfoListSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TArmyInfoList
+         serproc = _serial_ArmyInfoListWriter
+         unsproc = _serial_ArmyInfoListReader
+         sizproc = _serial_ArmyInfoListSize
+         postproc = 
+         seekproc = _serial_ArmyInfoListSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TGridList
+         serproc = _serial_GridListWriter
+         unsproc = _serial_GridListReader
+         sizproc = _serial_GridListSize
+         postproc = 
+         seekproc = _serial_GridListSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TResGridList
+         serproc = _serial_ResGridListWriter
+         unsproc = _serial_ResGridListReader
+         sizproc = _serial_ResGridListSize
+         postproc = _serial_ResGridListPost
+         seekproc = _serial_ResGridListSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TInterface
+         serproc = _serial_InterfaceWriter
+         unsproc = _serial_InterfaceReader
+         sizproc = _serial_InterfaceSize
+         postproc = 
+         seekproc = _serial_InterfaceSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TWallSystem
+         serproc = _serial_WallSystemWriter
+         unsproc = _serial_WallSystemReader
+         sizproc = _serial_WallSystemSize
+         postproc = 
+         seekproc = _serial_WallSystemSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TWallCluster
+         serproc = _serial_WallClusterWriter
+         unsproc = _serial_WallClusterReader
+         sizproc = _serial_WallClusterSize
+         postproc = 
+         seekproc = _serial_WallClusterSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TWallCell
+         serproc = _serial_WallCellWriter
+         unsproc = _serial_WallCellReader
+         sizproc = _serial_WallCellSize
+         postproc = _serial_WallCellPost
+         seekproc = _serial_WallCellSeek
+         over = True
+      struct.end
+      [*] : struct.begin
+         type = TWriteNewRequest
+         serproc = 
+         unsproc = 
+         sizproc = 
+         postproc = 
+         seekproc = 
+         over = False
+      struct.end
+   struct.end
+   serialbeforeproc = _serial_BeforeProcWriter
+   serialafterproc = _serial_AfterProcWriter
+   serialfinalproc = _serial_FinalProcWriter
+   unserialbeforeproc = _serial_BeforeProcReader
+   unserialafterproc = _serial_AfterProcReader
+   unserialfinalproc = _serial_FinalProcReader
+   optdebugenabled = False
+   optrangechecking = False
+section.end
+

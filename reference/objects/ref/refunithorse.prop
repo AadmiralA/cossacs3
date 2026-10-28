@@ -1,0 +1,16 @@
+{refurl=.\data\objects\ref\refunit.prop}
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.5375
+   DefaultScale.Y = 0.5375
+   DefaultScale.Z = 0.5375
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=collisionmeshproperty}
+   CustomBoundingAABBMin.X = -0.35
+   CustomBoundingAABBMin.Y = 0.05
+   CustomBoundingAABBMin.Z = -0.35
+   CustomBoundingAABBMax.X = 0.35
+   CustomBoundingAABBMax.Y = 0.95
+   CustomBoundingAABBMax.Z = 0.35
+section.end

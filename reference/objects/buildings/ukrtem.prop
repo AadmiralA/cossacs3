@@ -1,0 +1,128 @@
+{refurl=.\data\objects\ref\refbuilding.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=mainproperty}
+   CustomName = ukrtem
+   BaseName = ukrtem
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=actorproperty}
+   LODActorName = ukrtem
+   DefaultMeshName = ukrtem.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = ukrtem
+   Mesh[0].UseableMaterials[0] = ukrtem
+   Mesh[0].UseSeasonMaterial = True
+   Mesh[0].UseableSummerMaterials[0] = ukrtem
+   Mesh[0].UseableWinterMaterials[0] = ukrtemw
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = ukrtem
+      UseableMaterials[0] = ukrtem
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = ukrtem
+      UseableMaterials[0] = ukrtem
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = ukrtem
+      UseableMaterials[0] = ukrtem
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = ukrtem
+      UseableMaterials[0] = ukrtem
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = ukrtem
+      UseableMaterials[0] = ukrtem
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = ukrtem
+      UseableMaterials[0] = ukrtem
+   struct.end
+section.end
+
+collisionmaskproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmaskproperty}
+   Mask : struct.begin
+      [*] = 0000000001111000000000
+      [*] = 0000000011111100000000
+      [*] = 0000000111111110000000
+      [*] = 0000001111111111000000
+      [*] = 0000011111111111100000
+      [*] = 0000111111111111110000
+      [*] = 0001111111111111111000
+      [*] = 0111111111111111111100
+      [*] = 1111111111111111111110
+      [*] = 0111111111111111111110
+      [*] = 0011111111111111111000
+      [*] = 0001100001111111110000
+      [*] = 0000000000111111100000
+      [*] = 0000000000011111000000
+      [*] = 0000000000001110000000
+      [*] = 0000000000000000000000
+      [*] = 0000000000000000000000
+      [*] = 0000000000000000000000
+      [*] = 0000000000000000000000
+   struct.end
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmeshproperty}
+   CustomBoundingAABBMin.X = -4.30
+   CustomBoundingAABBMin.Y = 0.75
+   CustomBoundingAABBMin.Z = -3.25
+   CustomBoundingAABBMax.X = 2.50
+   CustomBoundingAABBMax.Y = 2.10
+   CustomBoundingAABBMax.Z = 4.05
+section.end
+
+autochildrenproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = AutoChildrenProperty
+   Custom = False
+   Mesh[0] : struct.begin
+      Enabled = True
+      Static = True
+      ClassName = MeshChildrenProperty
+      Children : struct.begin
+         [0] : struct.begin
+            Enabled = True
+            Static = True
+            ClassName = ChildProperty
+            BaseName = ukrtema
+            RaceName = buildings
+            DefaultMeshName = ukrtema.mesh
+            RandomMeshName = False
+            Mesh[0] = ukrtema
+            Mesh[1] = ukrtem1a
+            Mesh[2] = ukrtem2a
+            Mesh[3] = ukrtem3a
+            Mesh[4] = ukrtem4a
+            Mesh[5] = ukrtem_death1a
+            Mesh[6] = ukrtem_death2a
+            DefaultMaterialName = scaffold
+            RandomMaterialName = False
+            Materials[0] = scaffold
+            Materials[1] = scaffold
+            Materials[2] = scaffold
+            Materials[3] = scaffold
+            Materials[4] = scaffold
+            Materials[5] = debris
+            Materials[6] = debris
+            Option = achildRequered
+            StartStateName = 
+            Useable = True
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.422
+   DefaultScale.Y = 0.422
+   DefaultScale.Z = 0.422
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=directionupproperty}
+   DefaultRollAngle = 45
+section.end

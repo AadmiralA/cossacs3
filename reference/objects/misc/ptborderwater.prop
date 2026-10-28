@@ -1,0 +1,71 @@
+{refurl=.\data\objects\ref\refmisc.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=mainproperty}
+   CustomName = ptborderwater
+   BaseName = ptborderwater
+section.end
+
+stringproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=stringproperty}
+   StringTag = 100
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=collisionmeshproperty}
+   Enabled = True
+   Static = True
+   Detection = False
+   BoundingMode = cbmAABB
+   BoundingData = cbdCustom
+   BoundingSpace = cbsProj
+   CustomBoundingAABBMin : struct.begin
+      X = -0.16
+      Y = -0.1
+      Z = -0.16
+   struct.end
+   CustomBoundingAABBMax : struct.begin
+      X = 0.16
+      Y = 0.25
+      Z = 0.16
+   struct.end
+   CustomBoundingSphere = 0.32
+   UseNoSPCull = False
+   UncollideDelta = 0.05
+   CIEnabled = True
+   CIMovable = False
+   CIMass = 1
+   CIIntersectRadius = 0.16
+   CIMaxDistKoef = 2
+   CIDeltaStep = 0.005
+   CIRotationSpeed = 5
+   CIStuckAngle = 5
+   CIEpsilonAngle = 4
+   CIEpsilonShift = 0.001
+   CIEpsilonMove = 0.02
+   CIDistExtPointEpsilon = 0.005
+   CIAvoidPointMaxAngle = 60
+   CIMaxCollideCounter = 7
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=actorproperty}
+   LODActorName = ptborderwater
+   DefaultMeshName = ptborderwater.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = ptborder
+   Mesh[0].UseableMaterials[0] = ptborder
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.325
+   DefaultScale.Y = 0.325
+   DefaultScale.Z = 0.325
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=directionupproperty}
+   RandomRollAngle = True
+   DeltaRollAngle = 1
+section.end
+
+offsetproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=offsetproperty}
+   OffsetCollideOption = ocoTerrainWater
+section.end

@@ -1,0 +1,497 @@
+section.begin
+   Name = Initial
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\initial.inc
+section.end
+
+section.begin
+   Name = OnBeforeSave
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\onbeforesave.inc
+section.end
+
+section.begin
+   Name = OnAfterLoad
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\onafterload.inc
+section.end
+
+section.begin
+   Name = Progress
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\progress.inc
+section.end
+
+section.begin
+   Name = ----------------------
+   UsedFileName = 
+section.end
+
+section.begin
+   Name = WriteSquadNew
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writesquadnew.inc
+section.end
+
+section.begin
+   Name = ReadSquadNew
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readsquadnew.inc
+section.end
+
+section.begin
+   Name = WriteSquadListAction
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writesquadlistaction.inc
+section.end
+
+section.begin
+   Name = ReadSquadListAction
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readsquadlistaction.inc
+section.end
+
+section.begin
+   Name = ----------------------
+   UsedFileName = 
+section.end
+
+section.begin
+   Name = WriteMove
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writemove.inc
+section.end
+
+section.begin
+   Name = ReadMove
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readmove.inc
+section.end
+
+section.begin
+   Name = WriteNew
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writenew.inc
+section.end
+
+section.begin
+   Name = ReadNew
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readnew.inc
+section.end
+
+section.begin
+   Name = WriteFree
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writefree.inc
+section.end
+
+section.begin
+   Name = ReadFree
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readfree.inc
+section.end
+
+section.begin
+   Name = WriteDeath
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writedeath.inc
+section.end
+
+section.begin
+   Name = ReadDeath
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readdeath.inc
+section.end
+
+section.begin
+   Name = WritePlayer
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writeplayer.inc
+section.end
+
+section.begin
+   Name = ReadPlayer
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readplayer.inc
+section.end
+
+section.begin
+   Name = WriteRally
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writerally.inc
+section.end
+
+section.begin
+   Name = ReadRally
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readrally.inc
+section.end
+
+section.begin
+   Name = WriteOrder
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writeorder.inc
+section.end
+
+section.begin
+   Name = ReadOrder
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readorder.inc
+section.end
+
+section.begin
+   Name = WriteUpgrade
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writeupgrade.inc
+section.end
+
+section.begin
+   Name = ReadUpgrade
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readupgrade.inc
+section.end
+
+section.begin
+   Name = WriteProduce
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writeproduce.inc
+section.end
+
+section.begin
+   Name = ReadProduce
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readproduce.inc
+section.end
+
+section.begin
+   Name = WriteSearch
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writesearch.inc
+section.end
+
+section.begin
+   Name = ReadSearch
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readsearch.inc
+section.end
+
+section.begin
+   Name = WriteStand
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writestand.inc
+section.end
+
+section.begin
+   Name = ReadStand
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readstand.inc
+section.end
+
+section.begin
+   Name = WriteConstruct
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writeconstruct.inc
+section.end
+
+section.begin
+   Name = ReadConstruct
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readconstruct.inc
+section.end
+
+section.begin
+   Name = WriteApply
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writeapply.inc
+section.end
+
+section.begin
+   Name = ReadApply
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readapply.inc
+section.end
+
+section.begin
+   Name = WriteLeaveOrder
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writeleaveorder.inc
+section.end
+
+section.begin
+   Name = ReadLeaveOrder
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readleaveorder.inc
+section.end
+
+section.begin
+   Name = WriteLeave
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writeleave.inc
+section.end
+
+section.begin
+   Name = ReadLeave
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readleave.inc
+section.end
+
+section.begin
+   Name = WriteProj
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writeproj.inc
+section.end
+
+section.begin
+   Name = ReadProj
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readproj.inc
+section.end
+
+section.begin
+   Name = WriteProjFree
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writeprojfree.inc
+section.end
+
+section.begin
+   Name = ReadProjFree
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readprojfree.inc
+section.end
+
+section.begin
+   Name = WriteNewP
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writenewp.inc
+section.end
+
+section.begin
+   Name = ReadNewP
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readnewp.inc
+section.end
+
+section.begin
+   Name = WriteStop
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writestop.inc
+section.end
+
+section.begin
+   Name = ReadStop
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readstop.inc
+section.end
+
+section.begin
+   Name = WriteTrade
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writetrade.inc
+section.end
+
+section.begin
+   Name = ReadTrade
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readtrade.inc
+section.end
+
+section.begin
+   Name = WriteWall
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writewall.inc
+section.end
+
+section.begin
+   Name = ReadWall
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readwall.inc
+section.end
+
+section.begin
+   Name = WriteGate
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writegate.inc
+section.end
+
+section.begin
+   Name = ReadGate
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readgate.inc
+section.end
+
+section.begin
+   Name = WriteFreeList
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writefreelist.inc
+section.end
+
+section.begin
+   Name = ReadFreeList
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readfreelist.inc
+section.end
+
+section.begin
+   Name = WritePeaceTime
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writepeacetime.inc
+section.end
+
+section.begin
+   Name = ReadPeaceTime
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readpeacetime.inc
+section.end
+
+section.begin
+   Name = WriteSync
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writesync.inc
+section.end
+
+section.begin
+   Name = ReadSync
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readsync.inc
+section.end
+
+section.begin
+   Name = WriteSyncUnitsParams
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writesyncunitsparams.inc
+section.end
+
+section.begin
+   Name = ReadSyncUnitsParams
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readsyncunitsparams.inc
+section.end
+
+section.begin
+   Name = ----------------------
+   UsedFileName = 
+section.end
+
+section.begin
+   Name = WritePackage
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writepackage.inc
+section.end
+
+section.begin
+   Name = ReadPackage
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readpackage.inc
+section.end
+
+section.begin
+   Name = ----------------------
+   UsedFileName = 
+section.end
+
+section.begin
+   Name = ProgressAI
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\progressai.inc
+section.end
+
+section.begin
+   Name = ProgressEconomicAI
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\progresseconomicai.inc
+section.end
+
+section.begin
+   Name = ProgressWarAI
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\progresswarai.inc
+section.end
+
+section.begin
+   Name = CheckErrors
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\checkerrors.inc
+section.end
+
+section.begin
+   Name = ReadTradeResources
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\readtraderesources.inc
+section.end
+
+section.begin
+   Name = WriteTradeResources
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\units\global.inc\writetraderesources.inc
+section.end
+
+section.begin
+   CurrentState = Progress
+   SaveVariables = False
+section.end
+

@@ -1,0 +1,175 @@
+{refurl=.\data\objects\ref\refbuilding.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=mainproperty}
+   CustomName = polcen
+   BaseName = polcen
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=actorproperty}
+   LODActorName = polcen
+   DefaultMeshName = polcen.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = polcen
+   Mesh[0].UseableMaterials[0] = polcen
+   Mesh[0].UseSeasonMaterial = True
+   Mesh[0].UseableSummerMaterials[0] = polcen
+   Mesh[0].UseableWinterMaterials[0] = polcenw
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = polcen
+      UseableMaterials[0] = polcen
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = polcen
+      UseableMaterials[0] = polcen
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = polcen
+      UseableMaterials[0] = polcen
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = polcen
+      UseableMaterials[0] = polcen
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = polcen
+      UseableMaterials[0] = polcen
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = polcen
+      UseableMaterials[0] = polcen
+   struct.end
+section.end
+
+collisionmaskproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmaskproperty}
+   Mask : struct.begin
+      [*] = 00000000000
+      [*] = 00001100000
+      [*] = 00011110000
+      [*] = 00111111000
+      [*] = 01111111110
+      [*] = 01111111110
+      [*] = 00111111110
+      [*] = 00011111100
+      [*] = 00001111000
+      [*] = 00001110000
+   struct.end
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmeshproperty}
+   CustomBoundingAABBMin.X = -1.30
+   CustomBoundingAABBMin.Y = -0.05
+   CustomBoundingAABBMin.Z = -1.30
+   CustomBoundingAABBMax.X = 1.55
+   CustomBoundingAABBMax.Y = 3.55
+   CustomBoundingAABBMax.Z = 1.55
+section.end
+
+autochildrenproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = AutoChildrenProperty
+   Custom = False
+   Mesh[0] : struct.begin
+      Enabled = True
+      Static = True
+      ClassName = MeshChildrenProperty
+      Children : struct.begin
+         [0] : struct.begin
+            Enabled = True
+            Static = True
+            ClassName = ChildProperty
+            BaseName = polcena
+            RaceName = buildings
+            DefaultMeshName = polcena.mesh
+            RandomMeshName = False
+            Mesh[0] = polcena
+            Mesh[1] = polcen1a
+            Mesh[2] = polcen2a
+            Mesh[3] = polcen3a
+            Mesh[4] = polcen4a
+            Mesh[5] = polcen_death1a
+            Mesh[6] = polcen_death2a
+            DefaultMaterialName = scaffold
+            RandomMaterialName = False
+            Materials[0] = scaffold
+            Materials[1] = scaffold
+            Materials[2] = scaffold
+            Materials[3] = scaffold
+            Materials[4] = scaffold
+            Materials[5] = debris
+            Materials[6] = debris
+            Option = achildRequered
+            StartStateName = 
+            Useable = True
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+autochildrenproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = AutoChildrenProperty
+   Custom = False
+   Mesh[0] : struct.begin
+      Enabled = True
+      Static = True
+      ClassName = MeshChildrenProperty
+      Children : struct.begin
+         [0] : struct.begin
+            Enabled = True
+            Static = True
+            ClassName = ChildProperty
+            BaseName = polcena
+            RaceName = buildings
+            DefaultMeshName = polcena.mesh
+            RandomMeshName = False
+            Mesh[0] = polcen
+            Mesh[1] = polcen1
+            Mesh[2] = polcen2
+            Mesh[3] = polcen3
+            Mesh[4] = polcen4
+            Mesh[5] = polcen_death1
+            Mesh[6] = polcen_death2
+            Mesh[7] = polcena
+            Mesh[8] = polcen1a
+            Mesh[9] = polcen2a
+            Mesh[10] = polcen3a
+            Mesh[11] = polcen4a
+            Mesh[12] = polcen_death1a
+            Mesh[13] = polcen_death2a
+            DefaultMaterialName = scaffold
+            RandomMaterialName = False
+            Materials[0] = polcen
+            Materials[1] = polcen
+            Materials[2] = polcen
+            Materials[3] = polcen
+            Materials[4] = polcen
+            Materials[5] = polcen
+            Materials[6] = polcen
+            Materials[7] = scaffold
+            Materials[8] = scaffold
+            Materials[9] = scaffold
+            Materials[10] = scaffold
+            Materials[11] = scaffold
+            Materials[12] = debris
+            Materials[13] = debris
+            Option = achildRequered
+            StartStateName = 
+            Useable = True
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.48
+   DefaultScale.Y = 0.48
+   DefaultScale.Z = 0.48
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=directionupproperty}
+   DefaultRollAngle = 135
+section.end

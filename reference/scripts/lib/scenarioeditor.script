@@ -1,0 +1,206 @@
+//
+// scenarioeditor.script
+//
+
+type TScenarioEditor = class
+   actionslist : Array [0..gc_trigger_action_count-1] of Integer;
+   conditionslist : Array [0..gc_trigger_condition_count-1] of Integer;
+   
+   function GetIndexByConditionID(const conditionid : Integer) : Integer;
+   begin
+      Result := -1;
+      var i : Integer;
+      for i:=0 to gc_trigger_condition_count-1 do
+      begin
+         if (conditionslist[i]=conditionid) then
+         begin
+            Result := i;
+            break;
+         end;
+      end;
+   end;
+   function GetIndexByActionID(const actionid : Integer) : Integer;
+   begin
+      Result := -1;
+      var i : Integer;
+      for i:=0 to gc_trigger_action_count-1 do
+      begin
+         if (actionslist[i]=actionid) then
+         begin
+            Result := i;
+            break;
+         end;
+      end;
+   end;
+   procedure AddCondition(const conditionid : Integer; var ind : Integer);
+   begin
+      if (ind>=0) and (ind<gc_trigger_action_count) then
+      begin
+         conditionslist[ind] := conditionid;
+         ind := ind+1;
+      end
+      else
+      ErrorLog('TScenarioEditor.AddCondition : index out of range');
+   end;
+   procedure AddAction(const actionid : Integer; var ind : Integer);
+   begin
+      if (ind>=0) and (ind<gc_trigger_action_count) then
+      begin
+         actionslist[ind] := actionid;
+         ind := ind+1;
+      end
+      else
+      ErrorLog('TScenarioEditor.AddAction : index out of range');
+   end;
+   procedure InitConditions();
+   begin
+      var ind : Integer;
+      AddCondition(gc_trigger_condition_none, ind);
+      AddCondition(gc_trigger_condition_undefined, ind);
+      AddCondition(gc_trigger_condition_triggerIsActive, ind);
+      AddCondition(gc_trigger_condition_triggerIsNotActive, ind);
+      AddCondition(gc_trigger_condition_triggerIsActiveTime, ind);
+      AddCondition(gc_trigger_condition_flagActive, ind);
+      AddCondition(gc_trigger_condition_flagNotActive, ind);
+      AddCondition(gc_trigger_condition_counterValue, ind);
+      AddCondition(gc_trigger_condition_timerFinished, ind);
+      AddCondition(gc_trigger_condition_timerNotFinished, ind);
+      AddCondition(gc_trigger_condition_difficulty, ind);
+      AddCondition(gc_trigger_condition_playerResources, ind);
+      AddCondition(gc_trigger_condition_units_CountOfUnitsInGroup, ind);
+      AddCondition(gc_trigger_condition_units_CountOfGroupUnitsInZone, ind);
+      AddCondition(gc_trigger_condition_units_CountOfUnitsInZone, ind);
+      AddCondition(gc_trigger_condition_units_CountOfPlayerUnitsInZone, ind);
+      AddCondition(gc_trigger_condition_units_CountOfPlayersTeamUnitsInZone, ind);
+      AddCondition(gc_trigger_condition_units_CountOfPlayerUnits, ind);
+      AddCondition(gc_trigger_condition_units_CountOfPlayerUnitsInGroup, ind);
+      AddCondition(gc_trigger_condition_units_CountOfActingUnitsInGroup, ind);
+      AddCondition(gc_trigger_condition_resultExecutedCount, ind);
+      AddCondition(gc_trigger_condition_executeState, ind);
+      AddCondition(gc_trigger_condition_logical_OR, ind);
+      AddCondition(gc_trigger_condition_net_IsServer, ind);
+      AddCondition(gc_trigger_condition_net_IsClient, ind);
+      AddCondition(gc_trigger_condition_net_IsOnline, ind);
+      AddCondition(gc_trigger_condition_net_IsOffline, ind);
+      AddCondition(gc_trigger_condition_net_IsQueryDialogVisible, ind);
+      AddCondition(gc_trigger_condition_net_CurrentPlayer, ind);
+      AddCondition(gc_trigger_condition_net_CurrentPlayerTeam, ind);
+      AddCondition(gc_trigger_condition_net_CurrentPlayerPosition, ind); // same as current player.
+      AddCondition(gc_trigger_condition_net_CountOfPlayersInTeam, ind);
+   end;
+   procedure InitActions();
+   begin
+      var ind : Integer;
+      AddAction(gc_trigger_action_none, ind);
+      AddAction(gc_trigger_action_undefined, ind);
+      AddAction(gc_trigger_action_service_timerStart, ind);
+      AddAction(gc_trigger_action_service_timerStop, ind);
+      AddAction(gc_trigger_action_service_timerStartCustom, ind);
+      AddAction(gc_trigger_action_service_flagSetActive, ind);
+      AddAction(gc_trigger_action_service_flagSetNotActive, ind);
+      AddAction(gc_trigger_action_service_counterAddValue, ind);
+      AddAction(gc_trigger_action_service_counterRemoveValue, ind);
+      AddAction(gc_trigger_action_service_counterSetValue, ind);
+      AddAction(gc_trigger_action_resource_resourceAdd, ind);
+      AddAction(gc_trigger_action_resource_resourceRemove, ind);
+      AddAction(gc_trigger_action_resource_resourceSet, ind);
+      AddAction(gc_trigger_action_objective_objectiveShow, ind);
+      AddAction(gc_trigger_action_objective_objectiveHide, ind);
+      AddAction(gc_trigger_action_objective_objectiveSetDone, ind);
+      AddAction(gc_trigger_action_map_cameraMoveToZone, ind);
+      AddAction(gc_trigger_action_map_revealZone, ind);
+      AddAction(gc_trigger_action_query_queryShow, ind);
+      AddAction(gc_trigger_action_selection_selectionAddGroup, ind);
+      AddAction(gc_trigger_action_selection_selectionAddUnitsInZone, ind);
+      AddAction(gc_trigger_action_selection_selectionClear, ind);
+      AddAction(gc_trigger_action_group_Clear, ind);
+      AddAction(gc_trigger_action_group_AddUnitsOfGroupToGroup, ind);
+      AddAction(gc_trigger_action_group_AddUnitsInZoneToGroup, ind);
+      AddAction(gc_trigger_action_group_AddUnitsOfGroupInZoneToGroup, ind);
+      AddAction(gc_trigger_action_group_AddUnitsOfPlayerInZoneToGroup, ind);
+      AddAction(gc_trigger_action_group_AddUnitsOfPlayerOfGroupToGroup, ind);
+      AddAction(gc_trigger_action_group_AddSpecificUnitsOfPlayerInZoneToGroup, ind);
+      AddAction(gc_trigger_action_group_AddIdlePeasantsToGroup, ind);
+      AddAction(gc_trigger_action_group_AddIdleMinesToGroup, ind);
+      AddAction(gc_trigger_action_group_CreateSquad, ind);
+      AddAction(gc_trigger_action_player_playerSetAsEnemy, ind);
+      AddAction(gc_trigger_action_player_playerSetAsAlly, ind);
+      AddAction(gc_trigger_action_player_playerSetAsNeutral, ind);
+      AddAction(gc_trigger_action_player_unitsChangePlayer, ind);
+      AddAction(gc_trigger_action_player_enableAI, ind);
+      AddAction(gc_trigger_action_player_disableAI, ind);
+      AddAction(gc_trigger_action_units_DestroyGroup, ind);
+      AddAction(gc_trigger_action_units_KillGroup, ind);
+      AddAction(gc_trigger_action_order_setUnitsVisible, ind);
+      AddAction(gc_trigger_action_order_setUnitsUnvisible, ind);
+      AddAction(gc_trigger_action_units_CreateUnits, ind);
+      AddAction(gc_trigger_action_units_MakeUnplayable, ind);
+      AddAction(gc_trigger_action_units_MakePlayable, ind);
+      AddAction(gc_trigger_action_country_unitProduceEnable, ind);
+      AddAction(gc_trigger_action_country_unitProduceDisable, ind);
+      AddAction(gc_trigger_action_country_upgradeEnable, ind);
+      AddAction(gc_trigger_action_country_upgradeDisable, ind);
+      AddAction(gc_trigger_action_country_makeUpgradeInstanly, ind);
+      AddAction(gc_trigger_action_order_attackGroup, ind);
+      AddAction(gc_trigger_action_order_moveToZone, ind);
+      AddAction(gc_trigger_action_order_moveToZoneInstanly, ind);
+      AddAction(gc_trigger_action_order_attackZone, ind);
+      AddAction(gc_trigger_action_order_findAndAttackEnemyInZone, ind);
+      AddAction(gc_trigger_action_order_dismissSquadsInGroup, ind);
+      AddAction(gc_trigger_action_order_ArtilleryAttackZoneCenterWithDispertion, ind);
+      AddAction(gc_trigger_action_order_setDirectionToZone, ind);
+      AddAction(gc_trigger_action_order_setDirectionToAngle, ind);
+      AddAction(gc_trigger_action_order_standground, ind);
+      AddAction(gc_trigger_action_order_cancelStandGround, ind);
+      AddAction(gc_trigger_action_order_enableSearchEnemy, ind);
+      AddAction(gc_trigger_action_order_disableSearchEnemy, ind);
+      AddAction(gc_trigger_action_order_runUpgrade, ind);
+      AddAction(gc_trigger_action_order_GroupProduceUnit, ind);
+      AddAction(gc_trigger_action_order_GroupCancelProduceUnit, ind);
+      AddAction(gc_trigger_action_order_SetRallyPointToZone, ind);
+      AddAction(gc_trigger_action_order_doExtractFood, ind);
+      AddAction(gc_trigger_action_order_doExtractWood, ind);
+      AddAction(gc_trigger_action_order_doExtractStone, ind);
+      AddAction(gc_trigger_action_order_goInside, ind);
+      AddAction(gc_trigger_action_gate_gateOpen, ind);
+      AddAction(gc_trigger_action_gate_gateClose, ind);
+      AddAction(gc_trigger_action_ferry_goOutside, ind);
+      AddAction(gc_trigger_action_endgame_win, ind);
+      AddAction(gc_trigger_action_endgame_lose, ind);
+      AddAction(gc_trigger_action_advanced_ifThenElse, ind);
+      AddAction(gc_trigger_action_advanced_enableTrigger, ind);
+      AddAction(gc_trigger_action_advanced_disableTrigger, ind);
+      AddAction(gc_trigger_action_advanced_enableThisTrigger, ind);
+      AddAction(gc_trigger_action_service_DebugLog, ind);
+      AddAction(gc_trigger_action_service_DebugMessage, ind);
+      AddAction(gc_trigger_action_save_save, ind);
+      AddAction(gc_trigger_action_save_load, ind);
+      AddAction(gc_trigger_action_advanced_executeState, ind);
+      AddAction(gc_trigger_action_advanced_ExecuteTriggerActions, ind);
+      AddAction(gc_trigger_action_objective_PlaceMarkerInZone, ind);
+      AddAction(gc_trigger_action_objective_RemoveMarkerInZone, ind);
+      AddAction(gc_trigger_action_objective_AddMarkerToGroup, ind);
+      AddAction(gc_trigger_action_objective_RemoveMarkerFromGroup, ind);
+      AddAction(gc_trigger_action_net_SetTriggerActive, ind);
+      AddAction(gc_trigger_action_net_SetFlagState, ind);
+      AddAction(gc_trigger_action_net_SetCounterValue, ind);
+      AddAction(gc_trigger_action_net_ExecuteTriggerActions, ind);
+      AddAction(gc_trigger_action_net_SetCounterSpecialValue, ind);
+      AddAction(gc_trigger_action_net_TeamSetTriggerActive, ind);
+      AddAction(gc_trigger_action_net_TeamSetFlagState, ind);
+      AddAction(gc_trigger_action_net_TeamSetCounterValue, ind);
+      AddAction(gc_trigger_action_net_TeamExecuteTriggerActions, ind);
+   end;
+   procedure Create();
+   begin
+      InitConditions();
+      InitActions();
+   end;
+   constructor TScenarioEditor;
+   begin
+      Create();
+   end;
+end;
+
+global gScenarioEditor : TScenarioEditor;
+gScenarioEditor.Create;

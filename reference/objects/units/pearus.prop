@@ -1,0 +1,55 @@
+{refurl=.\data\objects\ref\refunit.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=mainproperty}
+   CustomName = pearus
+   BaseName = pearus
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=actorproperty}
+   LODActorName = pearus
+   DefaultMeshName = pearus.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = pearus
+   Mesh[0].UseableMaterials[0] = pearus
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=statemachineproperty}
+   StateMachineInterval = 135
+section.end
+
+autochildrenproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=autochildrenproperty}
+   Enabled = True
+   Mesh[0] : struct.begin
+      Children : struct.begin
+         [0] : struct.begin
+            BaseName = pearus_tools
+            DefaultMeshName = pearus_axe.mesh
+            Mesh : struct.begin
+               [0] = pearus_axe.mesh
+               [1] = pearus_bag.mesh
+               [2] = pearus_cart.mesh
+               [3] = pearus_hammer.mesh
+               [4] = pearus_hoe.mesh
+               [5] = pearus_lumber.mesh
+               [6] = pearus_pick.mesh
+            struct.end
+            DefaultMaterialName = peaaustools
+            Materials : struct.begin
+               [0] = peaaustools
+               [1] = peaaustools
+               [2] = peaaustools
+               [3] = peaaustools
+               [4] = peaaustools
+               [5] = peaaustools
+               [6] = peaaustools
+            struct.end
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=frameanimationproperty}
+   FrameAnimationCyclesLibName = pearus
+section.end

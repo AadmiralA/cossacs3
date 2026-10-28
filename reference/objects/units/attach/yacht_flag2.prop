@@ -1,0 +1,35 @@
+{refurl=.\data\objects\ref\refunitattach.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=mainproperty}
+   CustomName = yacht_flag2
+   BaseName = yacht_flag2
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=actorproperty}
+   LODActorName = yacht_flag2
+   DefaultMeshName = yacht_flag2.mesh
+   UseableMeshes : struct.begin
+      [0] = True
+   struct.end
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = yacht
+   Mesh[0].UseableMaterials[0] = yacht
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=frameanimationproperty}
+   ClassName = FrameAnimationProperty
+   DefaultFrameAnimationName = idle
+   FrameAnimationSynchronizeOption = fasoNone
+   RandomOffsetFrameAnimationCycles = True
+   RandomOffsetFrameAnimation = True
+section.end
+
+designproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=designproperty}
+   Enabled = True
+   Static = True
+   ClassName = DesignProperty
+   VisibleAtDesignTime = True
+   DesignPriority = 100
+section.end

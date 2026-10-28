@@ -1,0 +1,22 @@
+{refurl=.\data\objects\ref\refbuildingattach.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuildingattach.prop; refkey=mainproperty}
+   CustomName = eurporb
+   BaseName = eurporb
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refbuildingattach.prop; refkey=actorproperty}
+   LODActorName = fishnet
+   DefaultMeshName = fishnet.mesh
+   UseableMeshes : struct.begin
+      [0] = True
+   struct.end
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuildingattach.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = fishnet
+   Mesh[0].UseableMaterials[0] = fishnet
+   Mesh[0].UseSeasonMaterial = True
+   Mesh[0].UseableSummerMaterials[0] = fishnet
+   Mesh[0].UseableWinterMaterials[0] = fishnetw
+section.end

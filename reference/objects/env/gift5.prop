@@ -1,0 +1,102 @@
+{refurl=.\data\objects\ref\refenv.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=mainproperty}
+   CustomName = gift5
+   BaseName = gift5
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=actorproperty}
+   LODActorName = gift
+   DefaultMeshName = gift5.mesh
+   RandomMeshName = False
+   UseableMeshes : struct.begin
+      [0] = True
+      [1] = True
+      [2] = True
+      [3] = True
+      [4] = True
+      [5] = True
+   struct.end
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=materialproperty}
+   Mesh : struct.begin      
+      [0] : struct.begin
+         Enabled = False
+         Static = False
+         ClassName = MeshMaterialProperty
+         DefaultMaterialName = gift
+         RandomMaterialName = False
+         UseableMaterials[0] = gift
+         UseSeasonMaterial = False
+      struct.end
+      [1] : struct.begin
+         Enabled = False
+         Static = False
+         ClassName = MeshMaterialProperty
+         DefaultMaterialName = gift
+         RandomMaterialName = False
+         UseableMaterials[0] = gift
+         UseSeasonMaterial = False
+      struct.end
+      [2] : struct.begin
+         Enabled = False
+         Static = False
+         ClassName = MeshMaterialProperty
+         DefaultMaterialName = gift
+         RandomMaterialName = False
+         UseableMaterials[0] = gift
+         UseSeasonMaterial = False
+      struct.end
+      [3] : struct.begin
+         Enabled = False
+         Static = False
+         ClassName = MeshMaterialProperty
+         DefaultMaterialName = gift
+         RandomMaterialName = False
+         UseableMaterials[0] = gift
+         UseSeasonMaterial = False
+      struct.end
+      [4] : struct.begin
+         Enabled = False
+         Static = False
+         ClassName = MeshMaterialProperty
+         DefaultMaterialName = gift
+         RandomMaterialName = False
+         UseableMaterials[0] = gift
+         UseSeasonMaterial = False
+      struct.end
+      [5] : struct.begin
+         Enabled = False
+         Static = False
+         ClassName = MeshMaterialProperty
+         DefaultMaterialName = gift
+         RandomMaterialName = False
+         UseableMaterials[0] = gift
+         UseSeasonMaterial = False
+      struct.end
+   struct.end
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=statemachineproperty}
+   ClassName = StateMachineProperty
+   DefaultInitStateName = InitialDecor
+section.end
+
+stringproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=stringproperty}
+   CategorieName = decor
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=scaleproperty}
+   DefaultScale : struct.begin
+      X = 0.5
+      Y = 0.5
+      Z = 0.5
+   struct.end
+   RandomScale = False
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=directionupproperty}
+   RandomRollAngle = False
+   DeltaRollAngle = 1	
+section.end

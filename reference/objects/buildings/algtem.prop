@@ -1,0 +1,6 @@
+{refurl=.\data\objects\buildings\turtem.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=mainproperty}
+   CustomName = algtem
+   BaseName = algtem
+section.end

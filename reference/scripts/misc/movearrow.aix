@@ -1,0 +1,40 @@
+section.begin
+   Name = Initial
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\movearrow.inc\initial.inc
+section.end
+
+section.begin
+   Name = Nothing
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\movearrow.inc\nothing.inc
+section.end
+
+section.begin
+   Name = OnEndFrameReached
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\movearrow.inc\onendframereached.inc
+section.end
+
+section.begin
+   Name = OnAfterLoad
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\movearrow.inc\onafterload.inc
+section.end
+
+section.begin
+   Name = DoDestroy
+   LanClientExecute = True
+   UsedFile = True
+   UsedFileName = .\data\scripts\misc\movearrow.inc\dodestroy.inc
+section.end
+
+section.begin
+   CurrentState = Nothing
+   SaveVariables = False
+section.end
+

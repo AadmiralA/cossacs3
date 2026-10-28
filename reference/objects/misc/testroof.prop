@@ -1,0 +1,19 @@
+{refurl=.\data\objects\ref\refmisc.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=mainproperty}
+   CustomName = testroof
+   BaseName = testroof
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=actorproperty}
+   LODActorName = testroof
+   DefaultMeshName = testroof.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = white
+   Mesh[0].UseableMaterials[0] = white
+   Mesh[0].UseableMaterials[1] = grey
+   Mesh[0].UseableMaterials[2] = black
+   Mesh[0].UseableMaterials[3] = gradient
+section.end

@@ -1,0 +1,31 @@
+{refurl=.\data\objects\ref\refmisc.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=mainproperty}
+   CustomName = miscircle
+   BaseName = miscircle
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=actorproperty}
+   LODActorName = miscircle
+   DefaultMeshName = miscircle.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = yellow
+   Mesh[0].UseableMaterials[0] = yellow
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.056
+   DefaultScale.Y = 0.056
+   DefaultScale.Z = 0.056
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=directionupproperty}
+   DefaultRollAngle = 0
+section.end
+
+offsetproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=offsetproperty}
+   Offset.Y = 0.125
+   OffsetCollideOption = ocoTerrainWater
+section.end

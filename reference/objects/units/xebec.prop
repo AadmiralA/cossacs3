@@ -1,0 +1,104 @@
+{refurl=.\data\objects\ref\refunit.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=mainproperty}
+   CustomName = xebec
+   BaseName = xebec
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=actorproperty}
+   LODActorName = xebec
+   DefaultMeshName = xebec.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = xebec
+   Mesh[0].UseableMaterials[0] = xebec
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = xebec
+      UseableMaterials[0] = xebec
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = xebec
+      UseableMaterials[0] = xebec
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = xebec
+      UseableMaterials[0] = xebec
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = xebec
+      UseableMaterials[0] = xebec
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = xebec
+      UseableMaterials[0] = xebec
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = xebec
+      UseableMaterials[0] = xebec
+   struct.end
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=statemachineproperty}
+   StateMachineInterval = 60
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=collisionmeshproperty}
+   UseCustTransformed = True
+   CustomBoundingAABBMin.X = -1
+   CustomBoundingAABBMin.Y = -0.2
+   CustomBoundingAABBMin.Z = -2.5
+   CustomBoundingAABBMax.X = 0.85
+   CustomBoundingAABBMax.Y = 1.2
+   CustomBoundingAABBMax.Z = 2.5
+section.end
+
+autochildrenproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = AutoChildrenProperty
+   Custom = False
+   Mesh[0] : struct.begin
+      Enabled = True
+      Static = True
+      ClassName = MeshChildrenProperty
+      Children : struct.begin
+         [0] : struct.begin
+            Enabled = True
+            Static = True
+            ClassName = ChildProperty
+            BaseName = xebeca
+            RaceName = units
+            DefaultMeshName = xebeca.mesh
+            RandomMeshName = False
+            Mesh[0] = xebeca
+            Mesh[1] = xebec1a
+            Mesh[2] = xebec2a
+            Mesh[3] = xebec3a
+            Mesh[4] = xebec4a
+            Mesh[5] = xebec_death1a
+            Mesh[6] = xebec_death2a
+            DefaultMaterialName = xebeca
+            RandomMaterialName = False
+            Materials[0] = xebec
+            Materials[1] = xebec
+            Materials[2] = xebec
+            Materials[3] = xebeca
+            Materials[4] = xebeca
+            Materials[5] = xebeca
+            Materials[6] = xebeca
+            Option = achildRequered
+            StartStateName = 
+            Useable = True
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=frameanimationproperty}
+   FrameAnimationCyclesLibName = xebec
+section.end
+
+offsetproperty : section.begin {refurl=.\data\objects\ref\refunit.prop; refkey=offsetproperty}
+   OffsetCollideOption = ocoTerrainWater
+section.end

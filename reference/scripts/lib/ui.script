@@ -1,0 +1,388 @@
+//
+// ui.script
+//
+type TUIElement = class
+public
+   fname : String;
+   fposx : Integer;
+   fposy : Integer;
+   fwidth : Integer;
+   fheight : Integer;
+   fborder : Integer;
+   ffont : Integer;
+   fcr : Float;
+   fcg : Float;
+   fcb : Float;
+   fca : Float;
+   procedure Init(const name : String; posx, posy, width, height, border : Integer);
+   begin
+      fname := name;
+      fposx := posx;
+      fposy := posy;
+      fwidth := width;
+      fheight := height;
+      fborder := border;
+   end;
+   procedure InitText(font : Integer; r, g, b, a : Float);
+   begin
+      ffont := font;
+      fcr := r;
+      fcg := g;
+      fcb := b;
+      fca := a;
+   end;
+   constructor TUIElement;
+   begin
+   end;
+end;
+
+type TUI = class
+private
+   fmaxwidthtype : Integer;
+public
+   fdebug : Boolean;
+   fcontainerwidth : Integer;
+   fcolumncount : Integer;
+   fcolumnwidth : Float;
+   //fgutterwidth : Integer;
+   frame1 : TUIElement;
+   btn1 : TUIElement;
+   btn2 : TUIElement;
+   inputbox : TUIElement;
+   combobox : TUIElement;
+   text1 : TUIElement;
+   text2 : TUIElement;
+   procedure SetContainerMaxWidthType(val : Integer);
+   begin
+      fmaxwidthtype := val;
+      case (val) of
+         0 : fcontainerwidth := GetViewerWidth;
+         1 : fcontainerwidth := 1248;
+         2 : fcontainerwidth := 1152;
+         3 : fcontainerwidth := 1056;
+         4 : fcontainerwidth := 960;
+         5 : fcontainerwidth := 864;
+         6 : fcontainerwidth := 672;
+         7 : fcontainerwidth := 480;
+         8 : fcontainerwidth := 384;
+      end;
+      fcolumnwidth := fcontainerwidth/fcolumncount;
+   end;
+   procedure InitUIElement(var uie : TUIElement; const name : String; posx, posy, width, height, border : Integer);
+   begin
+      uie.Init(name, posx, posy, width, height, border);
+   end;
+   procedure InitUIElementText(var uie : TUIElement; font : Integer; r, g, b, a : Float);
+   begin
+      uie.InitText(font, r, g, b, a);
+   end;
+   procedure InitUIEngine;
+   begin
+      fcolumncount := 12;
+      SetContainerMaxWidthType(0); //fcontainerwidth := GetViewerWidth; //fcolumnwidth := fcontainerwidth/fcolumncount;
+      InitUIElement(btn1, 'btn1', 0, 0, 202, 54, 0);
+      InitUIElementText(btn1, gc_font_default_serif, 1, 1, 1, 1);
+      InitUIElement(btn2, 'btn2', 0, 0, 1024, 31, 0);
+      InitUIElementText(btn2, gc_font_default_serif, 1, 1, 1, 1);
+      InitUIElement(combobox, 'combobox', 0, 0, 256, 31, 0);
+      InitUIElementText(combobox, gc_font_default_serif, 1, 1, 1, 1);
+      InitUIElementText(text1, gc_font_default_serif, 1, 1, 1, 1);
+      InitUIElement(text1, 'text1', 0, 0, 0, GetGUIElementFontHeight(gUIConst.font[text1.ffont]), 0);
+      InitUIElementText(text2, gc_font_default_sans, 1, 1, 1, 1);
+      InitUIElement(text2, 'text2', 0, 0, 0, GetGUIElementFontHeight(gUIConst.font[text2.ffont]), 0);
+      InitUIElement(frame1, 'frame1', 0, 0, 0, 0, 6);
+      InitUIElement(inputbox, 'inputbox', 0, 0, 256, 31, 0);
+      InitUIElementText(inputbox, gc_font_default_serif, 1, 1, 1, 1);
+   end;
+   procedure SetDebug(val : Boolean);
+   begin
+      fdebug := val;
+   end;
+   constructor TUI;
+   begin
+      InitUIEngine;
+   end;
+end;
+
+function _ui_CreateContainer(var ui : TUI; const name : String; parent : Integer; valign : Integer; yoff, height : Integer; bupdate : Boolean) : Integer;
+begin
+   var rparent : Integer = parent; if (parent=0) then rparent := _gui_GetTop;
+   var rheight : Integer = height; if (height=0) then rheight := GetGUIElementHeight(rparent);
+   var rvalign : Integer = valign; if (valign=gc_valDefault) then rvalign := gc_valParentTop;
+   var columnwidth : Float = _misc_MinFloat(GetGUIElementWidth(rparent), ui.fcontainerwidth)/ui.fcolumncount;
+   Result := _gui_CreateParent(name, rparent, gc_halParentMiddle, rvalign, 0, 0, floor(ui.fcolumncount*columnwidth), rheight, bupdate);
+   if (ui.fdebug) then
+   begin
+      var elmHnd : Integer = _gui_CreateImage('debug', Result, gc_gui_material_black, gc_halParentLeft, gc_valParentTop, 0, 0, GetGUIElementWidth(Result), GetGUIElementHeight(Result), 0, bupdate);
+      SetGUIElementUserBlend(elmHnd, 0.35);
+   end;
+end;
+function _ui_CreateCol(var ui : TUI; const name : String; parent : Integer; valign : Integer; startcol, endcol : Float; hpadding, vpadding, height : Integer; bupdate : Boolean) : Integer;
+begin
+   var rparent : Integer = parent; if (parent=0) then rparent := _gui_GetTop;
+   var rheight : Integer = height; if (height=0) then rheight := GetGUIElementHeight(rparent);
+   var rvalign : Integer = valign; if (valign=gc_valDefault) then rvalign := gc_valParentTop;
+   //var columnwidth : Float = GetGUIElementWidth(rparent)/fcolumncount;
+   var columnwidth : Float = _misc_MinFloat(GetGUIElementWidth(rparent), ui.fcontainerwidth)/ui.fcolumncount;
+   Result := _gui_CreateParent(name, rparent, gc_halParentLeft, rvalign, floor(startcol*columnwidth)+hpadding, vpadding, floor((endcol-startcol)*columnwidth)-hpadding*2, rheight-vpadding*2, bupdate);
+   if (ui.fdebug) then
+   begin
+      var elmHnd : Integer = _gui_CreateImage('debug', Result, gc_gui_material_black, gc_halParentLeft, gc_valParentTop, 0, 0, GetGUIElementWidth(Result), GetGUIElementHeight(Result), 0, bupdate);
+      SetGUIElementUserBlend(elmHnd, 0.35);
+   end;
+end;
+function _ui_CreateCustomContainer(var ui : TUI; const name : String; parent : Integer; halign, valign : Integer; x, y, width, height : Integer; bupdate : Boolean) : Integer;
+begin
+   var rparent : Integer = parent; if (parent=0) then rparent := _gui_GetTop;
+   var rheight : Integer = height; if (height=0) then rheight := GetGUIElementHeight(rparent);
+   var rwidth : Integer = width; if (width=0) then rwidth := GetGUIElementWidth(rparent);
+   var rhalign : Integer = halign; if (halign=gc_halDefault) then rhalign := gc_halParentLeft;
+   var rvalign : Integer = valign; if (valign=gc_valDefault) then rvalign := gc_valParentTop;
+   Result := _gui_CreateParent(name, rparent, rhalign, rvalign, x, y, rwidth, rheight, bupdate);
+   if (ui.fdebug) then
+   begin
+      var elmHnd : Integer = _gui_CreateImage('debug', Result, gc_gui_material_black, gc_halParentLeft, gc_valParentTop, 0, 0, GetGUIElementWidth(Result), GetGUIElementHeight(Result), 0, bupdate);
+      SetGUIElementUserBlend(elmHnd, 0.35);
+   end;
+end;
+function _ui_CreateRow(var ui : TUI; const name : String; parent : Integer; valign : Integer; posy, height : Integer; bupdate : Boolean) : Integer;
+begin
+   var rparent : Integer = parent; if (parent=0) then rparent := _gui_GetTop;
+   var rheight : Integer = height; if (height=0) then rheight := GetGUIElementHeight(rparent);
+   var rvalign : Integer = valign; if (valign=gc_valDefault) then rvalign := gc_valParentTop;
+   Result := _gui_CreateParent(name, rparent, gc_halParentLeft, rvalign, 0, posy, GetGUIElementWidth(rparent), rheight, bupdate);
+   if (ui.fdebug) then
+   begin
+      var elmHnd : Integer = _gui_CreateImage('debug', Result, gc_gui_material_black, gc_halParentLeft, gc_valParentTop, 0, 0, GetGUIElementWidth(Result), GetGUIElementHeight(Result), 0, bupdate);
+      SetGUIElementUserBlend(elmHnd, 0.35);
+   end;
+end;
+function _ui_CreateFrameDecor(parent : Integer; bupdate : Boolean) : Integer;
+begin
+   const materialBase = 'frame';
+   var elmHnd : Integer = GetGUIElementIndexByNameParent('bg', parent);
+   var bordersize : Integer = GetGUIElementPositionX(elmHnd);
+   var size : Integer = 1+bordersize;
+   var cMaterialCornerLT : String = materialBase+'.corner_lt'+'.decor';
+   var cMaterialCornerRT : String = materialBase+'.corner_rt'+'.decor';
+   var cMaterialCornerLB : String = materialBase+'.corner_lb'+'.decor';
+   var cMaterialCornerRB : String = materialBase+'.corner_rb'+'.decor';
+   _gui_CreateImage('ddlt', parent, cMaterialCornerLT, gc_halParentLeft, gc_valParentTop, size, size, 0, 0, 0, bupdate);
+   _gui_CreateImage('ddlb', parent, cMaterialCornerLB, gc_halParentLeft, gc_valParentBottomHeight, size, -size, 0, 0, 0, bupdate);
+   _gui_CreateImage('ddrt', parent, cMaterialCornerRT, gc_halParentRightWidth, gc_valParentTop, -size, size, 0, 0, 0, bupdate);
+   _gui_CreateImage('ddrb', parent, cMaterialCornerRB, gc_halParentRightWidth, gc_valParentBottomHeight, -size, -size, 0, 0, 0, bupdate);
+end;
+function _ui_CreateFrameCross(parent : Integer; bupdate : Boolean) : Integer;
+begin
+   const materialBase = 'frame';
+   var elmHnd : Integer = GetGUIElementIndexByNameParent('bg', parent);
+   var bordersize : Integer = GetGUIElementPositionX(elmHnd);
+   var size : Integer = 21-bordersize;
+   var cMaterialCornerLT : String = materialBase+'.corner_lt'+'.cross';
+   var cMaterialCornerRT : String = materialBase+'.corner_rt'+'.cross';
+   var cMaterialCornerLB : String = materialBase+'.corner_lb'+'.cross';
+   var cMaterialCornerRB : String = materialBase+'.corner_rb'+'.cross';
+   _gui_CreateImage('dclt', parent, cMaterialCornerLT, gc_halParentLeft, gc_valParentTop, -size, -size, 0, 0, 0, bupdate);
+   _gui_CreateImage('dclb', parent, cMaterialCornerLB, gc_halParentLeft, gc_valParentBottomHeight, -size, size, 0, 0, 0, bupdate);
+   _gui_CreateImage('dcrt', parent, cMaterialCornerRT, gc_halParentRightWidth, gc_valParentTop, size, -size, 0, 0, 0, bupdate);
+   _gui_CreateImage('dcrb', parent, cMaterialCornerRB, gc_halParentRightWidth, gc_valParentBottomHeight, size, size, 0, 0, 0, bupdate);
+end;
+function _ui_CreateFrameLine(const name : String; parent : Integer; halign, valign : Integer; posx, posy, width, height : Integer; bupdate : Boolean) : Integer;
+begin
+   var rwidth : Integer = width; if (width=0) then rwidth := GetGUIElementWidth(parent);
+   var rheight : Integer = height; if (height=0) then rheight := GetGUIElementHeight(parent);
+   var rhalign : Integer = halign; if (halign=gc_halDefault) then rhalign := gc_halParentLeft;
+   var rvalign : Integer = valign; if (valign=gc_valDefault) then rvalign := gc_valParentTop;
+   Result := _gui_CreateFrameLine(name, parent, halign, valign, posx, posy, width, height, bupdate);
+end;
+function _ui_CreateFrame(var ui : TUI; const name : String; parent : Integer; halign, valign : Integer; posx, posy, width, height, bordersize : Integer; const decorsid : String; bgalpha : Float; bupdate : Boolean) : Integer;
+begin
+   var rwidth : Integer = width; if (width=0) then rwidth := GetGUIElementWidth(parent);
+   var rheight : Integer = height; if (height=0) then rheight := GetGUIElementHeight(parent);
+   var rhalign : Integer = halign; if (halign=gc_halDefault) then rhalign := gc_halParentLeft;
+   var rvalign : Integer = valign; if (valign=gc_valDefault) then rvalign := gc_valParentTop;
+   var columnwidth : Float = GetGUIElementWidth(parent)/ui.fcolumncount;
+   Result := _gui_CreateFrameWindow(name, parent, rhalign, rvalign, posx, posy, rwidth, rheight, bordersize, bgalpha, bupdate);
+   if (decorsid<>'') then
+   begin
+      if (StrExists(decorsid, 'cross')) then _ui_CreateFrameCross(Result, bupdate);
+      if (StrExists(decorsid, 'decor')) then _ui_CreateFrameDecor(Result, bupdate);
+   end;
+end;
+function _ui_CreateBtn(var ui : TUI; const name : String; parent : Integer; btntype : Integer; var text : String; halign, valign : Integer; posx, posy, width, height : Integer; var eventstate, hint : String; tag : Integer; bupdate : Boolean) : Integer;
+begin
+   var uielement : TUIElement;
+   case btntype of
+      0 : uielement := ui.btn1;
+      1 : uielement := ui.btn2;
+   end;
+   var rwidth : Integer = uielement.fwidth;
+   var rheight : Integer = uielement.fheight;
+   if (width<>0) then rwidth := width;
+   if (height<>0) then rheight := height;
+   var rcolor : TColor;
+   rcolor.r := uielement.fcr;
+   rcolor.g := uielement.fcg;
+   rcolor.b := uielement.fcb;
+   rcolor.a := uielement.fca;
+   if (btntype=1) then
+   begin
+      const cPaddingX = 10;
+      const cMaterial = 'line.27';
+      Result := _gui_CreateButton(name, parent, cMaterial, halign, valign, posx+uielement.fposx, posy+uielement.fposy, rwidth, rheight, eventstate, hint, tag, bupdate);
+      //_gui_CreateImage('l', Result, cMaterial+'.left.normal', gc_halParentLeft, gc_valParentTop, 0, 0, 0, 0, 0, bupdate);
+      //_gui_CreateImage('r', Result, cMaterial+'.right.normal', gc_halParentRightWidth, gc_valParentTop, 0, 0, 0, 0, 0, bupdate);
+      _gui_CreateText('t', Result, text, gc_halParentLeft, gc_valParentTop, cPaddingX, 0, GetGUIElementWidth(Result)-cPaddingX*2, GetGUIElementHeight(Result), gc_halLeft, gc_valMiddle, uielement.ffont, rcolor, bupdate);
+   end
+   else
+   begin
+      Result := _ui_CreateFrame(ui, 'f'+name, parent, halign, valign, posx+uielement.fposx, posy+uielement.fposy, rwidth, rheight, uielement.fborder, 'decor', 1, bupdate);
+      _gui_CreateText('t'+name, Result, text, gc_halParentLeft, gc_valParentTop, 0, 0, GetGUIElementWidth(Result), GetGUIElementHeight(Result), gc_halMiddle, gc_valMiddle, uielement.ffont, rcolor, bupdate);
+      _gui_CreateButton(name, Result, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, GetGUIElementWidth(Result), GetGUIElementHeight(Result), eventstate, hint, tag, bupdate);
+   end;
+end;
+function _ui_CreateBtnWithShortcut(var ui : TUI; const name : String; parent : Integer; btntype : Integer; var text : String; halign, valign : Integer; posx, posy, width, height : Integer; var eventstate, hint : String; tag : Integer; bupdate : Boolean) : Integer;
+begin
+   _gui_HighlightTextHotkey(text, eventstate, name, text, True);
+   Result := _ui_CreateBtn(ui, name, parent, btntype, text, halign, valign, posx, posy, width, height, eventstate, hint, tag, bupdate);
+end;
+function _ui_CreateText(var ui : TUI; const name : String; parent : Integer; texttype : Integer; var text : String; halign, valign : Integer; posx, posy, width, height : Integer; thalign, tvalign : Integer; bupdate : Boolean) : Integer;
+begin
+   var uielement : TUIElement;
+   case texttype of
+      0 : uielement := ui.text1;
+      1 : uielement := ui.text2;
+   end;
+   var rparent : Integer = parent; if (parent=0) then rparent := _gui_GetTop;
+   var rwidth : Integer = GetGUIElementWidth(rparent);
+   var rheight : Integer = GetGUIElementHeight(rparent);
+   if (width<>0) then rwidth := width;
+   if (height<>0) then rheight := height;
+   var rcolor : TColor;
+   rcolor.r := uielement.fcr;
+   rcolor.g := uielement.fcg;
+   rcolor.b := uielement.fcb;
+   rcolor.a := uielement.fca;
+   Result := _gui_CreateText(name, rparent, text, halign, valign, posx, posy, rwidth, rheight, thalign, tvalign, uielement.ffont, rcolor, bupdate);
+end;
+function _ui_CreateCheckBox(var ui : TUI; const name : String; parent : Integer; bchecked : Boolean; halign, valign : Integer; posx, posy : Integer; var eventstate, hint : String; tag : Integer; bupdate : Boolean) : Integer;
+begin
+   var rparent : Integer = parent; if (parent=0) then rparent := _gui_GetTop;
+   //_gui_CreateCheckBox(elementName : String; parent : Integer; bChecked : Boolean; text : String; hAlign, vAlign : Integer; posX, posY : Integer; eventState, hint : String; tag : Integer; bGetUpdate : Boolean) : Integer;
+   Result := _gui_CreateCheckBox(name, rparent, bchecked, halign, valign, posx, posy, eventstate, hint, tag, bupdate);
+end;
+function _ui_CreateComboBox(var ui : TUI; const name : String; parent : Integer; count, minscrollcount : Integer; halign, valign : Integer; posx, posy, width : Integer; thalign : Integer; var eventstate : String; bupdate : Boolean) : Integer;
+begin
+   var uielement : TUIElement = ui.combobox;
+   var rparent : Integer = parent; if (parent=0) then rparent := _gui_GetTop;
+   var rwidth : Integer = GetGUIElementWidth(rparent);
+   //var rwidth : Integer = uielement.fwidth;
+   if (width<>0) then rwidth := width;
+   var txoff : Integer = 6;
+   if thalign=gc_halMiddle then
+   txoff := 1;
+   Result := _gui_CreateComboBox(name, rparent, count, minscrollcount, halign, valign, posx, posy, rwidth, thalign, gc_valMiddle, txoff, 0, uielement.ffont, True, eventstate, bupdate, True);
+end;
+function _ui_CreateInputBox(var ui : TUI; const inputboxid : String; parent : Integer; var text : String; halign, valign : Integer; posx, posy, width, maxlength : Integer; var eventstate, hint : String; enabled, bupdate : Boolean) : Integer;
+begin
+   var uielement : TUIElement = ui.inputbox;
+   var rparent : Integer = parent; if (parent=0) then rparent := _gui_GetTop;
+   var rwidth : Integer = GetGUIElementWidth(rparent);
+   //var rwidth : Integer = uielement.fwidth;
+   if (width<>0) then rwidth := width;
+   var tposx : Integer = 6;
+   var tposy : Integer;
+   var thalign : Integer = gc_halLeft;
+   var tvalign : Integer = gc_valMiddle;
+   Result := _gui_CreateInputBox(inputboxid, rparent, text, halign, valign, posX, posY, rwidth, maxlength, eventState, hint, enabled, tposx, tposy, thalign, tvalign, uielement.ffont, uielement.fcr, uielement.fcg, uielement.fcb, uielement.fca, bupdate);
+end;
+function _ui_CreateCheckBoxScenario(var ui : TUI; parent : Integer; const checkboxid : String; var lefttext, hint : String; bchecked : Boolean; colsize : Integer; var eventstate : String; var ind : Integer; bupdate : Boolean) : Integer;
+begin
+   const wpadding = 8;
+   const hpadding = 2;
+   var elmRow : Integer = _ui_CreateRow(ui, 'row'+IntToStr(ind), parent, gc_valDefault, wpadding+(hpadding+31)*ind, 31, bupdate);
+   var elmRowCol1 : Integer = _ui_CreateCol(ui, 'col1', elmRow, gc_valDefault, 0, colsize, wpadding, 0, 0, bupdate);
+   var elmRowCol2 : Integer = _ui_CreateCol(ui, 'col2', elmRow, gc_valDefault, colsize, 12, wpadding, 0, 0, bupdate);
+   _ui_CreateText(ui, 'txt', elmRowCol1, 0, lefttext, gc_halParentLeft, gc_valParentTop, 6, 0, 0, 0, gc_halLeft, gc_valMiddle, bupdate);
+   const tag = 0;
+   Result := _ui_CreateCheckBox(ui, checkboxid, elmRowCol2, bchecked, gc_halParentLeft, gc_valParentMiddle, 0, 0, eventstate, hint, tag, bupdate);
+   ind := ind+1;
+end;
+function _ui_CreateComboBoxScenario(var ui : TUI; parent : Integer; const comboboxid : String; var lefttext, hint : String; maxcount, minscrollcount, colsize : Integer; var eventstate : String; var ind : Integer; bupdate : Boolean) : Integer;
+begin
+   const wpadding = 8;
+   const hpadding = 2;
+   var elmRow : Integer = _ui_CreateRow(ui, 'row'+IntToStr(ind), parent, gc_valDefault, wpadding+(hpadding+31)*ind, 31, bupdate);
+   var elmRowCol1 : Integer = _ui_CreateCol(ui, 'col1', elmRow, gc_valDefault, 0, colsize, wpadding, 0, 0, bupdate);
+   var elmRowCol2 : Integer = _ui_CreateCol(ui, 'col2', elmRow, gc_valDefault, colsize, 12, wpadding, 0, 0, bupdate);
+   _ui_CreateText(ui, 'txt', elmRowCol1, 0, lefttext, gc_halParentLeft, gc_valParentTop, 6, 0, 0, 0, gc_halLeft, gc_valMiddle, bupdate);
+   Result := _ui_CreateComboBox(ui, comboboxid, elmRowCol2, maxcount, minscrollcount, gc_halParentLeft, gc_valParentMiddle, 0, 0, 0, gc_halLeft, eventstate, bupdate);
+   _misc_StringToText(hint, hint);
+   SetGUIElementHint(Result, hint);
+   ind := ind+1;
+end;
+function _ui_CreateInputBoxScenario(var ui : TUI; parent : Integer; const inputboxid : String; var lefttext, hint, svalue : String; colsize : Integer; var eventstate : String; benabled : Boolean; var ind : Integer; bupdate : Boolean) : Integer;
+begin
+   const wpadding = 8;
+   const hpadding = 2;
+   const cMaxLength = 256;
+   var elmRow : Integer = _ui_CreateRow(ui, 'row'+IntToStr(ind), parent, gc_valDefault, wpadding+(hpadding+31)*ind, 31, bupdate);
+   var elmRowCol1 : Integer = _ui_CreateCol(ui, 'col1', elmRow, gc_valDefault, 0, colsize, wpadding, 0, 0, bupdate);
+   var elmRowCol2 : Integer = _ui_CreateCol(ui, 'col2', elmRow, gc_valDefault, colsize, 12, wpadding, 0, 0, bupdate);
+   _ui_CreateText(ui, 'txt', elmRowCol1, 0, lefttext, gc_halParentLeft, gc_valParentTop, 6, 0, 0, 0, gc_halLeft, gc_valMiddle, bupdate);
+   Result := _ui_CreateInputBox(ui, inputboxid, elmRowCol2, svalue, gc_halParentMiddle, gc_valParentMiddle, 0, 0, 0, cMaxLength, eventstate, hint, benabled, bupdate);
+   ind := ind+1;
+end;
+function _ui_CreateIntInputBoxScenario(var ui : TUI; parent : Integer; const inputboxid : String; var lefttext, hint : String; ivalue, colsize : Integer; var eventstate : String; benabled : Boolean; var ind : Integer; bupdate : Boolean) : Integer;
+begin
+   const wpadding = 8;
+   const hpadding = 2;
+   const cMaxLength = 256;
+   var elmRow : Integer = _ui_CreateRow(ui, 'row'+IntToStr(ind), parent, gc_valDefault, wpadding+(hpadding+31)*ind, 31, bupdate);
+   var elmRowCol1 : Integer = _ui_CreateCol(ui, 'col1', elmRow, gc_valDefault, 0, colsize, wpadding, 0, 0, bupdate);
+   var elmRowCol2 : Integer = _ui_CreateCol(ui, 'col2', elmRow, gc_valDefault, colsize, 12, wpadding, 0, 0, bupdate);
+   _ui_CreateText(ui, 'txt', elmRowCol1, 0, lefttext, gc_halParentLeft, gc_valParentTop, 6, 0, 0, 0, gc_halLeft, gc_valMiddle, bupdate);
+   var svalue : String = IntToStr(ivalue);
+   Result := _ui_CreateInputBox(ui, inputboxid, elmRowCol2, svalue, gc_halParentMiddle, gc_valParentMiddle, 0, 0, 0, cMaxLength, eventstate, hint, benabled, bupdate);
+   ind := ind+1;
+end;
+function _ui_CreateFloatInputBoxScenario(var ui : TUI; parent : Integer; const inputboxid : String; var lefttext, hint : String; fvalue : Float; colsize : Integer; var eventstate : String; benabled : Boolean; var ind : Integer; bupdate : Boolean) : Integer;
+begin
+   const wpadding = 8;
+   const hpadding = 2;
+   const cMaxLength = 256;
+   var elmRow : Integer = _ui_CreateRow(ui, 'row'+IntToStr(ind), parent, gc_valDefault, wpadding+(hpadding+31)*ind, 31, bupdate);
+   var elmRowCol1 : Integer = _ui_CreateCol(ui, 'col1', elmRow, gc_valDefault, 0, colsize, wpadding, 0, 0, bupdate);
+   var elmRowCol2 : Integer = _ui_CreateCol(ui, 'col2', elmRow, gc_valDefault, colsize, 12, wpadding, 0, 0, bupdate);
+   _ui_CreateText(ui, 'txt', elmRowCol1, 0, lefttext, gc_halParentLeft, gc_valParentTop, 6, 0, 0, 0, gc_halLeft, gc_valMiddle, bupdate);
+   var svalue : String = FloatToStr(fvalue);
+   Result := _ui_CreateInputBox(ui, inputboxid, elmRowCol2, svalue, gc_halParentMiddle, gc_valParentMiddle, 0, 0, 0, cMaxLength, eventstate, hint, benabled, bupdate);
+   ind := ind+1;
+end;
+
+procedure _ui_Reset(var interface : TInterface; bAll, bButtons, bControl, bStates : Boolean);
+begin
+   if (bAll) then
+   begin
+      var tmpinterface : TInterface;
+      interface := tmpinterface;
+   end
+   else
+   begin
+      if (bButtons) then
+      begin
+         var tmpbuttons : TInterfaceButtons;
+         interface.buttons := tmpbuttons;
+      end;
+      if (bControl) then
+      begin
+         var tmpcontrol : TInterfaceControl;
+         interface.control := tmpcontrol;
+      end;
+      if (bStates) then
+      begin
+         var tmpstates : TInterfaceStates;
+         interface.states := tmpstates;
+      end;
+   end;
+end;

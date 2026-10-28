@@ -1,0 +1,6 @@
+{refurl=.\data\objects\ref\refenv.prop}
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=statemachineproperty}
+   ClassName = StateMachineProperty
+   DefaultInitStateName = InitialDecor
+section.end

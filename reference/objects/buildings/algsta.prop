@@ -1,0 +1,6 @@
+{refurl=.\data\objects\buildings\tursta.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=mainproperty}
+   CustomName = algsta
+   BaseName = algsta
+section.end

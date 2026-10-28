@@ -1,0 +1,729 @@
+//
+// steam.script
+//
+
+type TSteamID=class //packed record
+   data1: integer; // 32 bit
+   data2: smallint; // 16 bit
+   data3: byte; // 8 bit
+   data4: byte; // 8 bit
+end;
+
+global _steam_loaded: boolean=false;
+global _steam_appid: integer=0;
+global _steam_uilanguage: string='';
+global _steam_ipcountry: string='';
+global _steam_user: integer=0;
+global _steam_loggedon: boolean=false;
+global _steam_steamid: TSteamID;
+global _steam_psteamid: Pointer=_steam_steamid;
+global _steam_accountid: integer=0;
+global _steam_accountinstance: integer=0;
+global _steam_accounttype: integer=0;
+global _steam_universe: integer=0;
+//global _steam_userdatafolder: string='';
+global _steam_userhaslicenseforapp: integer=0;
+global _steam_isbehindnat: boolean=false;
+global _steam_playersteamlevel: integer=0;
+global _steam_personaname: string='';
+global _steam_personastate: integer=0;
+global _steam_playernickname: string='';
+global _steam_currentgamelanguage: string='';
+//global _steam_earliestpurchaseunixtime: integer=0;
+//global _steam_issubscribedfromfreeweekend: boolean=false;
+global _steam_currentbetaname: string='';
+
+global _steam_userstats_loaded: boolean=false;
+global _steam_userstats_requested: boolean=false;
+global _steam_userstats_changed: boolean=false;
+global _steam_userstats_store: boolean=false;
+
+const _steam_callbacks_ind_userstatsreceived=47;
+const _steam_callbacks_fun_userstatsreceived='_steam_callbacks_OnUserStatsReceived';
+const _steam_callbacks_ind_userstatsstored=48;
+const _steam_callbacks_fun_userstatsstored='_steam_callbacks_OnUserStatsStored';
+const _steam_callbacks_ind_userachievementstored=49;
+const _steam_callbacks_fun_userachievementstored='_steam_callbacks_OnUserAchievementStored';
+const _steam_callbacks_ind_userstatsunloaded=54;
+const _steam_callbacks_fun_userstatsunloaded='_steam_callbacks_OnUserStatsUnloaded';
+const _steam_callbacks_ind_steamserversconnected=13;
+const _steam_callbacks_fun_steamserversconnected='_steam_callbacks_OnSteamServersConnected';
+const _steam_callbacks_ind_steamserverconnectfailure=14;
+const _steam_callbacks_fun_steamserverconnectfailure='_steam_callbacks_OnSteamServerConnectFailure';
+const _steam_callbacks_ind_steamserversdisconnected=15;
+const _steam_callbacks_fun_steamserversdisconnected='_steam_callbacks_OnSteamServersDisconnected';
+
+const _steam_steamwrap_lib='steamwrap.dll';
+const _steam_steamapi_lib=_init_steamapi_lib;
+
+const _gog_galaxywrap_lib='galaxywrap.dll';
+const _gog_galaxyapi_lib=_init_galaxyapi_lib;
+
+const _steam_error_log=' :: STEAM ERROR :: ';
+const _steam_warning_log=' :: STEAM WARNING :: ';
+const _steam_callbacks_log=' :: STEAM CALLBACK :: ';
+const _steam_message_log=' :: STEAM LOG :: ';
+
+// general result codes
+const _steam_resultok=1; // success
+
+type TSteamAchievement=class
+   id: string;
+   name: string;
+   desc: string;
+   achieved: boolean;
+   stored: boolean;
+   
+   function Load(): boolean;
+   begin
+      result:=SteamwrapGetAchievement(id, achieved);
+      if not result then
+      ErrorLog(_steam_error_log+'TSteamAchievement->Load->SteamwrapGetAchievement('''+id+''', ...)')
+      else begin
+         name:=SteamwrapGetAchievementDisplayAttribute(id, 'name');
+         desc:=SteamwrapGetAchievementDisplayAttribute(id, 'desc');
+      end;
+   end;
+   
+   function SetAchieved(val: boolean): boolean;
+   begin
+      if achieved<>val then begin
+         if val then begin
+            result:=SteamwrapSetAchievement(id);
+            if not result then
+            ErrorLog(_steam_error_log+'TSteamAchievement->SetAchieved->SteamwrapSetAchievement('''+id+''')');
+            end else begin
+            result:=SteamwrapClearAchievement(id);
+            if not result then
+            ErrorLog(_steam_error_log+'TSteamAchievement->SetAchieved->SteamwrapClearAchievement('''+id+''')');
+         end;
+         if result then
+         achieved:=val;
+         _steam_userstats_changed:=result;
+      end else result:=true;
+   end;
+   
+   procedure SaveToStruct(struct: integer);
+   begin
+      ParserSetValueByKeyByHandle(struct, 'id', id);
+      ParserSetValueByKeyByHandle(struct, 'name', name);
+      ParserSetValueByKeyByHandle(struct, 'desc', desc);
+      ParserSetBoolValueByKeyByHandle(struct, 'achieved', achieved);
+   end;
+   
+   procedure LoadFromStruct(struct: integer);
+   begin
+      id:=ParserGetValueByKeyByHandle(struct, 'id');
+      name:=ParserGetValueByKeyByHandle(struct, 'name');
+      desc:=ParserGetValueByKeyByHandle(struct, 'desc');
+      achieved:=ParserGetBoolValueByKeyByHandle(struct, 'achieved');
+   end;
+end;
+
+type TSteamAchievements=class
+   fList: TPtrList;
+   fFileName: string;
+   
+   procedure Create; begin if self.fList.GetItemSize=0 then self.fList.Create; end;
+   constructor TSteamAchievements; begin Create; end;
+   procedure Clear;
+   begin
+      var i: integer;
+      for i:=0 to self.fList.GetCount-1 do begin
+         var p: Pointer=self.fList.GetPointer(i);
+         FreeMem(p);
+      end;
+      self.fList.Clear;
+   end;
+   procedure Destroy; begin Clear; self.fList.Destroy; end;
+   destructor TSteamAchievements; begin Destroy; end;
+   function GetCount: integer; begin result:=self.fList.GetCount; end;
+   function Get(index: integer): Pointer; begin result:=self.fList.GetPointer(index); end;
+   
+   function Add: Pointer;
+   begin
+      GetMem(result, SizeOf(TSteamAchievement));
+      FillMem(result, SizeOf(TSteamAchievement), 0);
+      self.fList.AddPointer(result);
+   end;
+   procedure Delete(const index: integer);
+   begin
+      if (index>=0) and (index<GetCount) then
+      begin
+         var p: Pointer=self.fList.GetPointer(index);
+         if p<>nil then
+         FreeMem(p);
+         self.fList.Delete(index);
+      end;
+   end;
+   
+   function IndexOf(const id: string): integer;
+   begin
+      result:=-1;
+      var i: integer;
+      for i:=0 to self.fList.GetCount-1 do begin
+         var p: Pointer=self.fList.GetPointer(i);
+         if SameText(id, TSteamAchievement(p).id) then begin
+            result:=i;
+            break;
+         end;
+      end;
+   end;
+   
+   function GetByID(const id: string): Pointer;
+   begin
+      var i: integer=IndexOf(id);
+      if i>=0 then
+      result:=self.fList.GetPointer(i)
+      else result:=nil;
+   end;
+   
+   
+   function GetOrAdd(const id: string): Pointer;
+   begin
+      var i: integer=IndexOf(id);
+      if i>=0 then
+      result:=self.fList.GetPointer(i)
+      else begin
+         result:=Add;
+         TSteamAchievement(result).id:=id;
+      end;
+   end;
+   
+   procedure SaveToStruct(struct: integer);
+   begin
+      var i: integer;
+      var child: integer=ParserAddChildByIndex(struct, 'steamachievements');
+      ParserClearByHandle(child);
+      for i:=0 to self.fList.GetCount-1 do begin
+         var p: Pointer=self.fList.GetPointer(i);
+         TSteamAchievement(p).SaveToStruct(ParserAddChildByIndex(child, '*'));
+      end;
+   end;
+   
+   procedure LoadFromStruct(struct: integer);
+   begin
+      Clear;
+      var i: integer;
+      var child: integer=ParserSelectByHandleByKey(struct, 'steamachievements');
+      for i:=0 to ParserGetCountByHandle(child)-1 do begin
+         var p: Pointer=Add;
+         TSteamAchievement(p).LoadFromStruct(ParserSelectByHandleByIndex(child, i));
+      end;
+   end;
+   
+   procedure SaveToFile(const filename: string);
+   begin
+      self.fFileName:=filename;
+      var p: integer=ParserCreate('steamachievements');
+      SaveToStruct(p);
+      ParserSaveToFileByHandle(p, filename);
+      ParserFreeByHandle(p);
+   end;
+   
+   procedure LoadFromFile(const filename: string);
+   begin
+      self.fFileName:=filename;
+      var p: integer=ParserCreate('steamachievements');
+      ParserLoadFromFileByHandle(p, filename);
+      LoadFromStruct(p);
+      ParserFreeByHandle(p);
+   end;
+   
+   procedure Reload; begin LoadFromFile(self.fFileName); end;
+end;
+
+global _steam_achievements_loaded: TSteamAchievements;
+global _steam_achievements_commit: TSteamAchievements;
+
+procedure _steam_callbacks;
+begin
+   if not SteamwrapInitCallbacksManager then
+   ErrorLog(_steam_error_log+'SteamwrapInitCallbacksManager()');
+   
+   SteamwrapSetProgressCallbacks('_steam_progress');
+   
+   // _steam_callbacks_OnSteamServersConnected
+   if not SteamwrapSetCallbacksFunc(_steam_callbacks_ind_steamserversconnected, _steam_callbacks_fun_steamserversconnected) then
+   ErrorLog(_steam_error_log+'SteamwrapSetCallbacksFunc('+IntToStr(_steam_callbacks_ind_steamserversconnected)+', '+_steam_callbacks_fun_steamserversconnected+')');
+   // _steam_callbacks_OnSteamServerConnectFailure
+   //if not SteamwrapSetCallbacksFunc(_steam_callbacks_ind_steamserverconnectfailure, _steam_callbacks_fun_steamserverconnectfailure) then
+   //ErrorLog(_steam_error_log+'SteamwrapSetCallbacksFunc('+IntToStr(_steam_callbacks_ind_steamserverconnectfailure)+', '+_steam_callbacks_fun_steamserverconnectfailure+')');
+   // _steam_callbacks_OnSteamServersDisconnected
+   if not SteamwrapSetCallbacksFunc(_steam_callbacks_ind_steamserversdisconnected, _steam_callbacks_fun_steamserversdisconnected) then
+   ErrorLog(_steam_error_log+'SteamwrapSetCallbacksFunc('+IntToStr(_steam_callbacks_ind_steamserversdisconnected)+', '+_steam_callbacks_fun_steamserversdisconnected+')');
+   // _steam_callbacks_OnUserStatsUnloaded
+   if not SteamwrapSetCallbacksFunc(_steam_callbacks_ind_userstatsunloaded, _steam_callbacks_fun_userstatsunloaded) then
+   ErrorLog(_steam_error_log+'SteamwrapSetCallbacksFunc('+IntToStr(_steam_callbacks_ind_userstatsunloaded)+', '+_steam_callbacks_fun_userstatsunloaded+')');
+   // _steam_callbacks_OnUserStatsReceived
+   if not SteamwrapSetCallbacksFunc(_steam_callbacks_ind_userstatsreceived, _steam_callbacks_fun_userstatsreceived) then
+   ErrorLog(_steam_error_log+'SteamwrapSetCallbacksFunc('+IntToStr(_steam_callbacks_ind_userstatsreceived)+', '+_steam_callbacks_fun_userstatsreceived+')');
+   // _steam_callbacks_OnUserStatsStored
+   if not SteamwrapSetCallbacksFunc(_steam_callbacks_ind_userstatsstored, _steam_callbacks_fun_userstatsstored) then
+   ErrorLog(_steam_error_log+'SteamwrapSetCallbacksFunc('+IntToStr(_steam_callbacks_ind_userstatsstored)+', '+_steam_callbacks_fun_userstatsstored+')');
+   // _steam_callbacks_OnUserAchievementStored
+   if not SteamwrapSetCallbacksFunc(_steam_callbacks_ind_userachievementstored, _steam_callbacks_fun_userachievementstored) then
+   ErrorLog(_steam_error_log+'SteamwrapSetCallbacksFunc('+IntToStr(_steam_callbacks_ind_userachievementstored)+', '+_steam_callbacks_fun_userachievementstored+')');
+end;
+
+procedure _steam_load;
+begin
+   Log(_steam_message_log+'_steam_load()');
+   
+   // Loading
+   
+   _steam_achievements_commit.LoadFromStruct(ParserSelectUser);
+   
+   if _steam_loaded then
+   ErrorLog(_steam_warning_log+'_steam_load() already runned');
+   
+   if not SteamwrapIsLoaded() and IsFileExists(_steam_steamapi_lib) then begin
+      //if not IsFileExists(_steam_steamwrap_lib) then begin
+         //   ErrorLog(_steam_error_log+'file not found '+_steam_steamwrap_lib);
+         //   exit;
+      //end;
+      var _st_error: integer;
+      if not SteamwrapInitSafe(_steam_steamwrap_lib, _st_error) then begin
+         var _logf: boolean=GetLogFileEnabled;
+         SetLogFileEnabled(true);
+         var _os_error: integer=GetLastOSError;
+         ErrorLog(_steam_error_log+'SteamwrapInitSafe(...); _st_error='+IntToStr(_st_error)+'; _os_error='+IntToStr(_os_error)+';');
+         //ErrorLog(_steam_error_log+'OSErrorMessage: '+GetOSErrorMessage(_os_error));
+         SetLogFileEnabled(_logf);
+         exit;
+      end;
+   end;
+   
+   // System
+   
+   if not SteamwrapIsSteamRunning() then begin
+      ErrorLog(_steam_error_log+'SteamwrapIsSteamRunning()');
+      exit;
+   end;
+   
+   
+   SteamwrapWarningMessageHookToLog(true);
+   
+   // SteamUtils
+   
+   _steam_appid:=SteamwrapGetAppID();
+   _steam_uilanguage:=SteamwrapGetSteamUILanguage();
+   _steam_ipcountry:=SteamwrapGetIPCountry();
+   
+   //if SteamwrapRestartAppIfNecessary(_steam_appid) then begin
+      //   ErrorLog(_steam_error_log+'SteamwrapRestartAppIfNecessary()');
+      //   exit;
+   //end;
+   
+   // SteamUser
+   
+   _steam_user:=SteamwrapGetSteamUser();
+   _steam_loggedon:=SteamwrapIsLoggedOn();
+   if not _steam_loggedon then
+   ErrorLog(_steam_warning_log+'SteamwrapIsLoggedOn()');
+   SteamwrapGetSteamID(_steam_psteamid);
+   _steam_accountid:=SteamwrapGetAccountIDFromSteamID(_steam_psteamid);
+   _steam_accountinstance:=SteamwrapGetAccountInstanceFromSteamID(_steam_psteamid);
+   _steam_accounttype:=SteamwrapGetAccountTypeFromSteamID(_steam_psteamid);
+   _steam_universe:=SteamwrapGetUniverseFromSteamID(_steam_psteamid);
+   //if not SteamwrapGetUserDataFolder(_steam_userdatafolder, 128);
+   //   ErrorLog(_steam_warning_log+'SteamwrapGetUserDataFolder()');
+   _steam_userhaslicenseforapp:=SteamwrapUserHasLicenseForApp(_steam_psteamid, _steam_appid);
+   _steam_isbehindnat:=SteamwrapIsBehindNAT();
+   _steam_playersteamlevel:=SteamwrapGetPlayerSteamLevel();
+   
+   // SteamFriends
+   
+   _steam_personaname:=SteamwrapFriendsGetPersonaName;
+   _steam_personastate:=SteamwrapFriendsGetPersonaState;
+   _steam_playernickname:=SteamwrapFriendsGetPlayerNickname(_steam_psteamid);
+   
+   // SteamApps
+   
+   _steam_currentgamelanguage:=SteamwrapGetCurrentGameLanguage;
+   
+   //SteamwrapIsDlcInstalled(appid: integer): boolean;
+   
+   //_steam_earliestpurchaseunixtime:=SteamwrapGetEarliestPurchaseUnixTime(_steam_appid);
+   //_steam_issubscribedfromfreeweekend:=SteamwrapIsSubscribedFromFreeWeekend;
+   
+   //SteamwrapGetDLCCount: integer;
+   //SteamwrapGetDLCDataByIndex(idlc: integer; var appid: integer; var isavailable: boolean; var name: string; namepbuffersize: integer): boolean;
+   
+   //SteamwrapRequestAppProofOfPurchaseKey(appid: integer);
+   
+   if not SteamwrapGetCurrentBetaName(_steam_currentbetaname, 64) then
+   _steam_currentbetaname:='';
+   
+   //SteamwrapGetInstalledDepots(appid: integer; var depots: integer; maxdepots: integer): integer;
+   //SteamwrapGetAppInstallDir(appid: integer; var folder: string; folderpbuffersize: integer): integer;
+   
+   // SteamUserStats
+   
+   // Callbacks
+   
+   _steam_callbacks;
+   
+   // Prepare
+   
+   _steam_userstats_requested:=true;
+   
+   _steam_loaded:=true;
+end;
+
+procedure _steam_userstats_reset;
+begin
+   _steam_userstats_store:=false;
+   _steam_userstats_loaded:=false;
+   _steam_userstats_changed:=false;
+   _steam_userstats_requested:=true;
+end;
+
+function _steam_commit_required: boolean;
+begin
+   result:=_steam_userstats_loaded and (_steam_achievements_commit.GetCount>0) and not _steam_userstats_changed and not _steam_userstats_store;
+end;
+
+function _steam_store_required: boolean;
+begin
+   result:=_steam_userstats_loaded and _steam_userstats_changed and not _steam_userstats_store;
+end;
+
+function _steam_commit_clear_stored: boolean;
+begin
+   var i: integer;
+   for i:=_steam_achievements_commit.GetCount-1 downto 0 do begin
+      var p: pointer=_steam_achievements_commit.Get(i);
+      if TSteamAchievement(p).stored then
+      _steam_achievements_commit.Delete(i);
+   end;
+   result:=_steam_achievements_commit.GetCount=0;
+end;
+
+function _steam_commit_save_to_profile: boolean;
+begin
+   _steam_achievements_commit.SaveToStruct(ParserSelectUser);
+   UserSaveProfileExt(false, true);
+   Log(_steam_message_log+'_steam_commit_save_to_profile() '+IntToStr(_steam_achievements_commit.GetCount)+' rows saved');
+end;
+
+procedure _steam_progress;
+begin
+   if not _steam_loaded then exit;
+   // is the user logged on?
+   _steam_loggedon:=SteamwrapIsLoggedOn();
+   if _steam_loggedon then begin
+      // steam client current has a live connection to the steam servers
+      // ask the server to send down this user's data and achievements for this game
+      if _steam_userstats_requested then begin
+         _steam_userstats_loaded:=false;
+         if not SteamwrapRequestCurrentStats() then
+         ErrorLog(_steam_error_log+'SteamwrapRequestCurrentStats()')
+         else begin
+            _steam_userstats_requested:=false;
+            Log(_steam_message_log+'SteamwrapRequestCurrentStats()');
+         end;
+      end;
+      // prepare achievements to commit on the steam server
+      if _steam_commit_required then begin
+         var i: integer;
+         for i:=_steam_achievements_commit.GetCount-1 downto 0 do begin
+            var src: pointer=_steam_achievements_commit.Get(i);
+            var dst: pointer=_steam_achievements_loaded.GetByID{GetOrAdd}(TSteamAchievement(src).id);
+            if dst<>nil then
+            TSteamAchievement(src).stored:=TSteamAchievement(dst).SetAchieved(TSteamAchievement(src).achieved)
+            else begin
+               TSteamAchievement(src).stored:=true; // mark to clean
+               ErrorLog(_steam_error_log+'Invalid achievement: '+TSteamAchievement(src).id);
+            end;
+         end;
+         // nothing changed?
+         if not _steam_userstats_changed then begin
+            //_steam_commit_clear_stored;
+            _steam_userstats_changed:=true;
+            ErrorLog(_steam_error_log+'_steam_commit_required && !_steam_userstats_changed');
+         end;
+         //_steam_commit_save_to_profile;
+         Log(_steam_message_log+'_steam_commit_required');
+      end;
+      // store the current data on the server; will get a callback when set
+      // and one callback for every new achievement
+      // if the callback has a result of k_EResultInvalidParam; one or more stats
+      // uploaded has been rejected; either because they broke constraints
+      // or were out of date. In this case the server sends back updated values.
+         // the stats should be re-iterated to keep in sync.
+         if _steam_store_required then begin
+            _steam_userstats_store:=SteamwrapStoreStats();
+            if not _steam_userstats_store then
+            ErrorLog(_steam_error_log+'SteamwrapStoreStats()')
+            else begin
+               _steam_userstats_changed:=false;
+               Log(_steam_message_log+'SteamwrapStoreStats()');
+            end;
+         end;
+         end else begin
+         // no active connection due to either a networking issue on the local machine; or the Steam server is down/busy.
+         // the steam client will automatically be trying to recreate the connection as often as possible.
+      end;
+   end;
+   
+   procedure _steam_callbacks_OnUserStatsReceived(gameid, eresult, usersteamid: pointer);
+   begin
+      Log(_steam_callbacks_log+_steam_callbacks_fun_userstatsreceived);
+      
+      if _steam_appid<>integer(gameid) then begin
+         _steam_userstats_requested:=true;
+         ErrorLog(_steam_callbacks_log+'Invalid argument: gameid='+IntToStr(integer(gameid)));
+         exit;
+      end;
+      
+      if _steam_accountid<>TSteamID(usersteamid).data1 then begin
+         _steam_userstats_requested:=true;
+         ErrorLog(_steam_callbacks_log+'Invalid argument: usersteamid='+IntToStr(TSteamID(usersteamid).data1));
+         exit;
+      end;
+      
+      if integer(eresult)<>_steam_resultok then begin
+         _steam_userstats_requested:=true;
+         ErrorLog(_steam_callbacks_log+'Invalid argument: eresult='+IntToStr(integer(eresult)));
+         exit;
+      end;
+      
+      _steam_achievements_loaded.Clear;
+      
+      var n: integer=SteamwrapGetNumAchievements();
+      Log(_steam_callbacks_log+'SteamwrapGetNumAchievements()='+IntToStr(n));
+      
+      var i: integer;
+      for i:=0 to n-1 do begin
+         var id: string=SteamwrapGetAchievementName(i);
+         if id='' then begin
+            ErrorLog(_steam_callbacks_log+'SteamwrapGetAchievementName('+IntToStr(i)+')');
+            continue;
+         end;
+         var p: pointer=_steam_achievements_loaded.Add;
+         TSteamAchievement(p).id:=id;
+         TSteamAchievement(p).Load;
+      end;
+      
+      _steam_userstats_loaded:=true;
+   end;
+   
+   procedure _steam_callbacks_OnUserStatsStored(gameid, eresult: pointer);
+   begin
+      Log(_steam_callbacks_log+_steam_callbacks_fun_userstatsstored);
+      
+      if _steam_appid<>integer(gameid) then begin
+         _steam_userstats_changed:=true;
+         _steam_userstats_store:=false;
+         ErrorLog(_steam_callbacks_log+'Invalid argument: gameid='+IntToStr(integer(gameid)));
+         exit;
+      end;
+      
+      if integer(eresult)<>_steam_resultok then begin
+         _steam_userstats_changed:=true;
+         _steam_userstats_store:=false;
+         ErrorLog(_steam_callbacks_log+'Invalid argument: eresult='+IntToStr(integer(eresult)));
+         exit;
+      end;
+      
+      _steam_commit_clear_stored;
+      _steam_commit_save_to_profile;
+      
+      _steam_userstats_changed:=false;
+      _steam_userstats_store:=false;
+   end;
+   
+   procedure _steam_callbacks_OnUserAchievementStored(gameid, bgroupachievement, achievementname, curprogress, maxprogress: pointer);
+   begin
+      Log(_steam_callbacks_log+_steam_callbacks_fun_userachievementstored+' '+string(achievementname));
+      if _steam_appid<>integer(gameid) then
+      ErrorLog(_steam_callbacks_log+'Invalid argument: gameid='+IntToStr(integer(gameid)));
+   end;
+   
+   procedure _steam_callbacks_OnUserStatsUnloaded(steamiduser: pointer);
+   begin
+      Log(_steam_callbacks_log+_steam_callbacks_fun_userstatsunloaded);
+      if _steam_accountid=TSteamID(steamiduser).data1 then begin
+         _steam_userstats_reset;
+      end else ErrorLog(_steam_callbacks_log+'Invalid argument: steamiduser='+IntToStr(TSteamID(steamiduser).data1));
+   end;
+   
+// called when a connections to the Steam back-end has been established
+// this means the Steam client now has a working connection to the Steam servers
+// usually this will have occurred before the game has launched, and should
+// only be seen if the user has dropped connection due to a networking issue
+// or a Steam server update
+procedure _steam_callbacks_OnSteamServersConnected();
+begin
+   _steam_userstats_reset;
+   Log(_steam_callbacks_log+_steam_callbacks_fun_steamserversconnected);
+end;
+
+// called when a connection attempt has failed
+// this will occur periodically if the Steam client is not connected,
+// and has failed in it's retry to establish a connection
+procedure _steam_callbacks_OnSteamServerConnectFailure(eresult: pointer);
+begin
+   _steam_userstats_reset;
+   ErrorLog(_steam_callbacks_log+_steam_callbacks_fun_steamserverconnectfailure+' eresult='+IntToStr(integer(eresult)));
+end;
+
+// called if the client has lost connection to the Steam servers
+// real-time services will be disabled until a matching SteamServersConnected_t has been posted
+procedure _steam_callbacks_OnSteamServersDisconnected(eresult: pointer);
+begin
+   _steam_userstats_reset;
+   ErrorLog(_steam_callbacks_log+_steam_callbacks_fun_steamserversdisconnected+' eresult='+IntToStr(integer(eresult)));
+end;
+
+function _steam_IsAchievementLoadedExists(const id: string): boolean;
+begin
+   result:=_steam_achievements_loaded.GetByID(id)<>nil;
+end;
+
+function _steam_IsAchievementCommitExists(const id: string): boolean;
+begin
+   result:=_steam_achievements_commit.GetByID(id)<>nil;
+end;
+
+function _steam_GetAchievement(const id: string): boolean;
+begin
+   var acommit: pointer=_steam_achievements_commit.GetByID(id);
+   if acommit<>nil then
+   result:=TSteamAchievement(acommit).achieved
+   else if _steam_userstats_loaded then begin
+      var aloaded: pointer=_steam_achievements_loaded.GetByID(id);
+      if aloaded<>nil then
+      result:=TSteamAchievement(aloaded).achieved
+      else result:=false;
+   end else result:=false;
+end;
+
+function _steam_SetAchievementToCommit(const id: string; value: boolean): boolean;
+begin
+   result:=false;
+   if id<>'' then begin
+      var acommit: pointer=_steam_achievements_commit.GetByID(id);
+      if acommit=nil then begin
+         result:=true;
+         acommit:=_steam_achievements_commit.Add;
+         TSteamAchievement(acommit).id:=id;
+         TSteamAchievement(acommit).achieved:=value;
+         TSteamAchievement(acommit).stored:=false;
+         Log(_steam_message_log+'_steam_SetAchievementToCommit('+id+', '+BoolToStr(value)+') added to commit');
+         _steam_commit_save_to_profile;
+         end else if TSteamAchievement(acommit).achieved<>value then begin
+         result:=true;
+         TSteamAchievement(acommit).achieved:=value;
+         TSteamAchievement(acommit).stored:=false;
+         Log(_steam_message_log+'_steam_SetAchievementToCommit('+id+', '+BoolToStr(value)+') changes added to commit');
+         _steam_commit_save_to_profile;
+      end else Log(_steam_message_log+'_steam_SetAchievementToCommit('+id+', '+BoolToStr(value)+') nothing added to commit');
+   end else ErrorLog(_steam_error_log+'Invalid achievement: '+id);
+end;
+
+function _steam_SetAchievementValue(const id: string; value: boolean): boolean;
+begin
+   result:=false;
+   if id<>'' then begin
+      if _steam_userstats_loaded then begin
+         var aloaded: pointer=_steam_achievements_loaded.GetByID(id);
+         if aloaded<>nil then begin
+            if TSteamAchievement(aloaded).achieved<>value then
+            result:=_steam_SetAchievementToCommit(id, value)
+            else Log(_steam_message_log+'_steam_SetAchievementValue('+id+', '+BoolToStr(value)+') nothing added to commit');
+         end else ErrorLog(_steam_error_log+'Invalid achievement: '+id);
+      end else result:=_steam_SetAchievementToCommit(id, value);
+   end else ErrorLog(_steam_error_log+'Invalid achievement: '+id);
+end;
+
+function _steam_SetAchievement(const id: string): boolean;
+begin
+   result:=_steam_SetAchievementValue(id, true);
+end;
+
+function _steam_IsUserstatsReady: boolean;
+begin
+   result:=false;
+   if not _steam_loaded then begin
+      ErrorLog(_steam_error_log+'Steam unloaded');
+      exit;
+   end;
+   if not _steam_loggedon then begin
+      ErrorLog(_steam_error_log+'Steam user logged off');
+      exit;
+   end;
+   if not _steam_userstats_loaded then begin
+      ErrorLog(_steam_error_log+'Steam stats unloaded');
+      exit;
+   end;
+   result:=true;
+end;
+
+function _steam_SetStatInt32(const id: string; val: integer): boolean;
+begin
+   result:=_steam_IsUserstatsReady;
+   if result then begin
+      result:=SteamwrapSetStatInt32(id, val);
+      if not result then
+      ErrorLog(_steam_error_log+'_steam_SetStatInt32('''+id+''', '+IntToStr(val)+')')
+      else begin
+         result:=SteamwrapStoreStats();
+         if not result then
+         ErrorLog(_steam_error_log+'SteamwrapStoreStats()');
+      end;
+   end;
+end;
+
+function _steam_GetStatInt32(const id: string; var val: integer): boolean;
+begin
+   result:=_steam_IsUserstatsReady;
+   if result then begin
+      result:=SteamwrapGetStatInt32(id, val);
+      if not result then
+      ErrorLog(_steam_error_log+'_steam_GetStatInt32('''+id+''', '+IntToStr(val)+')')
+   end;
+end;
+
+function _steam_SetStatFloat(const id: string; val: float): boolean;
+begin
+   result:=_steam_IsUserstatsReady;
+   if result then begin
+      result:=SteamwrapSetStatFloat(id, val);
+      if not result then
+      ErrorLog(_steam_error_log+'_steam_SetStatFloat('''+id+''', '+FloatToStr(val)+')')
+      else begin
+         result:=SteamwrapStoreStats();
+         if not result then
+         ErrorLog(_steam_error_log+'SteamwrapStoreStats()');
+      end;
+   end;
+end;
+
+function _steam_GetStatFloat(const id: string; var val: float): boolean;
+begin
+   result:=_steam_IsUserstatsReady;
+   if result then begin
+      result:=SteamwrapGetStatFloat(id, val);
+      if not result then
+      ErrorLog(_steam_error_log+'_steam_GetStatFloat('''+id+''', '+FloatToStr(val)+')')
+   end;
+end;
+
+procedure _steam_thirdparty_cdkey(var result : String);
+begin
+   if (gbool_issteam) then
+   begin
+      const HKEY_CURRENT_USER=$80000001;
+      result:=WindowsRegistryReadString(HKEY_CURRENT_USER, '\Software\Valve\TestApp'+IntToStr(gc_app_cossacks3), 'SteamKey');
+   end
+   else
+   result:= '';
+end;
+
+_steam_achievements_loaded.Create;
+_steam_achievements_commit.Create;
+
+if (gbool_issteam) then
+_steam_load;

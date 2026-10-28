@@ -1,0 +1,30 @@
+{refurl=.\data\objects\ref\refmisc.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=mainproperty}
+   CustomName = rallypoint
+   BaseName = rallypoint
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=actorproperty}
+   LODActorName = rallypoint
+   DefaultMeshName = rallypoint.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = rallypoint
+   Mesh[0].UseableMaterials[0] = rallypoint
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.0525
+   DefaultScale.Y = 0.0525
+   DefaultScale.Z = 0.0525
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=directionupproperty}
+   DefaultRollAngle = 45
+section.end
+
+offsetproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=offsetproperty}
+   OffsetCollideOption = ocoTerrainWater
+section.end

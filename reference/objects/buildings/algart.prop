@@ -1,0 +1,6 @@
+{refurl=.\data\objects\buildings\turart.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=mainproperty}
+   CustomName = algart
+   BaseName = algart
+section.end

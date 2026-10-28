@@ -1,0 +1,43 @@
+{refurl=.\data\objects\ref\refunitattach.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=mainproperty}
+   CustomName = multicannon_wheel_left
+   BaseName = multicannon_wheel_left
+   StaticObject = False
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=actorproperty}
+   LODActorName = multicannon
+   DefaultMeshName = multicannon_wheel_left.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = multicannon
+   Mesh[0].UseableMaterials[0] = multicannon
+   Mesh[1].DefaultMaterialName = multicannon
+   Mesh[1].UseableMaterials[0] = multicannon
+   Mesh[2].DefaultMaterialName = multicannon
+   Mesh[2].UseableMaterials[0] = multicannon
+section.end
+
+pfxproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=pfxproperty}
+   Enabled = True
+   Static = True
+   ClassName = PFXProperty
+   BehavioursStored = True
+   EffectsStored = True
+section.end
+
+frameanimationproperty : section.begin {refurl=.\data\objects\ref\refunitattach.prop; refkey=frameanimationproperty}
+   Enabled = True
+   Static = True
+   ClassName = FrameAnimationProperty
+   DefaultFrameAnimationName = 
+   DefaultFrameAnimationMode = aamNone
+   FrameAnimationSynchronizeOption = fasoInherited
+   FrameAnimationSwitchChildren = False
+   DefaultFrameAnimationCycles = 
+   FrameAnimationCyclesLibName = 
+   RandomOffsetFrameAnimationCycles = False
+   RandomOffsetFrameAnimation = False
+section.end

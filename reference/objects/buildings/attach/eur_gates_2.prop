@@ -1,0 +1,46 @@
+{refurl=.\data\objects\ref\refbuildingattach.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuildingattach.prop; refkey=mainproperty}
+   CustomName = eur_gate_2
+   BaseName = eur_gate_2
+section.end
+
+stringproperty : section.begin {refurl=.\data\objects\ref\refbuildingattach.prop; refkey=stringproperty}
+   StringTag = 103
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refbuildingattach.prop; refkey=actorproperty}
+   LODActorName = eur_gates_2
+   DefaultMeshName = eur_gates_2.mesh
+   UseableMeshes : struct.begin
+      [0] = True
+      [1] = True
+      [2] = True
+   struct.end
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuildingattach.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = eurswa
+   Mesh[0].UseableMaterials[0] = eurswa
+   Mesh[0].UseSeasonMaterial = True
+   Mesh[0].UseableSummerMaterials[0] = eurswa
+   Mesh[0].UseableWinterMaterials[0] = eurswaw
+   Mesh[1].DefaultMaterialName = eurswa
+   Mesh[1].UseableMaterials[0] = eurswa
+   Mesh[1].UseSeasonMaterial = True
+   Mesh[1].UseableSummerMaterials[0] = eurswa
+   Mesh[1].UseableWinterMaterials[0] = eurswaw
+   Mesh[2].DefaultMaterialName = eurswa
+   Mesh[2].UseableMaterials[0] = eurswa
+   Mesh[2].UseSeasonMaterial = True
+   Mesh[2].UseableSummerMaterials[0] = eurswa
+   Mesh[2].UseableWinterMaterials[0] = eurswaw
+section.end
+
+designproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = DesignProperty
+   VisibleAtDesignTime = True
+   DesignPriority = 100
+section.end

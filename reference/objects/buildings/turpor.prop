@@ -1,0 +1,124 @@
+{refurl=.\data\objects\ref\refbuilding.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=mainproperty}
+   CustomName = turpor
+   BaseName = turpor
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=actorproperty}
+   LODActorName = turpor
+   DefaultMeshName = turpor.mesh
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = turpor
+   Mesh[0].UseableMaterials[0] = turpor
+   Mesh[0].UseSeasonMaterial = True
+   Mesh[0].UseableSummerMaterials[0] = turpor
+   Mesh[0].UseableWinterMaterials[0] = turporw
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = turpor
+      UseableMaterials[0] = turpor
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = turpor
+      UseableMaterials[0] = turpor
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = turpor
+      UseableMaterials[0] = turpor
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = turpor
+      UseableMaterials[0] = turpor
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = turpor
+      UseableMaterials[0] = turpor
+   struct.end
+   Mesh[*] : struct.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=materialproperty.Mesh[0]}
+      DefaultMaterialName = turpor
+      UseableMaterials[0] = turpor
+   struct.end
+section.end
+
+collisionmaskproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmaskproperty}
+   Mask : struct.begin
+      [*] = 0000000000000000
+      [*] = 0000000111000000
+      [*] = 0000001111100000
+      [*] = 0011111111111100
+      [*] = 0111111111111100
+      [*] = 1111111111111110
+      [*] = 1111111111111110
+      [*] = 1111111111111111
+      [*] = 1111111111111111
+      [*] = 0111111111111110
+      [*] = 0011111111111100
+      [*] = 0001111111111000
+      [*] = 0000111111110000
+      [*] = 0000000111110000
+      [*] = 0000000011000000
+   struct.end
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=collisionmeshproperty}
+   CustomBoundingAABBMin.X = -2.80
+   CustomBoundingAABBMin.Y = 0.00
+   CustomBoundingAABBMin.Z = -2.50
+   CustomBoundingAABBMax.X = 2.20
+   CustomBoundingAABBMax.Y = 1.00
+   CustomBoundingAABBMax.Z = 2.70
+section.end
+
+autochildrenproperty : section.begin
+   Enabled = True
+   Static = True
+   ClassName = AutoChildrenProperty
+   Custom = False
+   Mesh[0] : struct.begin
+      Enabled = True
+      Static = True
+      ClassName = MeshChildrenProperty
+      Children : struct.begin
+         [0] : struct.begin
+            Enabled = True
+            Static = True
+            ClassName = ChildProperty
+            BaseName = turpora
+            RaceName = buildings
+            DefaultMeshName = turpora.mesh
+            RandomMeshName = False
+            Mesh[0] = turpora
+            Mesh[1] = turpor1a
+            Mesh[2] = turpor2a
+            Mesh[3] = turpor3a
+            Mesh[4] = turpor4a
+            Mesh[5] = turpor_death1a
+            Mesh[6] = turpor_death2a
+            DefaultMaterialName = scaffold
+            RandomMaterialName = False
+            Materials[0] = scaffold
+            Materials[1] = scaffold
+            Materials[2] = scaffold
+            Materials[3] = scaffold
+            Materials[4] = scaffold
+            Materials[5] = debris
+            Materials[6] = debris
+            Option = achildRequered
+            StartStateName = 
+            Useable = True
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=scaleproperty}
+   DefaultScale.X = 0.425
+   DefaultScale.Y = 0.425
+   DefaultScale.Z = 0.425
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refbuilding.prop; refkey=directionupproperty}
+   DefaultRollAngle = 135
+section.end

@@ -1,0 +1,1266 @@
+//
+// weapon.script
+//
+
+// _weapon_GetTProj
+//
+function _weapon_GetTProj(goHnd : Integer) : Pointer;
+begin
+   Result := _misc_GetObjectArgData(goHnd, gc_argproj_proj);
+   if (TBaseObj(Result).baseid<>gc_baseid_prj) then
+   begin
+      Result := nil;
+      ErrorLog('_unit_GetTProj try to get wrong baseid : state='+GetCurrentStateName+' filename='+GetStateMachineFileName(GetCurrentStateMachineHandle));
+   end;
+   if (gProfile.bDbgLogPointerNil) then
+   _init_DebugPointerNil(Result);
+end;
+
+// _weapon_GetWeaponIdBySID
+//
+function _weapon_GetWeaponIdBySID(var weaponsid : String) : Integer;
+begin
+   Result := -1;
+   var i : Integer;
+   for i:=0 to gc_weapon_maxmembers-1 do
+   begin
+      if (gWeapons[i].sid=weaponsid) then
+      begin
+         Result := i;
+         break;
+      end;
+   end;
+   if (Result=-1) then
+   ErrorLog('GetWeaponIdBySID : unknown weaponsid = '+weaponsid);
+end;
+
+// _weapon_AddWeapon
+//
+procedure _weapon_AddWeapon(var ind : Integer; const weaponsid, fx, projbasename : String; damage : Integer; radius, gravity : Float; propagation : Integer; physvalue, time : Float);
+begin
+   //time<0 - gc_weapon_time_cInfinite
+   //time=0 - gc_weapon_time_cPlayOnce
+   //time>0 - play x time then die
+   var weapon : TWeapon; // clear weapon with default settings
+   weapon.sid := weaponsid;
+   weapon.id := ind;
+   weapon.fx := fx;
+   weapon.sndind := gc_snd_ind_none;
+   weapon.projbasename := projbasename;
+   weapon.damage := damage;
+   weapon.radius := radius;
+   weapon.gravity := gravity;
+   weapon.propagation := propagation;
+   weapon.brotate := (propagation=gc_weapon_propagation_random1) and (projbasename<>'') and (projbasename<>'point');
+   weapon.bcollisiondetection := ((propagation=gc_weapon_propagation_angle) or (propagation=gc_weapon_propagation_fly));
+   weapon.bcheckfriendonline := True;
+   weapon.volumeclippedfreq := 0;
+   case propagation of
+      gc_weapon_propagation_random, gc_weapon_propagation_random1, gc_weapon_propagation_fly, gc_weapon_propagation_randomsimulate : weapon.speed := physvalue;
+      gc_weapon_propagation_angle : weapon.angle := physvalue;
+      gc_weapon_propagation_slightup : weapon.gravity := -physvalue;
+      gc_weapon_propagation_stand, gc_weapon_propagation_slightup, gc_weapon_propagation_immediate : ;
+      else
+      ErrorLog('AddWeapon, unknown propagation = '+IntToStr(propagation));
+   end;
+   weapon.time := time;
+   gWeapons[ind] := weapon;
+   ind := ind+1;
+end;
+
+// _weapon_SetWeaponTrail
+//
+procedure _weapon_SetWeaponTrail(const weaponsid, trailfx : String);
+begin
+   var tweaponsid : String = weaponsid;
+   var id : Integer = _weapon_GetWeaponIdBySID(tweaponsid);
+   if (id>-1) then
+   gWeapons[id].trailfx := trailfx;
+end;
+
+// _weapon_SetWeaponSound
+//
+procedure _weapon_SetWeaponSound(const weaponsid : String; const sndind : Integer);
+begin
+   var tweaponsid : String = weaponsid;
+   var id : Integer = _weapon_GetWeaponIdBySID(tweaponsid);
+   if (id>-1) then
+   gWeapons[id].sndind := sndind;
+end;
+
+// _weapon_SetWeaponUseOwnerDamage
+//
+procedure _weapon_SetWeaponUseOwnerDamage(const weaponsid : String);
+begin
+   var tweaponsid : String = weaponsid;
+   var id : Integer = _weapon_GetWeaponIdBySID(tweaponsid);
+   if (id>-1) then
+   gWeapons[id].buseownerdamage := True;
+end;
+
+// _weapon_SetWeaponUseExpDecal
+//
+procedure _weapon_SetWeaponUseExpDecal(const weaponsid, expdecname : String);
+begin
+   var tweaponsid : String = weaponsid;
+   var id : Integer = _weapon_GetWeaponIdBySID(tweaponsid);
+   if (id>-1) then
+   gWeapons[id].expdecname := expdecname;
+end;
+
+// _weapon_SetWeaponUseOwnerFXShot
+//
+procedure _weapon_SetWeaponUseOwnerFXShot(const weaponsid : String);
+begin
+   var tweaponsid : String = weaponsid;
+   var id : Integer = _weapon_GetWeaponIdBySID(tweaponsid);
+   if (id>-1) then
+   gWeapons[id].buseownerfxshot := True;
+end;
+
+// _weapon_SetWeaponCheckFriendOnLine
+//
+procedure _weapon_SetWeaponCheckFriendOnLine(const weaponsid : String; bstate : Boolean);
+begin
+   var tweaponsid : String = weaponsid;
+   var id : Integer = _weapon_GetWeaponIdBySID(tweaponsid);
+   if (id>-1) then
+   gWeapons[id].bcheckfriendonline := bstate;
+end;
+
+// _weapon_SetWeaponUseCustomObjPointsOffset
+//
+procedure _weapon_SetWeaponUseCustomObjPointsOffset(const weaponsid : String);
+begin
+   var tweaponsid : String = weaponsid;
+   var id : Integer = _weapon_GetWeaponIdBySID(tweaponsid);
+   if (id>-1) then
+   gWeapons[id].buseownercustomobjpoints := True;
+end;
+
+// _weapon_SetWeaponChilds
+//
+procedure _weapon_SetWeaponChilds(const weaponsid : String; mincount, maxcount : Integer; buseparentdestpos : Boolean; const s1, s2, s3, s4 : String);
+begin
+   var tweaponsid : String = weaponsid;
+   var id : Integer = _weapon_GetWeaponIdBySID(tweaponsid);
+   if (id>-1) then
+   begin
+      gWeapons[id].childs.mincount := mincount;
+      gWeapons[id].childs.maxcount := maxcount;
+      gWeapons[id].childs.buseparentdestpos := buseparentdestpos;
+      var id1, id2, id3, id4 : Integer = -1;
+      var ts1 : String = s1;
+      var ts2 : String = s2;
+      var ts3 : String = s3;
+      var ts4 : String = s4;
+      if (ts1<>'') then id1 := _weapon_GetWeaponIdBySID(ts1);
+      if (ts2<>'') then id2 := _weapon_GetWeaponIdBySID(ts2);
+      if (ts3<>'') then id3 := _weapon_GetWeaponIdBySID(ts3);
+      if (ts4<>'') then id4 := _weapon_GetWeaponIdBySID(ts4);
+      if (id1>-1) then gWeapons[id].childs.list.Add(id1);
+      if (id2>-1) then gWeapons[id].childs.list.Add(id2);
+      if (id3>-1) then gWeapons[id].childs.list.Add(id3);
+      if (id4>-1) then gWeapons[id].childs.list.Add(id4);
+   end;
+end;
+
+// _weapon_SetWeaponChildsByList
+//
+procedure _weapon_SetWeaponChildsByList(var weaponsid : String; mincount, maxcount : Integer; buseparentdestpos : Boolean; var childlist : TIntegerList; bClearList : Boolean);
+begin
+   var id : Integer = _weapon_GetWeaponIdBySID(weaponsid);
+   if (id>-1) then
+   begin
+      gWeapons[id].childs.mincount := mincount;
+      gWeapons[id].childs.maxcount := maxcount;
+      gWeapons[id].childs.buseparentdestpos := buseparentdestpos;
+      gWeapons[id].childs.list := childlist; // check if integerlist can be so easily copied
+   end;
+   if (bClearList) then
+   childlist.Clear;
+end;
+
+// _weapon_AddWeaponToList
+//
+procedure _weapon_AddWeaponToList(var childlist : TIntegerList; var weaponsid : String);
+begin
+   var id : Integer = _weapon_GetWeaponIdBySID(weaponsid);
+   if (id>-1) then
+   childlist.Add(id);
+end;
+
+// _weapon_SetWeaponSyncWeapon
+//
+procedure _weapon_SetWeaponSyncWeapon(const weaponsid : String; const s1, s2, s3, s4 : String);
+begin
+   var tweaponsid : String = weaponsid;
+   var id : Integer = _weapon_GetWeaponIdBySID(tweaponsid);
+   if (id>-1) then
+   begin
+      var id1, id2, id3, id4 : Integer = -1;
+      var ts1 : String = s1;
+      var ts2 : String = s2;
+      var ts3 : String = s3;
+      var ts4 : String = s4;
+      if (ts1<>'') then id1 := _weapon_GetWeaponIdBySID(ts1);
+      if (ts2<>'') then id2 := _weapon_GetWeaponIdBySID(ts2);
+      if (ts3<>'') then id3 := _weapon_GetWeaponIdBySID(ts3);
+      if (ts4<>'') then id4 := _weapon_GetWeaponIdBySID(ts4);
+      if (id1>-1) then gWeapons[id].syncweaponslist.Add(id1);
+      if (id2>-1) then gWeapons[id].syncweaponslist.Add(id2);
+      if (id3>-1) then gWeapons[id].syncweaponslist.Add(id3);
+      if (id4>-1) then gWeapons[id].syncweaponslist.Add(id4);
+   end;
+end;
+
+// _weapon_SetWeaponCustomExplosions
+//
+procedure _weapon_SetWeaponCustomExplosions(const weaponsid : String; material, mincount, maxcount : Integer; const s1, s2, s3, s4, s5 : String);
+begin
+   var tweaponsid : String = weaponsid;
+   var id : Integer = _weapon_GetWeaponIdBySID(tweaponsid);
+   if (id>-1) then
+   begin
+      gWeapons[id].customexplosions[material].mincount := mincount;
+      gWeapons[id].customexplosions[material].maxcount := maxcount;
+      var id1, id2, id3, id4, id5 : Integer = -1;
+      var ts1 : String = s1;
+      var ts2 : String = s2;
+      var ts3 : String = s3;
+      var ts4 : String = s4;
+      var ts5 : String = s5;
+      if (ts1<>'') then id1 := _weapon_GetWeaponIdBySID(ts1);
+      if (ts2<>'') then id2 := _weapon_GetWeaponIdBySID(ts2);
+      if (ts3<>'') then id3 := _weapon_GetWeaponIdBySID(ts3);
+      if (ts4<>'') then id4 := _weapon_GetWeaponIdBySID(ts4);
+      if (ts5<>'') then id5 := _weapon_GetWeaponIdBySID(ts5);
+      if (id1>-1) then gWeapons[id].customexplosions[material].list.Add(id1);
+      if (id2>-1) then gWeapons[id].customexplosions[material].list.Add(id2);
+      if (id3>-1) then gWeapons[id].customexplosions[material].list.Add(id3);
+      if (id4>-1) then gWeapons[id].customexplosions[material].list.Add(id4);
+      if (id5>-1) then gWeapons[id].customexplosions[material].list.Add(id5);
+   end;
+end;
+
+// _weapon_Init
+//
+procedure _weapon_Init();
+begin
+   const cFXNone = '';
+   const cFXPoint = '';
+   
+   // SHOT EFFECT
+   const cFXMusket = 'shotmusket';
+   const cFXCannon = 'shotcannon';
+   const cFXCannonCannister = 'shotcannon';
+   const cFXCannonShip = 'shotcannon';
+   const cFXMulticannon = 'shotmusket';
+   const cFXMortar = 'shotmortar';
+   const cFXHowitzer = 'shotmortar';
+   const cFXTower = 'shottower';
+   
+   // IMPACT EFFECT (GROUND, BUILDING, WATER)
+   const cFXImpDust = 'impactdust';
+   const cFXImpDustBuilding = 'impactsmoke';
+   const cFXImpWaterSmall = 'waterblastsmall';
+   const cFXImpWaterLarge = 'waterblast';
+   
+   // EXPLOSIONS
+   const cFXGrenadeExp = 'grenadeexp'; // grenade explosion
+   const cFXCannonExp = 'cannonexpground'; // cannon ball terrain explosion
+   const cFXCannonExpBuilding = 'cannonexpbuilding'; // cannon ball building explosion
+   const cFXHowitzerExp = 'howitzerexpground'; // howitzer ball terrain explosion
+   const cFXHowitzerExpBuilding = 'howitzerexpbuilding'; // howitzer ball building explosion
+   const cFXBuildingExp = 'grenadeexp'; // building explosion on death
+   const cFXShipExp = 'grenadeexp'; // ship explosion on death
+   const cFXCannonShipExp = 'cannonexpground'; // ship explosion on death
+   const cFXFramExp = 'framexp'; // framegun explosion
+   
+   // TRAILS
+   const cFXTrailCannonBall = 'bullettrail';
+   const cFXTrailHowitzerBall = 'bullettrail';
+   const cFXTrailMortarBall = 'bullettrail';
+   const cFXTrailGrenade = 'bullettrail';
+   const cFXTrailArrow = 'bullettrail';
+   const cFXTrailFireArrow = 'firearrowtrail';
+   const cFXTrailCannonBallShip = 'bullettrail';
+   const cFXTrailHowitzerBallFragment = 'fragtrail';
+   const cFXTrailDebrisWood = 'fragtrail';
+   const cFXTrailDebrisStone = 'fragtrail';
+   
+   // MISC
+   const cFXArrow = 'arrow';
+   const cFXFireArrow = 'firearrow';
+   
+   // PROJECTILES MESHES
+   const cProjNone = gc_basename_point;
+   const cProjUnused = gc_basename_point;
+   const cProjPoint = gc_basename_point;
+   const cProjDummy = 'projectile';
+   const cProjCannonBall = 'projcannonball';
+   const cProjHowitzerBall = 'projhowitzerball';
+   const cProjHowitzerBallFragment = 'projhowitzerballfragment';
+   const cProjMortarBall = 'projmortarball';
+   const cProjGrenade = 'projgrenade';
+   const cProjArrow = 'projarrow';
+   const cProjArrowGround = 'projarrow';
+   const cProjDebrisWood = 'debris_wood';
+   const cProjDebrisStone = 'debris_stone';
+   
+   // Register new weapon member
+   // null
+   var ind : Integer;
+   _weapon_AddWeapon(ind, '', '', '', 0, 0, gc_weapon_gravity_0, gc_weapon_propagation_stand, 0, gc_weapon_time_cPlayOnce);
+   // others
+   _weapon_AddWeapon(ind, 'SHOTMUSKET', cFXMusket, cProjNone, 0, 0, gc_weapon_gravity_0, gc_weapon_propagation_immediate{gc_weapon_propagation_stand}, 1, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'SHOTCANNON', cFXCannon, cProjNone, 0, _misc_PixelsToTiles(20), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce); // change damage from 1 to 0, dont think that this is important
+   _weapon_AddWeapon(ind, 'SHOTSHIP', cFXCannonShip, cProjNone, 0, _misc_PixelsToTiles(20), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce); // change damage from 1 to 0, dont think that this is important
+   _weapon_AddWeapon(ind, 'SHOTCANNISTER', cFXCannonCannister, cProjNone, 0, _misc_PixelsToTiles(20), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce); // change damage from 1 to 0, dont think that this is important
+   _weapon_AddWeapon(ind, 'SHOTMORTAR', cFXMortar, cProjNone, 0, 0, gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'SHOTHOWITZER', cFXHowitzer, cProjNone, 0, 0, gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'SHOTMULTICANNON', cFXMulticannon, cProjNone, 0, 0, gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'SHOTTOWER', cFXCannon, cProjNone, 0, _misc_PixelsToTiles(20), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce); // change damage from 1 to 0, dont think that this is important
+   _weapon_AddWeapon(ind, 'NUCL2P', cFXNone, cProjCannonBall, 340, _misc_PixelsToTiles(35), gc_weapon_gravity_2, gc_weapon_propagation_angle, 10, gc_weapon_time_cInfinite);
+   _weapon_AddWeapon(ind, 'NUCL2PTOW', cFXNone, cProjCannonBall, 340, _misc_PixelsToTiles(35), gc_weapon_gravity_2, gc_weapon_propagation_fly, 38, gc_weapon_time_cInfinite);
+   _weapon_AddWeapon(ind, 'NUCL2PKOR', cFXNone, cProjCannonBall, 400, _misc_PixelsToTiles(35), gc_weapon_gravity_2, gc_weapon_propagation_fly, 38, gc_weapon_time_cInfinite);
+   _weapon_AddWeapon(ind, 'NUCL3M', cFXNone, cProjHowitzerBall, 800, _misc_PixelsToTiles(60), gc_weapon_gravity_5, gc_weapon_propagation_angle, 55, gc_weapon_time_cInfinite); // angle was 75
+   _weapon_AddWeapon(ind, 'NUCL3MONO', cFXNone, cProjMortarBall, 250, _misc_PixelsToTiles(2), gc_weapon_gravity_5, gc_weapon_propagation_angle, 70, gc_weapon_time_cInfinite); // angle was 75
+   _weapon_AddWeapon(ind, 'NUCL3MONONEW', cFXPoint, cProjMortarBall, 0, _misc_PixelsToTiles(2), gc_weapon_gravity_5, gc_weapon_propagation_angle, 70, gc_weapon_time_cInfinite); // angle was 75
+   _weapon_AddWeapon(ind, 'NUCL3MONONEWDMG', cFXPoint, cProjMortarBall, 500{250}, _misc_PixelsToTiles(2), gc_weapon_gravity_5, gc_weapon_propagation_random, 1, gc_weapon_time_cInfinite);
+   _weapon_AddWeapon(ind, 'NUCL3MONOEXPL', cFXPoint, cProjNone, 0, 0, gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'NUCLGRE', cFXNone, cProjGrenade, 110, _misc_PixelsToTiles(50), gc_weapon_gravity_5, gc_weapon_propagation_angle, 55, gc_weapon_time_cInfinite);
+   _weapon_AddWeapon(ind, 'NUCLM', cFXPoint, cProjPoint, 100, _misc_PixelsToTiles(50), gc_weapon_gravity_5, gc_weapon_propagation_slightup, 0, _misc_FramesToTime(2));
+   _weapon_AddWeapon(ind, 'NUCLMOSKOL', cFXPoint, cProjHowitzerBallFragment, 800, _misc_PixelsToTiles(30), gc_weapon_gravity_5, gc_weapon_propagation_random, 4, gc_weapon_time_cInfinite);
+   _weapon_AddWeapon(ind, 'STRELA', cFXArrow, cProjArrow, 25, _misc_PixelsToTiles(20), gc_weapon_gravity_2, gc_weapon_propagation_fly, 25, gc_weapon_time_cInfinite);
+   _weapon_AddWeapon(ind, 'OSTRELA', cFXFireArrow, cProjArrow, 50, _misc_PixelsToTiles(15), gc_weapon_gravity_2, gc_weapon_propagation_fly, 15, gc_weapon_time_cInfinite);
+   _weapon_AddWeapon(ind, 'STRELDEZ', cFXNone, cProjArrowGround, 0, 0, gc_weapon_gravity_0, gc_weapon_propagation_stand, 0, _misc_FramesToTime(950));
+   _weapon_AddWeapon(ind, 'POINT', cFXPoint, cProjPoint, 0, _misc_PixelsToTiles(1), gc_weapon_gravity_3, gc_weapon_propagation_random, 3, gc_weapon_time_cInfinite);
+   _weapon_AddWeapon(ind, 'POINTOTVZRIV', cFXPoint, cProjPoint, 100, _misc_PixelsToTiles(15), gc_weapon_gravity_3, gc_weapon_propagation_randomsimulate, 3, gc_weapon_time_cInfinite);
+   _weapon_AddWeapon(ind, 'POINTSTONE4', cFXPoint, cProjPoint, 0, _misc_PixelsToTiles(1), gc_weapon_gravity_3, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce); // change damage from 1 to 0, dont think that this is important
+   _weapon_AddWeapon(ind, 'PPOINTT', cFXPoint, cProjNone, 0, 0, gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PPOINTTTOW', cFXPoint, cProjNone, 0, 0, gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PPOINTTKOR', cFXTower, cProjNone, 0, 0, gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PSMPOINTT', cFXPoint, cProjNone, 0, 0, gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PSMPOINTTPUS', cFXPoint, cProjNone, 0, 0, gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce); // cFXCannon was in c1. it was wrong cause it spawn 2 fxes
+   _weapon_AddWeapon(ind, 'DIMMORT1', cFXPoint, cProjNone, 0, 0, gc_weapon_gravity_5, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce); // was propagaion=angle 60
+   _weapon_AddWeapon(ind, 'DIMMORT2', cFXPoint, cProjNone, 0, 0, gc_weapon_gravity_5, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce); // was propagaion=angle 60
+   _weapon_AddWeapon(ind, 'DIMMORT2NEW', cFXPoint, cProjNone, 0, 0, gc_weapon_gravity_5, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce); // was propagaion=angle 60
+   _weapon_AddWeapon(ind, 'PUSSTRELA', cFXPoint, cProjPoint, 512, _misc_PixelsToTiles(25), gc_weapon_gravity_0, gc_weapon_propagation_fly, 20, _misc_FramesToTime(round(2*1.625))); // changed multiply to 1.5 in c3. Need to multiply 2, cause in c1 on fast speed weapon progress other way then on alow speed and cannister fire twice more far
+   _weapon_AddWeapon(ind, 'PUSSTRELA1', cFXPoint, cProjPoint, 256, _misc_PixelsToTiles(50), gc_weapon_gravity_0, gc_weapon_propagation_fly, 20, _misc_FramesToTime(round(4*1.625)));
+   _weapon_AddWeapon(ind, 'PUSSTRELA2', cFXPoint, cProjPoint, 128, _misc_PixelsToTiles(75), gc_weapon_gravity_0, gc_weapon_propagation_fly, 20, _misc_FramesToTime(round(8*1.625)));
+   _weapon_AddWeapon(ind, 'PUSSTRELA3', cFXPoint, cProjPoint, 112, _misc_PixelsToTiles(100), gc_weapon_gravity_0, gc_weapon_propagation_fly, 20, _misc_FramesToTime(round(2*1.625)));
+   _weapon_AddWeapon(ind, 'PUSSTRELA4', cFXPoint, cProjPoint, 30, _misc_PixelsToTiles(125), gc_weapon_gravity_0, gc_weapon_propagation_fly, 20, _misc_FramesToTime(round(5*1.625)));
+   _weapon_AddWeapon(ind, 'PUSSTRELA5', cFXPoint, cProjPoint, 30, _misc_PixelsToTiles(150), gc_weapon_gravity_0, gc_weapon_propagation_fly, 20, _misc_FramesToTime(round(10*1.625)));
+   _weapon_AddWeapon(ind, 'PUSSTRELA6', cFXPoint, cProjPoint, 30, _misc_PixelsToTiles(175), gc_weapon_gravity_0, gc_weapon_propagation_fly, 20, _misc_FramesToTime(round(15*1.625)));
+   _weapon_AddWeapon(ind, 'PUSSTRELAPUS', cFXPoint, cProjPoint, 600, _misc_PixelsToTiles(25+10), gc_weapon_gravity_0, gc_weapon_propagation_fly, 20, _misc_FramesToTime(round(2*2.75)));
+   _weapon_AddWeapon(ind, 'PUSSTRELA1PUS', cFXPoint, cProjPoint, 480, _misc_PixelsToTiles(50+15), gc_weapon_gravity_0, gc_weapon_propagation_fly, 20, _misc_FramesToTime(round(4*2.75)));
+   _weapon_AddWeapon(ind, 'PUSSTRELA2PUS', cFXPoint, cProjPoint, 350, _misc_PixelsToTiles(75+20), gc_weapon_gravity_0, gc_weapon_propagation_fly, 20, _misc_FramesToTime(round(8*2)));
+   _weapon_AddWeapon(ind, 'PUSSTRELA3PUS', cFXPoint, cProjPoint, 210, _misc_PixelsToTiles(100-100), gc_weapon_gravity_0, gc_weapon_propagation_fly, 20, _misc_FramesToTime(round(2*0.5)));
+   _weapon_AddWeapon(ind, 'PUSSTRELA4PUS', cFXPoint, cProjPoint, 150, _misc_PixelsToTiles(125-100), gc_weapon_gravity_0, gc_weapon_propagation_fly, 20, _misc_FramesToTime(round(5*0.5)));
+   _weapon_AddWeapon(ind, 'PUSSTRELA5PUS', cFXPoint, cProjPoint, 150, _misc_PixelsToTiles(150-100), gc_weapon_gravity_0, gc_weapon_propagation_fly, 20, _misc_FramesToTime(round(10*0.5)));
+   _weapon_AddWeapon(ind, 'PUSSTRELA6PUS', cFXPoint, cProjPoint, 96, _misc_PixelsToTiles(175-100), gc_weapon_gravity_0, gc_weapon_propagation_fly, 20, _misc_FramesToTime(round(15*0.5)));
+   _weapon_AddWeapon(ind, 'KAPEZ', cFXPoint, cProjPoint, 3000, _misc_PixelsToTiles(25), gc_weapon_gravity_2, gc_weapon_propagation_random1, 9, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'STRELDEZPRO', cFXPoint, cProjNone, 0, 0, gc_weapon_gravity_0, gc_weapon_propagation_stand, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PUEXP', cFXCannonExp, cProjNone, 900, _misc_PixelsToTiles(10), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PUNOEXP', cFXCannonExp, cProjNone, 900, _misc_PixelsToTiles(10), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PUEXPBUILDINGDEATH', cFXBuildingExp, cProjNone, 900, _misc_PixelsToTiles(10), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PUEXPBLD', cFXCannonExpBuilding, cProjNone, 900, _misc_PixelsToTiles(10), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PUNOEXPBLD', cFXCannonExpBuilding, cProjNone, 900, _misc_PixelsToTiles(10), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PUEXPHOWITZER', cFXHowitzerExp, cProjNone, 900, _misc_PixelsToTiles(10), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PUEXPHOWITZERBLD', cFXHowitzerExpBuilding, cProjNone, 900, _misc_PixelsToTiles(10), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PUEXPKOR', cFXCannonShipExp, cProjNone, 900, _misc_PixelsToTiles(50), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PUNOEXPKOR', cFXCannonShipExp, cProjNone, 900, _misc_PixelsToTiles(50), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PUEXPKORDEATH', cFXShipExp, cProjNone, 200{900}, _misc_PixelsToTiles(50), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PU4GRE', cFXGrenadeExp, cProjNone, 50, _misc_PixelsToTiles(10), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'SMALL', cFXImpDust, cProjNone, 10, _misc_PixelsToTiles(10), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'SMALL2', cFXImpDust, cProjNone, 10, _misc_PixelsToTiles(10), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'SMALL2BLD', cFXImpDustBuilding, cProjNone, 10, _misc_PixelsToTiles(10), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'VODABUL', cFXImpWaterLarge, cProjNone, 10, _misc_PixelsToTiles(10), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'VODABUL2', cFXImpWaterSmall, cProjNone, 10, _misc_PixelsToTiles(10), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'debrisstone', cFXNone, cProjDebrisStone, 300, _misc_PixelsToTiles(15), gc_weapon_gravity_3, gc_weapon_propagation_random1, 9, gc_weapon_time_cInfinite);
+   _weapon_AddWeapon(ind, 'debriswood', cFXNone, cProjDebrisWood, 300, _misc_PixelsToTiles(15), gc_weapon_gravity_3, gc_weapon_propagation_random1, 9, gc_weapon_time_cInfinite);
+   _weapon_AddWeapon(ind, 'SHOTBLOCKHOUSE', cFXMusket, cProjNone, 0, 0, gc_weapon_gravity_0, gc_weapon_propagation_immediate{gc_weapon_propagation_stand}, 1, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PUEXPKORVSKOR', cFXGrenadeExp, cProjNone, 900, _misc_PixelsToTiles(50), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PUNOEXPKORVSKOR', cFXGrenadeExp, cProjNone, 900, _misc_PixelsToTiles(50), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'DIMMORT2KOR', cFXMortar, cProjNone, 0, 0, gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce); // was propagaion=angle 60
+   _weapon_AddWeapon(ind, 'PUEXPONSHIP', cFXCannonExp, cProjNone, 900, _misc_PixelsToTiles(10), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PPOINTTFRAME', cFXNone, cProjGrenade, 500, _misc_PixelsToTiles(20), gc_weapon_gravity_5, gc_weapon_propagation_angle, 15, gc_weapon_time_cInfinite);
+   _weapon_AddWeapon(ind, 'PPOINTTFRAME5', cFXPoint, cProjNone, 0, 0, gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'PU4FRAMEGRE', cFXGrenadeExp, cProjNone, 10, _misc_PixelsToTiles(1), gc_weapon_gravity_0, gc_weapon_propagation_slightup, 0, gc_weapon_time_cPlayOnce);
+   _weapon_AddWeapon(ind, 'POINTOTVZRIVFRAME', cFXNone, cProjNone, 110, _misc_PixelsToTiles(32), gc_weapon_gravity_5, gc_weapon_propagation_random1, 4, gc_weapon_time_cInfinite);
+   
+   function GetWeaponIDBySIDConst(const weaponsid : String) : Integer;
+   begin
+      var tweaponsid : String = weaponsid;
+      Result := _weapon_GetWeaponIdBySID(tweaponsid);
+   end;
+   
+   // Sound
+   _weapon_SetWeaponSound('SHOTMUSKET', gc_snd_ind_musket);
+   _weapon_SetWeaponSound('PPOINTT', gc_snd_ind_shotcannon);
+   _weapon_SetWeaponSound('PPOINTTTOW', gc_snd_ind_shotcannon);
+   _weapon_SetWeaponSound('PPOINTTKOR', gc_snd_ind_shotship);
+   _weapon_SetWeaponSound('PSMPOINTTPUS', gc_snd_ind_shotcannoncannister);
+   _weapon_SetWeaponSound('DIMMORT1', gc_snd_ind_shothowitzer);
+   _weapon_SetWeaponSound('DIMMORT2NEW', gc_snd_ind_shotmortar);
+   _weapon_SetWeaponSound('DIMMORT2KOR', gc_snd_ind_shotmortar);
+   _weapon_SetWeaponSound('PSMPOINTT', gc_snd_ind_shotmulticannon);
+   
+   _weapon_SetWeaponSound('PUEXPBLD', gc_snd_ind_cannonballhitbuilding);
+   _weapon_SetWeaponSound('PUEXP', gc_snd_ind_explcannon);
+   _weapon_SetWeaponSound('PUEXPONSHIP', gc_snd_ind_cannonballhitship);
+   _weapon_SetWeaponSound('PUEXPKORVSKOR', gc_snd_ind_cannonballhitship);
+   _weapon_SetWeaponSound('PUEXPHOWITZERBLD', gc_snd_ind_cannonballhitbuilding);
+   _weapon_SetWeaponSound('PUEXPHOWITZER', gc_snd_ind_explhowitzer);
+   _weapon_SetWeaponSound('PUNOEXP', gc_snd_ind_none);
+   _weapon_SetWeaponSound('VODABUL', gc_snd_ind_watersplash);
+   _weapon_SetWeaponSound('VODABUL2', gc_snd_ind_watersplash);
+   //_weapon_SetWeaponSound('SMALL2', gc_snd_ind_mortarballhitground);
+   _weapon_SetWeaponSound('STRELDEZPRO', gc_snd_ind_arrowimpact);
+   _weapon_SetWeaponSound('STRELA', gc_snd_ind_arrow);
+   _weapon_SetWeaponSound('OSTRELA', gc_snd_ind_firearrow);
+   _weapon_SetWeaponSound('POINTSTONE4', gc_snd_ind_cannonballhitbuilding); // weapon, when mortar ball hit building
+   _weapon_SetWeaponSound('PPOINTTFRAME', gc_snd_ind_shotcannon); //choose the best
+   _weapon_SetWeaponSound('PPOINTTFRAME5', gc_snd_ind_shotship); //choose the best
+   // Trail
+   _weapon_SetWeaponTrail('NUCL2P', cFXTrailCannonBall);
+   _weapon_SetWeaponTrail('NUCL2PTOW', cFXTrailCannonBall);
+   _weapon_SetWeaponTrail('NUCL2PKOR', cFXTrailCannonBallShip);
+   _weapon_SetWeaponTrail('NUCL3M', cFXTrailHowitzerBall);
+   _weapon_SetWeaponTrail('NUCL3MONO', cFXTrailMortarBall);
+   _weapon_SetWeaponTrail('NUCL3MONONEW', cFXTrailMortarBall);
+   _weapon_SetWeaponTrail('NUCL3MONONEWDMG', cFXTrailMortarBall);
+   _weapon_SetWeaponTrail('NUCLGRE', cFXTrailGrenade);
+   _weapon_SetWeaponTrail('NUCLMOSKOL', cFXTrailHowitzerBallFragment);
+   _weapon_SetWeaponTrail('STRELA', cFXTrailArrow);
+   _weapon_SetWeaponTrail('OSTRELA', cFXTrailFireArrow);
+   _weapon_SetWeaponTrail('debriswood', cFXTrailDebrisWood);
+   _weapon_SetWeaponTrail('debrisstone', cFXTrailDebrisStone);
+   _weapon_SetWeaponTrail('PPOINTTFRAME', cFXTrailGrenade);
+   
+   // Use owner damage
+   _weapon_SetWeaponUseOwnerDamage('STRELA');
+   _weapon_SetWeaponUseOwnerDamage('OSTRELA');
+   _weapon_SetWeaponUseOwnerDamage('NUCLGRE');
+   //_weapon_SetWeaponUseOwnerDamage('PPOINTTFRAME');
+   // Use explosion decal
+   const cExpDecNameDef = 'groundexp';
+   _weapon_SetWeaponUseExpDecal('NUCL2P', cExpDecNameDef);
+   _weapon_SetWeaponUseExpDecal('NUCL2PTOW', cExpDecNameDef);
+   _weapon_SetWeaponUseExpDecal('NUCL2PKOR', cExpDecNameDef);
+   _weapon_SetWeaponUseExpDecal('NUCL3M', cExpDecNameDef);
+   _weapon_SetWeaponUseExpDecal('NUCL3MONO', cExpDecNameDef);
+   _weapon_SetWeaponUseExpDecal('NUCL3MONONEW', cExpDecNameDef);
+   
+   // turn off collision detection for mass projectiles
+   var id : Integer = GetWeaponIDBySIDConst('STRELA');
+   if (id>-1) then
+   gWeapons[id].bcollisiondetection := False;
+   
+   id := GetWeaponIDBySIDConst('OSTRELA');
+   if (id>-1) then
+   gWeapons[id].bcollisiondetection := False;
+   //gWeapons[GetWeaponIDBySIDConst('OSTRELA')].bcollisiondetection := False;
+   
+   id := GetWeaponIDBySIDConst('SMALL2');
+   if (id>-1) then
+   gWeapons[id].volumeclippedfreq := 0.9;
+   
+   id := GetWeaponIDBySIDConst('SHOTMUSKET');
+   if (id>-1) then
+   gWeapons[id].volumeclippedfreq := 0.75;
+   
+   // turn on rotation
+   id := GetWeaponIDBySIDConst('STRELA');
+   if (id>-1) then
+   gWeapons[id].brotate := True;
+   id := GetWeaponIDBySIDConst('OSTRELA');
+   if (id>-1) then
+   gWeapons[id].brotate := True;
+   
+   // turn off bcheckfriendonline
+   _weapon_SetWeaponCheckFriendOnLine('STRELA', False);
+   _weapon_SetWeaponCheckFriendOnLine('OSTRELA', False);
+   _weapon_SetWeaponCheckFriendOnLine('SHOTMUSKET', False);
+   _weapon_SetWeaponCheckFriendOnLine('SHOTBLOCKHOUSE', False);
+   _weapon_SetWeaponCheckFriendOnLine('NUCLGRE', False);
+   _weapon_SetWeaponCheckFriendOnLine('PSMPOINTTPUS', False);
+   _weapon_SetWeaponCheckFriendOnLine('DIMMORT1', False);
+   _weapon_SetWeaponCheckFriendOnLine('DIMMORT2NEW', False);
+   _weapon_SetWeaponCheckFriendOnLine('PSMPOINTT', False);
+   _weapon_SetWeaponCheckFriendOnLine('DIMMORT2KOR', False);
+   
+   // Use owner fxshot
+   _weapon_SetWeaponUseOwnerFXShot('SHOTMUSKET');
+   _weapon_SetWeaponUseOwnerFXShot('SHOTCANNON');
+   _weapon_SetWeaponUseOwnerFXShot('SHOTTOWER');
+   _weapon_SetWeaponUseOwnerFXShot('SHOTSHIP');
+   _weapon_SetWeaponUseOwnerFXShot('SHOTCANNISTER');
+   _weapon_SetWeaponUseOwnerFXShot('SHOTMORTAR');
+   _weapon_SetWeaponUseOwnerFXShot('SHOTHOWITZER');
+   _weapon_SetWeaponUseOwnerFXShot('SHOTMULTICANNON');
+   _weapon_SetWeaponUseOwnerFXShot('SHOTBLOCKHOUSE');
+   
+   // Use owner weapon birth position offset
+   _weapon_SetWeaponUseCustomObjPointsOffset('STRELA');
+   _weapon_SetWeaponUseCustomObjPointsOffset('OSTRELA');
+   _weapon_SetWeaponUseCustomObjPointsOffset('NUCL2P');
+   _weapon_SetWeaponUseCustomObjPointsOffset('PPOINTTTOW'); //_weapon_SetWeaponUseCustomObjPointsOffset('NUCL2PTOW');
+   _weapon_SetWeaponUseCustomObjPointsOffset('PPOINTTKOR');
+   _weapon_SetWeaponUseCustomObjPointsOffset('SHOTTOWER');
+   _weapon_SetWeaponUseCustomObjPointsOffset('PUSSTRELAPUS');
+   _weapon_SetWeaponUseCustomObjPointsOffset('PUSSTRELA1PUS');
+   _weapon_SetWeaponUseCustomObjPointsOffset('PUSSTRELA2PUS');
+   _weapon_SetWeaponUseCustomObjPointsOffset('PUSSTRELA');
+   _weapon_SetWeaponUseCustomObjPointsOffset('PUSSTRELA1');
+   _weapon_SetWeaponUseCustomObjPointsOffset('PUSSTRELA2');
+   _weapon_SetWeaponUseCustomObjPointsOffset('NUCL3M');
+   _weapon_SetWeaponUseCustomObjPointsOffset('NUCL3MONO');
+   _weapon_SetWeaponUseCustomObjPointsOffset('NUCL3MONONEW');
+   _weapon_SetWeaponUseCustomObjPointsOffset('SHOTBLOCKHOUSE');
+   _weapon_SetWeaponUseCustomObjPointsOffset('DIMMORT2KOR');
+   
+   // SyncWeapon
+   _weapon_SetWeaponSyncWeapon('PPOINTT', 'SHOTCANNON', 'NUCL2P', '', '');
+   _weapon_SetWeaponSyncWeapon('PPOINTTTOW', 'PUSSTRELA', 'PUSSTRELA1', 'SHOTTOWER', 'NUCL2PTOW');
+   _weapon_SetWeaponSyncWeapon('PPOINTTKOR', 'NUCL2PKOR', '' ,'', '');
+   _weapon_SetWeaponSyncWeapon('PSMPOINTT', 'PUSSTRELA', 'PUSSTRELA1', 'PUSSTRELA2', 'SHOTMULTICANNON');
+   _weapon_SetWeaponSyncWeapon('PSMPOINTTPUS', 'PUSSTRELAPUS', 'PUSSTRELA1PUS', 'PUSSTRELA2PUS', 'SHOTCANNISTER');
+   _weapon_SetWeaponSyncWeapon('PUSSTRELA2', 'PUSSTRELA4', 'PUSSTRELA5', 'PUSSTRELA6', '');
+   _weapon_SetWeaponSyncWeapon('PUSSTRELA2PUS', 'PUSSTRELA4PUS', 'PUSSTRELA5PUS', 'PUSSTRELA6PUS', '');
+   _weapon_SetWeaponSyncWeapon('NUCL3M', 'NUCLM', {'PU2'}'', '', '');
+   _weapon_SetWeaponSyncWeapon('DIMMORT1', 'NUCL3M', 'SHOTHOWITZER', '', '');
+   _weapon_SetWeaponSyncWeapon('DIMMORT2', 'SHOTMORTAR', 'NUCL3MONO', '', '');
+   _weapon_SetWeaponSyncWeapon('DIMMORT2NEW', 'SHOTMORTAR', 'NUCL3MONONEW', '', '');
+   _weapon_SetWeaponSyncWeapon('DIMMORT2KOR', 'NUCL3MONO', '', '', '');
+   _weapon_SetWeaponSyncWeapon('PPOINTTFRAME5', 'NUCLGRE', '', '', '');
+   _weapon_SetWeaponSyncWeapon('PU4FRAMEGRE', 'POINTOTVZRIVFRAME', '', '', '');
+   //_weapon_SetWeaponSyncWeapon('PPOINTTFRAME', 'PU4FRAMEGRE', '', '', '');
+   
+   // Childs
+   //_weapon_SetWeaponChilds('PU4GRE', 3, 6, False, 'debrisstone', 'debrisstone', 'debrisstone', ''); // grenadiers shouldn't birth debris or they die from debris
+   _weapon_SetWeaponChilds('POINTSTONE4', 10, 20, False, 'debrisstone', 'debrisstone', 'debrisstone', '');
+   _weapon_SetWeaponChilds('NUCLGRE', 1, 1, False, 'PU4GRE', '', '', '');
+   //_weapon_SetWeaponChilds('NUCL2PKOR', 1, 1, False, 'PUEXPKOR', 'PUEXPKOR', 'PUEXPKOR', 'PUNOEXPKOR');
+   _weapon_SetWeaponChilds('NUCL3MONO', 1, 1, False, 'NUCL3MONOEXPL', '', '', ''); // SMALL2
+   //_weapon_SetWeaponChilds('NUCL3MONONEW', 1, 1, False, 'NUCL3MONOEXPL', 'NUCL3MONONEWDMG', 'NUCL3MONONEWDMG', ''); // SMALL2
+   _weapon_SetWeaponChilds('NUCL3MONONEW', 1, 1, False, 'NUCL3MONONEWDMG', '', '', ''); // SMALL2
+   _weapon_SetWeaponChilds('NUCL3MONONEWDMG', 1, 1, False, 'NUCL3MONOEXPL', '', '', ''); // SMALL2
+   _weapon_SetWeaponChilds('PUEXP', 20, 40, False, 'POINTOTVZRIV', '', '', '');
+   _weapon_SetWeaponChilds('PUEXPONSHIP', 20, 40, False, 'POINTOTVZRIV', '', '', '');
+   _weapon_SetWeaponChilds('PUEXPKOR', 20, 40, False, 'POINTOTVZRIV', '', '', '');
+   _weapon_SetWeaponChilds('PUEXPKORVSKOR', 20, 40, False, 'POINTOTVZRIV', 'debriswood', 'POINTOTVZRIV', '');
+   _weapon_SetWeaponChilds('PUEXPBUILDINGDEATH', 30, 40, False, 'POINTOTVZRIV', '', '', '');
+   _weapon_SetWeaponChilds('PUEXPBLD', 20, 40, False, 'POINTOTVZRIV', '', '', '');
+   _weapon_SetWeaponChilds('PUEXPHOWITZER', 20, 40, False, 'POINTOTVZRIV', '', '', '');
+   _weapon_SetWeaponChilds('PUEXPHOWITZERBLD', 20, 40, False, 'POINTOTVZRIV', '', '', '');
+   //_weapon_SetWeaponChilds('PUEXPKORDEATH', 30, 40, False, 'POINTOTVZRIV', '', '', ''); // done too much damage
+   
+   _weapon_SetWeaponChilds('NUCLM', 2, 3, False, 'NUCLMOSKOL', '', '', '');
+   _weapon_SetWeaponChilds('NUCLMOSKOL', 1, 1, False, 'SMALL', '', '', '');
+   _weapon_SetWeaponChilds('SMALL', 10, 30, False, 'POINTOTVZRIV', '', '', '');
+   _weapon_SetWeaponChilds('PUSSTRELA2', 1, 1, False, 'PUSSTRELA3', '', '', '');
+   
+   _weapon_SetWeaponChilds('debriswood', 1, 1, False, 'SMALL2', '', '', '');
+   _weapon_SetWeaponChilds('debrisstone', 1, 1, False, 'SMALL2', '', '', '');
+   _weapon_SetWeaponChilds('STRELDEZPRO', 1, 1, False, 'STRELDEZ', 'STRELDEZ', 'STRELDEZ', 'POINT'); // STRELDEZ STRELDEZ POINT POINT
+   _weapon_SetWeaponChilds('PPOINTTFRAME', 1, 1, False, 'PU4FRAMEGRE', '', '', '');
+   _weapon_SetWeaponChilds('PU4FRAMEGRE', 1, 1, False, 'POINTOTVZRIVFRAME', '', '', '');
+   //_weapon_SetWeaponChilds('PPOINTTFRAME5', 5, 5, False, 'NUCLGRE', '', '', '');
+   
+   // Custom Explosions
+   _weapon_SetWeaponCustomExplosions('NUCL2P', gc_obj_explmedia_building, 1, 1, 'PUEXPBLD', 'PUEXPBLD', 'PUEXPBLD', 'PUNOEXPBLD', '');
+   _weapon_SetWeaponCustomExplosions('NUCL2P', gc_obj_explmedia_grass, 1, 1, 'PUEXP', 'PUEXP', 'PUEXP', 'PUNOEXP', '');
+   _weapon_SetWeaponCustomExplosions('NUCL2P', gc_obj_explmedia_water, 1, 1, 'VODABUL', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL2P', gc_obj_explmedia_wood, 1, 1, 'PUEXP', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL2P', gc_obj_explmedia_ship, 1, 1, 'PUEXPONSHIP', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL2PTOW', gc_obj_explmedia_building, 1, 1, 'PUEXPBLD', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL2PTOW', gc_obj_explmedia_grass, 1, 1, 'PUEXP', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL2PTOW', gc_obj_explmedia_water, 1, 1, 'VODABUL', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL2PTOW', gc_obj_explmedia_wood, 1, 1, 'PUEXP', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL2PTOW', gc_obj_explmedia_ship, 1, 1, 'PUEXPONSHIP', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL2PKOR', gc_obj_explmedia_building, 1, 1, 'PUEXPKOR', 'PUEXPKOR', 'PUEXPKOR', 'PUNOEXPKOR', '');
+   _weapon_SetWeaponCustomExplosions('NUCL2PKOR', gc_obj_explmedia_grass, 1, 1, 'PUEXPKOR', 'PUEXPKOR', 'PUEXPKOR', 'PUNOEXPKOR', '');
+   _weapon_SetWeaponCustomExplosions('NUCL2PKOR', gc_obj_explmedia_water, 1, 1, 'VODABUL', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL2PKOR', gc_obj_explmedia_wood, 1, 1, 'PUEXPKOR', 'PUEXPKOR', 'PUEXPKOR', 'PUNOEXPKOR', '');
+   _weapon_SetWeaponCustomExplosions('NUCL2PKOR', gc_obj_explmedia_ship, 1, 1, 'PUEXPKORVSKOR', 'PUEXPKORVSKOR', 'PUEXPKORVSKOR', 'PUNOEXPKORVSKOR', '');
+   _weapon_SetWeaponCustomExplosions('NUCL3M', gc_obj_explmedia_building, 1, 1, 'PUEXPHOWITZERBLD', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL3M', gc_obj_explmedia_grass, 1, 1, 'PUEXPHOWITZER', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL3M', gc_obj_explmedia_water, 1, 1, 'VODABUL', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL3M', gc_obj_explmedia_wood, 1, 1, 'PUEXPHOWITZER', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL3M', gc_obj_explmedia_ship, 1, 1, 'PUEXPHOWITZER', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL3MONO', gc_obj_explmedia_building, 1, 1, 'POINTSTONE4', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL3MONONEWDMG', gc_obj_explmedia_building, 1, 1, 'POINTSTONE4', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL3MONOEXPL', gc_obj_explmedia_building, 1, 1, 'SMALL2BLD', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL3MONOEXPL', gc_obj_explmedia_grass, 1, 1, 'SMALL2', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCL3MONOEXPL', gc_obj_explmedia_water, 1, 1, 'VODABUL', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('POINTOTVZRIV', gc_obj_explmedia_water, 1, 1, 'VODABUL2', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('debriswood', gc_obj_explmedia_water, 1, 1, 'VODABUL2', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('debrisstone', gc_obj_explmedia_water, 1, 1, 'VODABUL2', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('POINT', gc_obj_explmedia_water, 1, 1, 'VODABUL2', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('NUCLMOSKOL', gc_obj_explmedia_water, 1, 1, 'VODABUL2', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('STRELA', gc_obj_explmedia_grass, 1, 1, 'STRELDEZPRO', 'POINT', 'POINT', 'POINT', '');
+   _weapon_SetWeaponCustomExplosions('OSTRELA', gc_obj_explmedia_grass, 1, 1, 'STRELDEZPRO', 'POINT', 'POINT', 'POINT', '');
+   _weapon_SetWeaponCustomExplosions('PUEXP', gc_obj_explmedia_building, 5, 9, 'debriswood', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('PUEXP', gc_obj_explmedia_wood, 5, 9, 'debriswood', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('PUEXP', gc_obj_explmedia_ship, 4, 4, 'debriswood', 'debriswood', 'debriswood', 'KAPEZ', '');
+   _weapon_SetWeaponCustomExplosions('PUEXPONSHIP', gc_obj_explmedia_ship, 4, 4, 'debriswood', 'debriswood', 'debriswood', 'KAPEZ', '');
+   _weapon_SetWeaponCustomExplosions('PUEXPBLD', gc_obj_explmedia_building, 5, 9, 'debriswood', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('PUNOEXPBLD', gc_obj_explmedia_building, 5, 9, 'debriswood', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('PUEXPKOR', gc_obj_explmedia_wood, 10, 20, 'debriswood', '', '', '', '');
+   _weapon_SetWeaponCustomExplosions('PUEXPKOR', gc_obj_explmedia_ship, 20, 30, 'debriswood', '', '', '', '');
+   
+   gDestructListBuilding.Clear;
+   gDestructListBuilding.Add(GetWeaponIDBySIDConst('debrisstone'));
+   gDestructListBuilding.Add(GetWeaponIDBySIDConst('debrisstone'));
+   gDestructListBuilding.Add(GetWeaponIDBySIDConst('PUEXPBUILDINGDEATH'));
+   
+   gDestructListShip.Clear;
+   gDestructListShip.Add(GetWeaponIDBySIDConst('debriswood'));
+   gDestructListShip.Add(GetWeaponIDBySIDConst('debriswood'));
+   gDestructListShip.Add(GetWeaponIDBySIDConst('PUEXPKORDEATH'));
+end;
+
+// _weapon_CalcShotDispertion
+//
+procedure _weapon_CalcShotDispertion(goHnd : Integer; disp, tx, ty, tz : Float; var dx, dy, dz : Float);
+begin
+   if (goHnd<>0) and (disp>0) then
+   begin
+      var px : Float = GetGameObjectPositionXByHandle(goHnd);
+      var pz : Float = GetGameObjectPositionZByHandle(goHnd);
+      var dist : Float = VectorDistance(px, 0, pz, tx, 0, tz);
+      var maxdisp : Float = dist*disp*gc_pixels_to_tile/2000;
+      dx := tx+(1-RandomExt*2)*maxdisp;
+      dz := tz+(1-RandomExt*2)*maxdisp;
+      dy := ty;
+      //dy := RayCastHeight(dx, dz);
+   end
+   else
+   begin
+      dx := tx;
+      dy := ty;
+      dz := tz;
+   end;
+end;
+
+// _weapon_GetUnitShotStartPosition
+//
+procedure _weapon_GetUnitShotStartPosition(goHnd : Integer; var sx, sy, sz : Float);
+begin
+   // find shot point
+   // use shot point offset
+   // if no shot point, use this numbers, perhaps?
+   {var zpoint : Float;
+   var unittype : Integer = _misc_GetUnitType(goHnd);
+   if (unittype=gc_result_unittype_inf) then
+   zpoint := 27
+   else
+   if (unittype=gc_result_unittype_cav) then
+   zpoint := 51
+   else
+   zpoint := 3;}
+   // return real point where shot should be (visual ending of rifle or cannon)
+   GetGameObjectAbsolutePositionByHandle(goHnd, sx, sy, sz);
+   if (sy<0) then
+   sy := 0.05;
+end;
+
+// _weapon_GetUnitShotEndPosition
+//
+procedure _weapon_GetUnitShotEndPosition(goHnd : Integer; var dx, dy, dz : Float);
+begin
+   var pobj : Pointer = _misc_GetObjectArgData(goHnd, gc_argunit_obj);
+   if (pobj<>nil) and ((gObjProp[TObj(pObj).cid][TObj(pObj).id].bbuilding) or (gObjProp[TObj(pObj).cid][TObj(pObj).id].explmedia=gc_obj_explmedia_ship)) then
+   begin
+      var dirx, diry, dirz : Float;
+      var bUseCustTransformed : Boolean = GetGameObjectUseCustTransformedByHandle(goHnd);
+      if (bUseCustTransformed) then
+      begin
+         var upx, upy, upz : Float;
+         GetGameObjectOrientationByHandle(goHnd, upx, upy, upz, dirx, diry, dirz);
+         var angle : Float = VectorAngle(-1, 0, 0, upx, 0, upz);
+         var tmpx, tmpy, tmpz : Float;
+         VectorCross(-1, 0, 0, upx, 0, upz, tmpx, tmpy, tmpz);
+         if (tmpy<0) then
+         angle := -angle;
+         
+         var minx, miny, minz, maxx, maxy, maxz : Float;
+         GetGameObjectCustomBoundingAABBByHandle(goHnd, minx, miny, minz, maxx, maxy, maxz);
+         dirx := (minx+maxx)*0.5;
+         if (gObjProp[TObj(pObj).cid][TObj(pObj).id].explmedia=gc_obj_explmedia_ship) then
+         diry := (miny+maxy)*(0.05+RandomExt*0.075) // (0.2+RandomExt*0.3)
+         else
+         if (gObjProp[TObj(pObj).cid][TObj(pObj).id].bwall) then
+         diry := (miny+maxy)*(0.15+RandomExt*0.3)
+         else
+         diry := (miny+maxy)*(0.2+RandomExt*0.4);
+         //diry := (miny+maxy)*(0.25+RandomExt*0.5);
+         dirz := (minz+maxz)*0.5;
+         VectorRotateY(dirx, diry, dirz, angle);
+      end;
+      GetGameObjectAbsolutePositionByHandle(goHnd, dx, dy, dz);
+      dx := dx+dirx;
+      dy := dy+diry;
+      dz := dz+dirz;
+   end
+   else
+   begin
+      {var zpoint : Float;
+      var basename : String = GetGameObjectBaseNameByHandle(goHnd);
+      case basename of
+         'cannon' : zpoint := 30;
+         'howitzer' : zpoint := 15;
+         'mortar' : zpoint := 15;
+         'multicannon' : zpoint := 27;
+         'eurtow', 'rustow', 'turtow' : zpoint := 51;
+         else
+         begin
+            var unittype : Integer = _misc_GetUnitType(goHnd);
+            if (unittype=gc_result_unittype_inf) then
+            zpoint := 27
+            else
+            if (unittype=gc_result_unittype_cav) then
+            zpoint := 51
+            else
+            zpoint := 3;
+         end;
+      end;
+      zpoint := zpoint*gc_tiles_to_pixels;}
+      
+      // return real point where shot should be (visual ending of rifle or cannon)
+      GetGameObjectAbsolutePositionByHandle(goHnd, dx, dy, dz);
+      {dx := GetGameObjectPositionXByHandle(goHnd);
+      dy := GetGameObjectPositionYByHandle(goHnd);// +zpoint shot in legs, not in air+0.5;
+      dz := GetGameObjectPositionZByHandle(goHnd);}
+   end;
+end;
+
+// _weapon_CheckWeapon
+//
+function _weapon_CheckWeaponTargetable(weaponid : Integer) : Boolean;
+begin
+   Result := (gWeapons[weaponid].propagation=gc_weapon_propagation_immediate) or (gWeapons[weaponid].propagation=gc_weapon_propagation_fly) or (gWeapons[weaponid].propagation=gc_weapon_propagation_angle) or (gWeapons[weaponid].propagation=gc_weapon_propagation_random) or (gWeapons[weaponid].propagation=gc_weapon_propagation_randomsimulate);
+end;
+
+// _weapon_CheckWeapon
+//
+function _weapon_CheckWeapon(weaponid : Integer) : Boolean;
+begin
+   Result := (gWeapons[weaponid].propagation=gc_weapon_propagation_immediate) or (gWeapons[weaponid].propagation=gc_weapon_propagation_fly) or (gWeapons[weaponid].propagation=gc_weapon_propagation_angle);
+end;
+
+// _weapon_GetFlyChild
+//
+function _weapon_GetFlyChild(weaponid : Integer) : Integer;
+begin
+   if (_weapon_CheckWeapon(weaponid)) then
+   begin
+      Result := weaponid;
+      exit;
+   end;
+   
+   Result := 0;
+   if (weaponid<>0) then
+   begin
+      var pweapon : Pointer = gWeapons[weaponid];
+      if (pweapon<>nil) then
+      begin
+         var i : Integer;
+         for i:=0 to TWeapon(pweapon).childs.list.GetCount-1 do
+         begin
+            var childweaponid : Integer = TWeapon(pweapon).childs.list.Get(i);
+            if (_weapon_CheckWeapon(childweaponid)) then
+            begin
+               Result := childweaponid;
+               exit;
+            end;
+         end;
+         for i:=0 to TWeapon(pweapon).syncweaponslist.GetCount-1 do
+         begin
+            var syncweaponid : Integer = TWeapon(pweapon).syncweaponslist.Get(i);
+            if (_weapon_CheckWeapon(syncweaponid)) then
+            begin
+               Result := syncweaponid;
+               exit;
+            end;
+         end;
+      end;
+   end;
+end;
+
+// _weapon_PredictShot
+//
+function _weapon_PredictShot(myHnd, parentweaponid : Integer; sx, sy, sz, dx, dy, dz : Float) : Boolean;
+begin
+   Result := False;
+   var weaponid : Integer = _weapon_GetFlyChild(parentweaponid);
+   if (weaponid<>0) then
+   begin
+      Result := True;
+   end;
+end;
+
+// _weapon_ThrowByAngle
+//
+function _weapon_ThrowByAngle(bHnd : Integer; angle, posX, posY, posZ, trgX, trgY, trgZ : Float) : Boolean;
+begin
+   SetBehaviourAffineVectorProperty(bHnd, 'TargetPosition', trgX, trgY, trgZ);
+   
+   var dirX, dirY, dirZ : Float;
+   dirX := trgX-posX;
+   dirY := 0;
+   dirZ := trgZ-posZ;
+   
+   var rX, rY, rZ : Float;
+   VectorCross(0, 1, 0, dirX, dirY, dirZ, rX, rY, rZ);
+   VectorRotateAxis(dirX, dirY, dirZ, rX, rY, rZ, angle);
+   
+   SetBehaviourAffineVectorProperty(bHnd, 'Direction', dirX, dirY, dirZ);
+   Result := GetBehaviourBoolProperty(bHnd, 'CalcSpeedByDirAndTrgPos');
+end;
+
+// _weapon_ThrowByHSpeed
+//
+function _weapon_ThrowByHSpeed(bHnd : Integer; hSpeed, trgX, trgY, trgZ : Float) : Boolean;
+begin
+   SetBehaviourAffineVectorProperty(bHnd, 'TargetPosition', trgX, trgY, trgZ);
+   
+   SetBehaviourFloatProperty(bHnd, 'HSpeed', hSpeed);
+   Result := GetBehaviourBoolProperty(bHnd, 'CalcDirByHSpeedAndTrgPos');
+end;
+
+// _weapon_ThrowRandom
+//
+procedure _weapon_ThrowRandom(bHnd : Integer; speed : Float);
+begin
+   var spX : Float = 2*(RandomExt-0.5)*speed;
+   var spY : Float = RandomExt * speed;
+   var spZ : Float = 2*(RandomExt-0.5)*speed;
+   
+   var len : Float = VectorLength(spX, spY, spZ);
+   if (len=0) then
+   begin
+      spX := speed;
+      spY := speed;
+      spZ := speed;
+      len := VectorLength(spX, spY, spZ);
+   end;
+   SetBehaviourFloatProperty(bHnd, 'Speed', len);
+   SetBehaviourAffineVectorProperty(bHnd, 'Direction', spX, spY, spz);
+   SetupThrowBehaviourSpeed(bHnd);
+end;
+
+// _weapon_InitProjectile
+//
+procedure _weapon_InitProjectile(projHnd : Integer);
+begin
+   const cFXPlayOnceDummy = 'shotmusket';
+   
+   var pproj : Pointer = _weapon_GetTProj(projHnd);
+   var id : Integer = TProj(pproj).weaponid;
+   if (id>-1) then
+   begin
+      //_misc_ProfilerBegin('_wpn_InitProj');
+      var px : Float = TProj(pproj).px;
+      var py : Float = TProj(pproj).py;
+      var pz : Float = TProj(pproj).pz;
+      var tx : Float = TProj(pproj).dx;
+      var ty : Float = TProj(pproj).dy;
+      var tz : Float = TProj(pproj).dz;
+      var speed : Float = _misc_PixelsToTiles(floor(gWeapons[id].speed*1000))*0.001*gc_time_to_frames;
+      var time : Float = gWeapons[id].time;
+      var propagation : Integer = gWeapons[id].propagation;
+      var gravity : Float;
+      // constangle and random
+      case (gWeapons[id].gravity) of
+         gc_weapon_gravity_0 : gravity := 2; // need at least some gravity to work properly. used by gc_weapon_propagation_stand and gc_weapon_propagation_slightup and cannon and multicannon cannister
+         gc_weapon_gravity_1 : gravity := 2.5; // no one use
+         gc_weapon_gravity_2 : gravity := 3.75; // cannonball/towerball/shipball and arrows
+         gc_weapon_gravity_3 : gravity := 7;//5.625; use debris and unvisible point dmg random dir projectiles
+         gc_weapon_gravity_4 : gravity := 9.25; // no one use
+         gc_weapon_gravity_5 : gravity := 11.5; // mortar and howitzer balls and their fragments
+      end;
+      if (propagation=gc_weapon_propagation_fly) then
+      begin
+         case (gWeapons[id].gravity) of
+            gc_weapon_gravity_2 : gravity := 11.5; // arrows
+         end;
+      end;
+      //test
+      //gravity := gWeapons[id].gravity*128*gc_tiles_to_pixels;
+      
+      if (gravity=0) then
+      gravity := 2;
+      
+      //log(gWeapons[id].sid+' g='+FloatToStr(gravity));
+      SetGameObjectPositionByHandle(projHnd, px, py, pz);
+      
+      var bPlayOnce : Boolean = (time=gc_weapon_time_cPlayOnce);
+      if (not bPlayOnce) then
+      begin
+         {if (propagation=gc_weapon_propagation_random) then // tune visual part of fragments
+         begin
+            const cModifierGravity = 0.4;
+            const cModifierSpeed = cModifierGravity*(1/cModifierGravity)/2;
+            gravity := gravity*cModifierGravity;
+            speed := speed*cModifierSpeed;
+         end;}
+         
+         var energyloss : Float;
+         if (gWeapons[id].gravity<>0) then
+         energyloss := 1;
+         var onstopevent : String;
+         if (time=gc_weapon_time_cInfinite) then
+         onstopevent := 'OnStopEvent';
+         
+         var bHnd : Integer = BehaviourCreate(projHnd, 'TXThrowBehaviour', true, false);
+         SetBehaviourStringProperty(bHnd, 'OnStopEvent', onstopevent);
+         SetBehaviourFloatProperty(bHnd, 'ProgressDeltaTime', 0.00000001);
+         SetBehaviourFloatProperty(bHnd, 'EnergyLoss', energyloss);
+         SetBehaviourFloatProperty(bHnd, 'DecFactor', 0);
+         SetBehaviourFloatProperty(bHnd, 'Speed', speed);
+         SetBehaviourFloatProperty(bHnd, 'Deceleration', 0);
+         SetBehaviourFloatProperty(bHnd, 'Height', py);
+         SetBehaviourFloatProperty(bHnd, 'Gravity', gravity);
+         SetBehaviourFloatProperty(bHnd, 'Radius', 0.01);
+         SetBehaviourBoolProperty(bHnd, 'Rotate', gWeapons[id].brotate);
+         SetBehaviourBoolProperty(bHnd, 'RayCastWater', True);
+         SetBehaviourBoolProperty(bHnd, 'FreeWhenDone', False);
+         
+         if (gWeapons[id].brotate) then
+         begin
+            var rotspeed : Float;
+            if (propagation=gc_weapon_propagation_random1) then
+            rotspeed := (2+RandomExt*8)
+            else
+            rotspeed := (2+RandomExt*4);
+            SetBehaviourFloatProperty(bHnd, 'RotationSpeed', rotspeed);
+         end
+         else
+         SetBehaviourFloatProperty(bHnd, 'RotationSpeed', 0);
+         
+         var bthrow : Boolean;
+         case propagation of
+            gc_weapon_propagation_angle : begin
+               bthrow := _weapon_ThrowByAngle(bHnd, gWeapons[id].angle, px, py, pz, tx, ty, tz);
+               if (not bthrow) then
+               log('unable to throw projectile bconstangle');
+            end;
+            gc_weapon_propagation_fly : begin
+               SetBehaviourBoolProperty(bHnd, 'RotateToTangent', gWeapons[id].brotate);
+               bthrow := _weapon_ThrowByHSpeed(bHnd, speed, tx, ty, tz);
+               if (not bthrow) then
+               log('unable to throw projectile bconstspeed');
+            end;
+            gc_weapon_propagation_random, gc_weapon_propagation_random1 : begin
+               bthrow := False;
+               _weapon_ThrowRandom(bHnd, speed);
+            end;
+            gc_weapon_propagation_randomsimulate : begin
+               bthrow := False;
+               _weapon_ThrowRandom(bHnd, speed);
+            end;
+         end;
+         
+         if (bthrow) and (gWeapons[id].bcollisiondetection) then
+         begin
+            SetGameObjectCollisionPriorityByHandle(projHnd, 10000);
+            SetGameObjectCollisionDetectionByHandle(projHnd, True);
+            SetGameObjectCollidedStateNameByHandle(projHnd, '_weapon_OnCollide');
+            SetGameObjectCollisionExecAsFuncByHandle(projHnd, True);
+         end
+         else
+         begin
+            SetGameObjectCollisionDetectionByHandle(projHnd, False);
+            SetGameObjectCollidedStateNameByHandle(projHnd, '');
+            SetGameObjectCollisionExecAsFuncByHandle(projHnd, False);
+         end;
+         
+         if (gWeapons[id].trailfx<>'') then
+         gEffectLibrary.GetOrCreate(gWeapons[id].trailfx, projHnd);
+         
+         if (time>0) then
+         GameObjectDelayExecuteStateByHandle(projHnd, 'OnStopEvent', time);
+         //_misc_ProfilerEnd('_wpn_InitProj');
+      end
+      else
+      begin
+         SetGameObjectCollisionDetectionByHandle(projHnd, False);
+         SetGameObjectCollidedStateNameByHandle(projHnd, '');
+         SetGameObjectCollisionExecAsFuncByHandle(projHnd, False);
+         SetGameObjectScaleByHandle(projHnd, 0.00001, 0.00001, 0.00001);
+         if (gWeapons[id].buseownerfxshot) then
+         begin
+            var fxshot : String;
+            var pobjweapon : Pointer = gObjProp[TProj(pproj).ownercid][TProj(pproj).ownerid].weapon[TProj(pproj).ownerweaponind];
+            if (pobjweapon<>nil) then
+            fxshot := TObjWeaponStatic(pobjweapon).fxshot;
+            var ind : Integer = gEffectLibrary.GetOrCreate(fxshot, projHnd);
+            //_misc_ProfilerEnd('_wpn_InitProj');
+            GameObjectExecuteStateByHandle(projHnd, 'DoExplode');
+            if (ind<0) then
+            GameObjectExecuteStateByHandle(projHnd, 'FreeToPool');
+         end
+         else
+         begin
+            if (gWeapons[id].fx<>'') then
+            begin
+               var ind : Integer = -1;
+               if (gWeapons[id].volumeclippedfreq<=0) or (gWeapons[id].volumeclippedfreq<random) or (gSoundManager.IsObjInFrustum(projHnd)) then // I use general random, cause no need to sync it and randomext may change planned results on dif PCs
+               ind := gEffectLibrary.GetOrCreate(gWeapons[id].fx, projHnd);
+               GameObjectExecuteStateByHandle(projHnd, 'DoExplode');
+               if (ind<0) then
+               GameObjectExecuteStateByHandle(projHnd, 'FreeToPool');
+            end
+            else
+            if (gProfile.bDbgVisualizePlayOnceProjFX) then
+            begin
+               var fxshot : String = cFXPlayOnceDummy;
+               var ind : Integer = gEffectLibrary.GetOrCreate(fxshot, projHnd);
+               //_misc_ProfilerEnd('_wpn_InitProj');
+               GameObjectExecuteStateByHandle(projHnd, 'DoExplode');
+               if (ind<0) then
+               GameObjectExecuteStateByHandle(projHnd, 'FreeToPool');
+            end
+            else
+            begin
+               GameObjectExecuteStateByHandle(projHnd, 'DoExplode');
+               GameObjectExecuteStateByHandle(projHnd, 'FreeToPool');
+            end;
+         end;
+      end;
+   end;
+end;
+
+// _weapon_CreateProjectileByWeaponID
+//
+function _weapon_CreateProjectileByWeaponID(goHnd, trgHnd : Integer; bUseParentPosition : Boolean; tmppx, tmppy, tmppz : Float; weaponid : Integer; tx, ty, tz : Float; ownercid, ownerid, ownerweaponind : Integer; uniqrnd : Float) : Integer;
+begin
+   Result := 0;
+   if (weaponid>-1) and (gWeapons[weaponid].projbasename<>'') then
+   begin
+      if (GetCountOfPlayers>=gc_playerind_misc) then
+      begin
+         var newuniqrnd : Float;
+         if uniqrnd=0 then
+         newuniqrnd := random
+         else
+         newuniqrnd := uniqrnd;
+         SetRandomKey(floor(newuniqrnd*gc_MaxInt)); // sync multiplayer
+         
+         var plHnd : Integer = GetPlayerHandleByIndex(gc_playerind_misc);
+         var px, py, pz : Float;
+         if (bUseParentPosition) then
+         begin
+            GetGameObjectAbsolutePositionByHandle(goHnd, px, py, pz);
+            //_weapon_GetUnitShotStartPosition(goHnd, px, py, pz);
+         end
+         else
+         begin
+            px := tmppx;
+            py := tmppy;
+            pz := tmppz;
+         end;
+         var upx, upy, upz, dirx, diry, dirz : Float;
+         
+         if (goHnd<>0) then
+         begin
+            GetGameObjectOrientationByHandle(goHnd, upx, upy, upz, dirx, diry, dirz);
+            if (gWeapons[weaponid].buseownercustomobjpoints) then
+            begin
+               gIntegerList.Clear;
+               if (gCustomObjPoints[ownercid][ownerid].shotCount>0) then
+               begin
+                  var shotangle : Float;
+                  var bRotatable : Boolean = (not gObjProp[ownercid][ownerid].bbuilding);
+                  if (bRotatable) then
+                  begin
+                     var tmpx : Float = tx-px;
+                     var tmpz : Float = tz-pz;
+                     shotangle := _misc_VectorAngle(upx, upz, tmpx, tmpz);
+                     shotangle := Abs(shotangle-180);
+                  end
+                  else
+                  shotangle := _misc_GetAngleToXVectorInvert(tx, tz, px, pz);
+                  var ind : Integer;
+                  var i : Integer;
+                  for i:=0 to gCustomObjPoints[ownercid][ownerid].shotCount-1 do
+                  begin
+                     if (not gCustomObjPoints[ownercid][ownerid].shotPoints[i].bcustomweaponind) or (gCustomObjPoints[ownercid][ownerid].shotPoints[i].weaponind=ownerweaponind) then
+                     begin
+                        if (gCustomObjPoints[ownercid][ownerid].shotPoints[i].bcustomdir) then
+                        begin
+                           var shotangletmp : Float;
+                           var minangle : Float = gCustomObjPoints[ownercid][ownerid].shotPoints[i].minangle;
+                           var maxangle : Float = gCustomObjPoints[ownercid][ownerid].shotPoints[i].maxangle;
+                           if (minangle<0) then
+                           begin
+                              if (shotangle<180) then
+                              shotangletmp := shotangle+360
+                              else
+                              shotangletmp := shotangle;
+                              minangle := minangle+360;
+                              maxangle := maxangle+360;
+                           end
+                           else
+                           shotangletmp := shotangle;
+                           if (shotangletmp>minangle) and (shotangletmp<maxangle) then
+                           gIntegerList.Add(i);
+                        end
+                        else
+                        gIntegerList.Add(i);
+                     end;
+                  end;
+                  var count : Integer = gIntegerList.GetCount;
+                  if (count>0) then
+                  ind := gIntegerList.Get(floor(RandomExt*count));
+                  var shotx : Float = gCustomObjPoints[ownercid][ownerid].shotPoints[ind].x;
+                  var shoty : Float = gCustomObjPoints[ownercid][ownerid].shotPoints[ind].y;
+                  var shotz : Float = gCustomObjPoints[ownercid][ownerid].shotPoints[ind].z;
+                  if (bRotatable) then
+                  begin
+                     var lookangle : Float = _misc_GetAngleToXVectorDirectInvert(upx, upz);
+                     VectorRotateY(shotx, shoty, shotz, -lookangle+180);
+                  end;
+                  px := px+shotx;
+                  py := py+shoty;
+                  pz := pz+shotz;
+                  upx := px-tx;
+                  upz := pz-tz;
+                  VectorNormalize(upx, upy, upz);
+               end;
+            end;
+            if (gWeapons[weaponid].propagation=gc_weapon_propagation_stand) then // cProjArrowGround
+            py := RandomExt*0.125;
+         end;
+         
+         //var projHnd : Integer = CreatePlayerGameObjectHandleByHandle(plHnd, gc_racename_misc, gWeapons[weaponid].projbasename, px, py, pz);
+         var projHnd : Integer = CreatePoolGameObjectHandle(gc_racename_misc, gWeapons[weaponid].projbasename, px, py, pz);
+         //BehaviourClearRequested(projHnd);
+         GameObjectResetAndPitchTurnRollByHandle(projHnd, 0, 0, 0);
+         GameObjectExecuteStateByHandle(projHnd, 'InitialEmpty');//'Initial');
+         SetGameObjectVisibleByHandle(projHnd, True);
+         //var projHnd : Integer = CreatePoolGameObjectHandle(gc_racename_misc, gWeapons[weaponid].projbasename, px, py, pz);
+         
+         if (gWeapons[weaponid].sndind<>0) then
+         _sound_RequestPlaySound(gc_sndlib_ind_units, gWeapons[weaponid].sndind, px, pz);
+         
+         if (gWeapons[weaponid].propagation=gc_weapon_propagation_random1) then
+         SetGameObjectOrientationByHandle(projHnd, (2*RandomExt-1), (2*RandomExt-1), (2*RandomExt-1), (2*RandomExt-1), (2*RandomExt-1), (2*RandomExt-1))
+         else
+         if (goHnd<>0) then
+         begin
+            SetGameObjectOrientationByHandle(projHnd, upx, upy, upz, dirx, diry, dirz);
+            if (gWeapons[weaponid].propagation=gc_weapon_propagation_stand) then // cProjArrowGround
+            GameObjectPitchByHandle(projHnd, -(30+RandomExt*30));
+         end;
+         
+         var pproj : Pointer = _weapon_GetTProj(projHnd);
+         if (pproj<>nil) then
+         begin
+            TProj(pproj).weaponid := weaponid;
+            if (goHnd<>0) then
+            TProj(pproj).owner := GetGameObjectUniqueIdByHandle(goHnd)
+            else
+            TProj(pproj).owner := 0; // needed after using pool
+            if (trgHnd<>0) then
+            TProj(pproj).trg := GetGameObjectUniqueIdByHandle(trgHnd)
+            else
+            TProj(pproj).trg := 0; // needed after using pool
+            TProj(pproj).px := px;
+            TProj(pproj).py := py;
+            TProj(pproj).pz := pz;
+            TProj(pproj).dx := tx;
+            TProj(pproj).dy := ty;
+            TProj(pproj).dz := tz;
+            if (goHnd<>0) then
+            TProj(pproj).ownerpl := GetPlayerIndexByHandle(GetGameObjectPlayerHandleByHandle(goHnd))
+            else
+            TProj(pproj).ownerpl := gc_MaxPlayerCount-1; // needed after using pool
+            TProj(pproj).ownercid := ownercid;
+            TProj(pproj).ownerid := ownerid;
+            TProj(pproj).ownerweaponind := ownerweaponind;
+            TProj(pproj).uniqrnd := newuniqrnd;
+            _weapon_InitProjectile(projHnd);
+         end;
+         
+         Result := projHnd;
+      end;
+   end;
+end;
+
+function _weapon_CreateDecalExp(var decname: String; x, z, ang: Float; rndang, rndind: Boolean; rndmax, rndoff: Integer; life: Float): Integer;
+begin
+   var rndval: Integer;
+   const cdefdecname='groundexp';
+   var tmpdecname : String = decname;
+   if decname='' then begin
+      tmpdecname:=cdefdecname;
+      if not rndind then tmpdecname:=tmpdecname+'0';
+   end;
+   if rndind then begin
+      rndval:=floor(random*rndmax+rndoff);
+      tmpdecname:=tmpdecname+IntToStr(rndval);
+   end;
+   if rndang then
+   ang:=random*360;
+   var y : Float = RayCastHeight(x, z);
+   var miscplhnd : Integer = GetPlayerHandleByIndex(gc_playerind_misc);
+   //var dumhnd : Integer = CreatePlayerGameObjectHandleByHandle(miscplhnd, gc_racename_misc, 'decal', x, y, z);
+   //GameObjectDelayExecuteStateByHandle(dumhnd, 'DoDeath', life);
+   var dumhnd : Integer = CreatePoolGameObjectHandle(gc_racename_misc, 'decal', x, y, z);
+   GameObjectDelayExecuteStateByHandle(dumhnd, 'DoDeath', life);
+   //FreeToPoolGameObjectTimeoutHandle(dumhnd, life);
+   var dechnd: Integer=AddNewDecalByLibName(dumhnd, x, z, ang, tmpdecname, tmpdecname);
+   var effhnd: Integer=BaseObjectEffectCreateWithKey(dechnd, 'TXLifeColorEffect', 'lifecolor', false);
+   SetBehaviourBoolProperty(effhnd, 'UseAmbient', false);
+   SetBehaviourBoolProperty(effhnd, 'UseDiffuse', false);
+   SetBehaviourBoolProperty(effhnd, 'UseEmission', false);
+   SetBehaviourBoolProperty(effhnd, 'UseSpecular', false);
+   SetBehaviourBoolProperty(effhnd, 'UseAlphaChannel', true);
+   SetBehaviourBoolProperty(effhnd, 'UseShininess', false);
+   SetBehaviourBoolProperty(effhnd, 'UseJustColorIfNoLight', true);
+   SetBehaviourBoolProperty(effhnd, 'UseFrontFace', true);
+   SetBehaviourBoolProperty(effhnd, 'UseBackFace', true);
+   SetBehaviourIntProperty(effhnd,  'CurrIndex', 0);
+   SetBehaviourBoolProperty(effhnd, 'Enable', true);
+   SetBehaviourBoolProperty(effhnd, 'Loop', false);
+   SetBehaviourBoolProperty(effhnd, 'ZWrite', false);
+   SetBehaviourBoolProperty(effhnd, 'ZTest', true);
+   SetBehaviourStringProperty(effhnd, 'Add', '');
+   SetBehaviourFloatProperty(effhnd, 'AlphaChannel[0]', 1.0);
+   SetBehaviourFloatProperty(effhnd, 'Time[0]', life);
+   SetBehaviourStringProperty(effhnd, 'Add', '');
+   SetBehaviourFloatProperty(effhnd, 'AlphaChannel[1]', 0.0);
+   SetBehaviourFloatProperty(effhnd, 'Time[1]', 0.0);
+   SetBehaviourBoolProperty(effhnd, 'OnEndReachedFreeOwner', False); // true lead to crash
+   result:=dechnd;
+end;
+
+// _weapon_OnCollide
+//
+procedure _weapon_OnCollide(hnd : Integer);
+begin
+   var pproj : Pointer = _weapon_GetTProj(hnd);;
+   var goHnd : Integer = GetGameObjectStateCollisionObjectByHandle(hnd);
+   if (goHnd<>0) and (GetGameObjectHandleByUniqueId(TProj(pproj).owner)<>goHnd) then
+   begin
+      if (GetGameObjectHandleByUniqueId(TProj(pproj).trg)<>goHnd) and ((TProj(pproj).trg=0) or (not gWeapons[TProj(pproj).weaponid].buseownerdamage)) then
+      begin
+         var smhnd : Integer = GetGameObjectStateMachineHandle(goHnd);
+         if (smhnd<>0) then
+         begin
+            var parg : Pointer = StateMachineGetArgDataByInd(smhnd, gc_argunit_obj);
+            if (parg<>nil) and (TBaseObj(parg).baseid=gc_baseid_obj) and ((gObjProp[TObj(parg).cid][TObj(parg).id].bbuilding) or ((gObjProp[TObj(parg).cid][TObj(parg).id].explmedia=gc_obj_explmedia_ship) and GetPlayerHandleByIndex(hnd)<>GetPlayerHandleByIndex(goHnd))) then // prevent ships from friendly fire
+            TProj(pproj).trg := GetGameObjectUniqueIdByHandle(goHnd);
+         end;
+      end;
+      GameObjectSwitchToStateByHandle(hnd, 'Nothing')
+   end
+   else
+   GameObjectSwitchToStateByHandle(hnd, 'NothingEmpty');
+end;
+
+_weapon_Init;

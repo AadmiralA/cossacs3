@@ -1,0 +1,3572 @@
+//
+// gui.script
+//
+
+// _gui_GetTop
+//
+function _gui_GetTop() : Integer;
+begin
+   Result := GetGUIElementTopIndexByName(gc_gui_element_top);
+   if (Result=0) then
+   begin
+      Result := AddNewElementTopByClassName(gc_gui_element_top, 'TOSWImageGuiControl', 0);
+      SetGUIElementAlign(Result, 'halLeft', 'valTop');
+      SetGUIElementAllPositionRect(Result, 0, 0, GetViewerWidth, GetViewerHeight);
+      SetGUIElementMaterial(Result, gc_gui_material_blank);
+   end;
+end;
+
+// _gui_SendTagToState
+//
+procedure _gui_SendTagToState(const state : String; tag : Integer);
+begin
+   SetGUIValue('Status', 'button');
+   SetGUIValue('Press', 'c');
+   SetGUIIntValue('Tag', tag);
+   GUIExecuteState(state);
+end;
+
+// _gui_SendTagToStateExt
+//
+procedure _gui_SendTagToStateExt(const state : String; tag : Integer; const press, key, status : String; elmHnd : Integer);
+begin
+   if (status<>'') then SetValueByName('Status', status);
+   if (press='') then SetValueByName('Press', 'c')
+   else SetValueByName('Press', press);
+   SetIntValueByName('Tag', tag);
+   if (key<>'') then SetValueByName('Key', key);
+   if (elmHnd<>0) then SetIntValueByName('ElementHandle', elmHnd);
+   GUIExecuteState(state);
+end;
+
+// _gui_GetFontTextWidth
+//
+function _gui_GetFontTextWidth(var text : String; font : Integer) : Integer;
+begin
+   var w, h : Integer;
+   GetGUIElementFontTextFormatRect(gUIConst.font[font], text, w, h);
+   Result := w;
+end;
+
+// _gui_GetFontTextHeight
+//
+function _gui_GetFontTextHeight(var text : String; font : Integer) : Integer;
+begin
+   var w, h : Integer;
+   GetGUIElementFontTextFormatRect(gUIConst.font[font], text, w, h);
+   Result := h;
+end;
+
+// _gui_GetRightPos
+//
+function _gui_GetRightPos(elmHnd : Integer) : Integer;
+begin
+   Result := 0;
+   if elmHnd<>0 then
+   Result := GetGUIElementPositionX(elmHnd)+GetGUIElementWidth(elmHnd);
+end;
+
+// _gui_GetBottomPos
+//
+function _gui_GetBottomPos(elmHnd : Integer) : Integer;
+begin
+   Result := 0;
+   if elmHnd<>0 then
+   Result := GetGUIElementPositionY(elmHnd)+GetGUIElementHeight(elmHnd);
+end;
+
+// _gui_ConvertIntColorToFloat
+//
+function _gui_ConvertIntColorToFloat(val : Integer) : Float;
+begin
+   Result := val/255;
+end;
+
+// _gui_SetupTColorInteger
+//
+procedure _gui_SetupTColorInteger(const r, g, b, a : Integer; const brightness : Float; var color : TColor);
+begin
+   color.r := _gui_ConvertIntColorToFloat(r)*brightness;
+   color.g := _gui_ConvertIntColorToFloat(g)*brightness;
+   color.b := _gui_ConvertIntColorToFloat(b)*brightness;
+   color.a := _gui_ConvertIntColorToFloat(a)*brightness;
+end;
+
+// _gui_SetupTColorFloat
+//
+procedure _gui_SetupTColorFloat(const r, g, b, a : Float; var color : TColor);
+begin
+   color.r := r;
+   color.g := g;
+   color.b := b;
+   color.a := a;
+end;
+
+// _gui_ConvertHexToTColor
+//
+procedure _gui_ConvertHexToTColor(const hex : String; var color : TColor);
+begin
+   if (StrLength(hex)=8) then
+   FormatHexToColor4(hex, color.r, color.g, color.b, color.a)
+   else
+   begin
+      color.a := 1;
+      FormatHexToColor3(hex, color.r, color.g, color.b);
+   end;
+end;
+
+// _gui_ConvertTColorToTextColor
+//
+procedure _gui_ConvertTColorToTextColor(color : TColor; var textcolor : String);
+begin
+   textcolor := '%color('+FormatColorToHex4(color.r, color.g, color.b, color.a)+')%';
+end;
+
+// _gui_GetMaterialWidthHeight
+//
+procedure _gui_CheckMaterialWidthHeight(const material : String; var width, height : Integer);
+begin
+   if (material<>gc_gui_material_blank) then
+   begin
+      if (width=0) then width := GetGUITextureWidth(material);
+      if (height=0) then height := GetGUITextureHeight(material);
+      if (width=0) and (height=0) then
+      ErrorLog('_gui_CheckMaterialWidthHeight unknown material = '+material);
+   end;
+end;
+
+// _gui_GetAbsScaleByDPI
+//
+function _gui_GetAbsScaleByDPI(x, y : Integer) : Float;
+begin
+   // dpi based
+   {var cBaseDPI : Integer = round(96/gfloat_gui_interfacescale);
+   var dpi : Integer = GetMonitorDPIFromPoint(x, y);
+   if dpi=0 then
+   begin
+      dpi := GetWindowMonitorDPI;
+      if dpi=0 then
+      begin
+         dpi := GetPrimaryMonitorDPI;
+         if dpi=0 then
+         dpi := cBaseDPI;
+      end;
+   end;
+   Result := dpi/cBaseDPI;}
+   
+   // resolution based
+   if GetViewerHeight>1535 then
+   Result := 2
+   else
+   Result := 1;
+end;
+
+// _gui_AbsScaleByDPI
+//
+function _gui_AbsScaleByDPI(elm : Integer) : Float;
+begin
+   var x, y : Integer;
+   GUIInvalidateParentPositions(elm);
+   GetGUIElementAlignPosition(elm, x, y);
+   Result := _gui_GetAbsScaleByDPI(x, y);
+   if (Result=1) then
+   begin
+      if (GetGUIElementAbsScaled(elm)) then
+      begin
+         if (GetGUIElementScaleX(elm)<>Result) or (GetGUIElementScaleY(elm)<>Result) then
+         SetGUIElementScale(elm, 1, 1);
+         SetGUIElementAbsScaled(elm, False);
+      end;
+      exit;
+   end;
+   if (not GetGUIElementAbsScaled(elm)) then
+   SetGUIElementAbsScaled(elm, True);
+   if (GetGUIElementScaleX(elm)<>Result) or (GetGUIElementScaleY(elm)<>Result) then
+   SetGUIElementScale(elm, Result, Result);
+end;
+
+// _gui_SetAbsScale
+//
+function _gui_SetAbsScale(elm : Integer; scale : Float) : Float;
+begin
+   if (scale=1) then
+   begin
+      if (GetGUIElementAbsScaled(elm)) then
+      begin
+         if (GetGUIElementScaleX(elm)<>Result) or (GetGUIElementScaleY(elm)<>Result) then
+         SetGUIElementScale(elm, 1, 1);
+         SetGUIElementAbsScaled(elm, False);
+      end;
+      exit;
+   end;
+   if (not GetGUIElementAbsScaled(elm)) then
+   SetGUIElementAbsScaled(elm, True);
+   if (GetGUIElementScaleX(elm)<>Result) or (GetGUIElementScaleY(elm)<>Result) then
+   SetGUIElementScale(elm, scale, scale);
+end;
+
+// _gui_CreateImage
+//
+function _gui_CreateImage(const elementName : String; parent : Integer; const material : String; hAlign, vAlign : Integer; posX, posY, width, height, tag : Integer; bGetUpdate : Boolean) : Integer;
+begin
+   if (bGetUpdate) and (elementName='') then log('_gui_Create function with bGet flag must have specified elementName, to work properly');
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this ca.se we are not able to get element handle by name. elmname='+elementName);
+   var iparent : Integer = parent;
+   if (iparent=0) then iparent := _gui_GetTop;
+   var smaterial : String = material;
+   if (smaterial='') then smaterial := gc_gui_material_blank;
+   var iwidth : Integer = width;
+   var iheight : Integer = height;
+   _gui_CheckMaterialWidthHeight(smaterial, iwidth, iheight);
+   var elmHnd : Integer;
+   if (bGetUpdate) then
+   elmHnd := GetGUIElementIndexByNameParent(elementName, iparent);
+   if (elmHnd=0) then
+   elmHnd := AddNewElementByClassNameParent(elementName, 'TOSWImageGuiControl', tag, iparent);
+   SetGUIElementTag(elmHnd, tag);
+   SetGUIElementAlign(elmHnd, gUIConst.halign[hAlign], gUIConst.valign[vAlign]);
+   SetGUIElementMaterial(elmHnd, smaterial);
+   SetGUIElementAllPositionRect(elmHnd, posX, posY, iwidth, iheight);
+   SetGUIAllowEvents(elmHnd, False, False, False);
+   Result := elmHnd;
+end;
+
+// _gui_CreateImageActive
+//
+function _gui_CreateImageActive(const elementName : String; parent : Integer; const material : String; hAlign, vAlign : Integer; posX, posY, width, height, tag : Integer; const eventState, hint : String; bGetUpdate : Boolean) : Integer;
+begin
+   if (bGetUpdate) and (elementName='') then log('_gui_Create function with bGet flag must have specified elementName, to work properly');
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this case_ we are not able to get element handle by name. elmname='+elementName);
+   const cBtnName = 'btn.dummy';
+   const cCursorActive = 2;
+   var iparent : Integer = parent;
+   if (iparent=0) then iparent := _gui_GetTop;
+   var smaterial : String = material;
+   if (smaterial='') then smaterial := gc_gui_material_blank;
+   var iwidth : Integer = width;
+   var iheight : Integer = height;
+   _gui_CheckMaterialWidthHeight(smaterial, iwidth, iheight);
+   var curind : Integer = -1;
+   
+   var elmHnd : Integer;
+   if (bGetUpdate) then
+   elmHnd := GetGUIElementIndexByNameParent(elementName, iparent);
+   if (elmHnd=0) then
+   elmHnd := AddNewElementParent(cBtnName, elementName, tag, iparent);
+   SetGUIElementTag(elmHnd, tag);
+   SetGUIElementAllPositionRect(elmHnd, posX, posY, iwidth, iheight);
+   SetGUIElementAlign(elmHnd, gUIConst.halign[hAlign], gUIConst.valign[vAlign]);
+   SetGUIElementLogicPositionRect(elmHnd, posX, posY, iwidth, iheight);
+   SetGUIElementHoverEnabled(elmHnd, true);
+   SetGUIElementEnabled(elmHnd, true);
+   SetGUIElementHint(elmHnd, hint);
+   if (eventState<>'') or (hint<>'') then
+   SetGUIAllowEvents(elmHnd, True, False, False);
+   if (eventState<>'') then
+   begin
+      SetGUIElementPressState(elmHnd, eventState);
+      curind := cCursorActive;
+   end;
+   SetGUIElementVisibleProperties(elmHnd, 'UpProperty', smaterial, 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+   SetGUIElementVisibleProperties(elmHnd, 'HoverProperty', smaterial, 0, 0, 0, 0, curind, 0.5, 0.5, 0.5, 1);
+   SetGUIElementVisibleProperties(elmHnd, 'DownProperty', smaterial, 0, 0, 0, 0, curind, 0.5, 0.5, 0.5, 1);
+   SetGUIElementVisibleProperties(elmHnd, 'DisableProperty', smaterial, 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+   SetGUIElementVisibleProperties(elmHnd, 'CheckOnProperty', smaterial, 0, 0, 0, 0, curind, 0.5, 0.5, 0.5, 1);
+   Result := elmHnd;
+end;
+
+// _gui_CreateText
+//
+function _gui_CreateText(const elementName : String; parent : Integer; var text : String; hAlign, vAlign : Integer; posX, posY, width, height : Integer; texthAlign, textvAlign, font : Integer; color : TColor; bGetUpdate : Boolean) : Integer;
+begin
+   if (bGetUpdate) and (elementName='') then log('_gui_Create function with bGet flag must have specified elementName, to work properly');
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this case_ we are not able to get element handle by name. elmname='+elementName);
+   var iparent : Integer = parent;
+   if (iparent=0) then iparent := _gui_GetTop;
+   var tmpText : String;
+   _misc_StringToText(text, tmpText);
+   var iwidth : Integer = width;
+   var iheight : Integer = height;
+   if (iwidth=0) or (iheight=0) then
+   begin
+      var tmpWidth : Integer;
+      var tmpHeight : Integer;
+      GetGUIElementFontTextFormatRect(gUIConst.font[font], tmpText, tmpWidth, tmpHeight);
+      if (iWidth=0) then iwidth := tmpWidth;
+      if (iHeight=0) then iheight := tmpHeight;
+   end;
+   var elmHnd : Integer;
+   if (bGetUpdate) then
+   elmHnd := GetGUIElementIndexByNameParent(elementName, iparent);
+   if (elmHnd=0) then
+   elmHnd := AddNewElementByClassNameParent(elementName, 'TOSWBaseGuiTextControl', 0, iparent);
+   //var scale : Float = _gui_AbsScaleByDPI(elmHnd);
+   SetGUIElementFont(elmHnd, gUIConst.font[font]);
+   var fontheight : Integer = GetGUIElementFontHeight(gUIConst.font[font]);
+   SetGUIElementTextAlign(elmHnd, gUIConst.halign[texthAlign], gUIConst.valign[textvAlign], 0, 0); //textYOff
+   SetGUIElementColor(elmHnd, color.r, color.g, color.b, color.a);
+   SetGUIElementAlign(elmHnd, gUIConst.halign[hAlign], gUIConst.valign[vAlign]);
+   SetGUIElementText(elmHnd, tmpText);
+   SetGUIElementTextFormatted(elmHnd, True);
+   SetGUIElementAllPositionRect(elmHnd, posX, posY, iwidth, iheight);
+   Result := elmHnd;
+end;
+
+// _gui_GetTextShadowElement
+//
+function _gui_GetTextShadowElement(elmText : Integer) : Integer;
+begin
+   var elmParent : Integer = GetGUIElementParentByIndex(elmText);
+   var elmName : String = GetGUIElementNameByIndex(elmText)+'_shadow';
+   Result := GetGUIElementIndexByNameParent(elmName, elmParent);
+end;
+
+// _gui_HighlightTextHotkey
+//
+procedure _gui_HighlightTextHotkey(var textin, eventstate : String; const btnname : String; var textout : String; bAddToEndIfNotFound : Boolean);
+begin
+   var hotkey : String = GetRegisterGUIShortcut('event|'+eventstate+'|'+btnname);
+   if (hotkey<>'') then
+   begin
+      var pos : Integer = StrPos(hotkey, textin);
+      if (pos>0) then
+      begin
+         var s0 : String = SubStr(textin, 1, pos-1);
+         var s1 : String = SubStr(textin, pos, 1);
+         var s2 : String = SubStr(textin, pos+1, StrLength(textin)-pos);
+         var fontcolor : String = '%color(F0E0C0)%'; //gc_font_color_orange
+         textout := s0+fontcolor+s1+gc_font_color_default+s2;
+      end
+      else
+      if (bAddToEndIfNotFound) then
+      textout := textin+' ('+hotkey+')';
+   end;
+end;
+
+// _gui_CreateTextShadowed
+//
+function _gui_CreateTextShadowed(const elementName : String; parent : Integer; var text : String; hAlign, vAlign : Integer; posX, posY, width, height : Integer; texthAlign, textvAlign, font : Integer; color : TColor; xOff, yOff : Integer; shadowcolor : TColor; bGetUpdate : Boolean) : Integer;
+begin
+   if (bGetUpdate) and (elementName='') then log('_gui_Create function with bGet flag must have specified elementName, to work properly');
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this case_ we are not able to get element handle by name. elmname='+elementName);
+   var tmpText : String;
+   _misc_StringToText(text, tmpText);
+   var shwElementName : String = elementName;
+   if (elementName<>'') then
+   shwElementName := elementName+'_shadow';
+   //var shadowcolor : TColor;
+   
+   {if (StrLength(hexshadowcolor)=8) then
+   FormatHexToColor4(hexshadowcolor, shadowcolor.r, shadowcolor.g, shadowcolor.b, shadowcolor.a)
+   else
+   begin
+      shadowcolor.a := 1;
+      FormatHexToColor3(hexshadowcolor, shadowcolor.r, shadowcolor.g, shadowcolor.b);
+   end;}
+   //_gui_ConvertHexToTColor(hexshadowcolor, shadowcolor);
+   var justtext : String = FormatGetJustTextWithoutTags(tmpText, 'color');
+   var shwHnd : Integer = _gui_CreateText(shwElementName, parent, justtext hAlign, vAlign, posX+xOff, posY+yOff, width, height, texthAlign, textvAlign, font, shadowcolor, bGetUpdate);
+   var elmHnd : Integer = _gui_CreateText(elementName, parent, tmpText, hAlign, vAlign, posX, posY, width, height, texthAlign, textvAlign, font, color, bGetUpdate);
+   _gui_AbsScaleByDPI(parent);
+   Result := elmHnd;
+end;
+
+// _gui_CreateTextShadow
+//
+function _gui_CreateTextShadow(textHnd : Integer; xOff, yOff : Integer; texthalign, textvalign : Integer; textxoff, textyoff : Integer; shadowcolor : TColor) : Integer;
+begin
+   var iparent : Integer = GetGUIElementParentByIndex(textHnd);
+   var elementName : String = GetGUIElementNameByIndex(textHnd);
+   elementName := elementName+'_shadow';
+   var justtext : String = FormatGetJustTextWithoutTags(GetGUIElementText(textHnd), 'color');
+   var elmHnd : Integer = _gui_CreateText(elementName, iparent, justtext, gUIConst.GetHAlignIndexByName(GetGUIElementHAlign(textHnd)), gUIConst.GetHAlignIndexByName(GetGUIElementVAlign(textHnd)), GetGUIElementPositionX(textHnd)+xOff, GetGUIElementPositionY(textHnd)+yOff, GetGUIElementWidth(textHnd), GetGUIElementHeight(textHnd), texthAlign, textvAlign, gUIConst.GetFontIndexByName(GetGUIElementFont(textHnd)), shadowcolor, True);
+   Result := elmHnd;
+end;
+
+// _gui_CreateButton
+//
+function _gui_CreateButton(const elementName : String; parent : Integer; const material : String; hAlign, vAlign : Integer; posX, posY, width, height : Integer; var eventState, hint : String; tag : Integer; bGetUpdate : Boolean) : Integer;
+begin
+   if (bGetUpdate) and (elementName='') then log('_gui_Create function with bGet flag must have specified elementName, to work properly');
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this case_ we are not able to get element handle by name. elmname='+elementName);
+   const cBtnName = 'btn.dummy';
+   const cCursorActive = 2;
+   var iparent : Integer = parent;
+   if (iparent=0) then iparent := _gui_GetTop;
+   var smaterial : String = material;
+   if (smaterial='') then smaterial := gc_gui_material_blank;
+   var iwidth : Integer = width;
+   var iheight : Integer = height;
+   if (smaterial<>gc_gui_material_blank) then
+   _gui_CheckMaterialWidthHeight(smaterial+'.normal', iwidth, iheight);
+   var elmHnd : Integer;
+   if (bGetUpdate) then
+   elmHnd := GetGUIElementIndexByNameParent(elementName, iparent);
+   if (elmHnd=0) then
+   elmHnd := AddNewElementParent(cBtnName, elementName, tag, iparent);
+   SetGUIElementTag(elmHnd, tag);
+   SetGUIElementAllPositionRect(elmHnd, posX, posY, iwidth, iheight);
+   SetGUIElementAlign(elmHnd, gUIConst.halign[hAlign], gUIConst.valign[vAlign]);
+   SetGUIElementLogicPositionRect(elmHnd, posX, posY, iwidth, iheight);
+   if (eventState<>'') then
+   begin
+      SetGUIAllowEvents(elmHnd, True, False, False);
+      SetGUIElementPressState(elmHnd, eventState);
+   end;
+   SetGUIElementHoverEnabled(elmHnd, true);
+   SetGUIElementEnabled(elmHnd, true);
+   SetGUIElementHint(elmHnd, hint);
+   if (GetGUITextureWidth(material+'.normal')=0) then
+   begin
+      SetGUIElementVisibleProperties(elmHnd, 'UpProperty', material, 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(elmHnd, 'HoverProperty', material, 0, 0, 0, 0, cCursorActive, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(elmHnd, 'DownProperty', material, 0, 0, 0, 0, cCursorActive, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(elmHnd, 'DisableProperty', material, 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(elmHnd, 'CheckOnProperty', material, 0, 0, 0, 0, cCursorActive, 0.5, 0.5, 0.5, 1);
+   end
+   else
+   begin
+      SetGUIElementVisibleProperties(elmHnd, 'UpProperty', material+'.normal', 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(elmHnd, 'HoverProperty', material+'.hover', 0, 0, 0, 0, cCursorActive, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(elmHnd, 'DownProperty', material+'.pressed', 0, 0, 0, 0, cCursorActive, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(elmHnd, 'DisableProperty', material+'.disabled', 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(elmHnd, 'CheckOnProperty', material+'.checked', 0, 0, 0, 0, cCursorActive, 0.5, 0.5, 0.5, 1);
+   end;
+   Result := elmHnd;
+end;
+
+// _gui_CreateParent
+//
+function _gui_CreateParent(const elementName : String; parent : Integer; hAlign, vAlign : Integer; posX, posY, width, height : Integer; bGetUpdate : Boolean) : Integer;
+begin
+   if (bGetUpdate) and (elementName='') then log('_gui_Create function with bGet flag must have specified elementName, to work properly');
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this case_ we are not able to get element handle by name. elmname='+elementName);
+   var iparent : Integer = parent;
+   if (iparent=0) then iparent := _gui_GetTop;
+   var elmHnd : Integer = GetGUIElementIndexByNameParent(elementName, iparent);
+   if (elmHnd=0) then
+   elmHnd := _gui_CreateImage(elementName, iparent, gc_gui_material_blank, hAlign, vAlign, posX, posY, width, height, 0, bGetUpdate)
+   else
+   begin
+      if (not bGetUpdate) then
+      RemoveGUIChildren(elmHnd);
+      SetGUIElementAlign(elmHnd, gUIConst.halign[hAlign], gUIConst.valign[vAlign]);
+      SetGUIElementAllPositionRect(elmHnd, posX, posY, width, height);
+   end;
+   SetGUIElementVisible(elmHnd, True);
+   Result := elmHnd;
+end;
+
+// _gui_CreateTileScaleImage
+//
+function _gui_CreateTileScaleImage(const elementName : String; parent : Integer; const material : String; hAlign, vAlign : Integer; posX, posY : Integer; width, height : Integer; bGetUpdate : Boolean) : Integer;
+begin
+   if (bGetUpdate) and (elementName='') then log('_gui_Create function with bGet flag must have specified elementName, to work properly');
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this case_ we are not able to get element handle by name. elmname='+elementName);
+   var iparent : Integer = parent;
+   if (iparent=0) then iparent := _gui_GetTop;
+   var elmHnd : Integer;
+   if (bGetUpdate) then
+   elmHnd := GetGUIElementIndexByNameParent(elementName, iparent);
+   if (elmHnd=0) then
+   elmHnd := AddNewElementByClassNameParent(elementName, 'TOSWImageGuiControl', 0, iparent);
+   SetGUIElementAlign(elmHnd, gUIConst.halign[hAlign], gUIConst.valign[vAlign]);
+   SetGUIElementMaterial(elmHnd, material);
+   SetGUIAllowEvents(elmHnd, False, False, False);
+   
+   var iwidth : Integer = width;
+   var iheight : Integer = height;
+   var elmwidth : Integer = GetGUITextureWidth(material);
+   var fscaleX, fscaleY : Float = 1;
+   if (iwidth<>0) {and (iwidth<elmwidth)} then
+   fscaleX := iwidth/elmwidth
+   else
+   iwidth := elmwidth;
+   var elmheight : Integer = GetGUITextureHeight(material);
+   if (iheight<>0) {and (iheight<elmheight)} then
+   fscaleY := iheight/elmheight
+   else
+   iheight := elmheight;
+   if (fscaleX>1) then fscaleX := 1;
+   if (fscaleY>1) then fscaleY := 1;
+   if (iwidth<0) then fscaleX := -fscaleX;
+   if (iheight<0) then fscaleY := -fscaleY;
+   
+   SetGUIElementTileScales(elmHnd, fscaleX, fscaleY);
+   SetGUIElementAllPositionRect(elmHnd, posX, posY, iwidth, iheight);
+   Result := elmHnd;
+end;
+
+// _gui_FadeElement
+//
+procedure _gui_FadeElement(elmHnd : Integer; fadeTime : Float; fadeIn : Boolean);
+begin
+   SetGUIElementFadeAutoDestroy(elmHnd, not fadeIn);
+   SetGUIElementFadeInEnabled(elmHnd, fadeIn);
+   SetGUIElementFadeOutEnabled(elmHnd, not fadeIn);
+   SetGUIElementFreezeEnabled(elmHnd, False);
+   SetGUIElementFadingTimes(elmHnd, fadeTime, 0);
+   SetGUIElementFadeStart(elmHnd, True);
+   if (not fadeIn) then
+   SetGUIAllowEvents(elmHnd, False, False, False);
+end;
+
+// _gui_FadeElementExt
+//
+procedure _gui_FadeElementExt(elmHnd : Integer; fadeTime, freezeTime : Float; fadeIn, fadeOut : Boolean);
+begin
+   SetGUIElementVisible(elmHnd, True);
+   SetGUIElementFadeAutoDestroy(elmHnd, fadeOut);
+   SetGUIElementFadeInEnabled(elmHnd, fadeIn);
+   SetGUIElementFadeOutEnabled(elmHnd, fadeOut);
+   SetGUIElementFreezeEnabled(elmHnd, (freezeTime>0));
+   SetGUIElementFadingTimes(elmHnd, fadeTime, freezeTime);
+   SetGUIElementFadeStart(elmHnd, True);
+   if (not fadeIn) then
+   SetGUIAllowEvents(elmHnd, False, False, False);
+end;
+
+// _gui_PreloadTextures
+//
+procedure _gui_PreloadTextures(top : Integer);
+begin
+   procedure PreloadFonts(elmPreload : Integer);
+   begin
+      var color : TColor;
+      var i : Integer;
+      for i:=0 to gUIConst.GetFontCount-1 do
+      begin
+         var ttext : String = '1';
+         if gUIConst.font[i]<>'' then
+         _gui_CreateText('preload', elmPreload, ttext, gc_halLeft, gc_valTop, GetViewerWidth, GetViewerHeight, 0, 0, gc_halLeft, gc_valTop, i, color, False);
+      end;
+   end;
+   
+   var totalphys, availphys, totalvirt, availvirt : Integer;
+   GetHardwareRAMInfo(totalphys, availphys, totalvirt, availvirt);
+   var ramGB : Integer = round(totalphys/1024) div 1000;
+   var lowPC : Boolean = ramGB<=2;
+   if (top<>0) then
+   begin
+      var elmPreload : Integer = AddNewElementByClassNameParent('preloader', 'TOSWImageGuiControl', 0, top);
+      var i : Integer;
+      for i:=0 to 2 do
+      begin
+         var mat : String;
+         case i of
+            0 : mat := 'misc.blank';
+            1 : mat := 'icons.bld.hou';
+            2 : begin
+               if (not lowPC) then
+               mat := 'misc.color.black';
+            end;
+         end;
+         if (mat<>'') then
+         _gui_CreateImage('', elmPreload, mat, gc_halLeft, gc_valTop, -64, -64, 16, 16, 0, False);
+      end;
+      if (not lowPC) then
+      PreloadFonts(elmPreload);
+      GUIPrepareLoad();
+      _gui_FadeElement(elmPreload, gc_gui_fade_time_200, False);
+   end
+   else
+   ErrorLog('_gui_PreloadTextures : top element = 0');
+end;
+
+// _gui_DoViewerRestrictWindow
+//
+procedure _gui_DoViewerRestrictWindow(elmHnd, marginl, margint, marginr, marginb, additionyoffset : Integer);
+begin
+   if (elmHnd<>0) then
+   begin
+      var px : Integer = GetGUIElementPositionX(elmHnd);
+      var py : Integer = GetGUIElementPositionY(elmHnd);
+      var dpiscale : Float = _gui_GetAbsScaleByDPI(px, py);
+      var width : Integer = round(GetGUIElementWidth(elmHnd)*dpiscale);
+      var height : Integer = round(GetGUIElementHeight(elmHnd)*dpiscale);
+      var restrictLeft : Integer = marginl;
+      var restrictTop : Integer = margint;
+      var restrictRight : Integer = GetViewerWidth()-(width+marginr);
+      var restrictBottom : Integer = GetViewerHeight()-(height+marginb);
+      
+      var minimapMinH : Integer = round(GetViewerHeight-GetGUIMiniMapPositionY-GetGUIMiniMapHeight-20*dpiscale);
+      var minimapMinW : Integer = round(GetGUIMiniMapPositionX-20*dpiscale);
+      if ((px+width)>minimapMinW) and ((py+height)>minimapMinH) then // minimap overlaps, need offset
+      restrictRight := restrictRight-round(GetGUIMiniMapWidth+20*dpiscale);
+      
+      if (px<restrictLeft) then
+      px := restrictLeft;
+      if (px>restrictRight) then
+      px := restrictRight;
+      if (py<(restrictTop)) then
+      py := restrictTop+additionyoffset;
+      if (py>restrictBottom) then
+      py := restrictBottom;
+      
+      SetGUIElementPositionX(elmHnd, px);
+      SetGUIElementPositionY(elmHnd, py);
+   end;
+end;
+
+function FindModifyElementTextHandle(elmHandle : Integer; ichar : Integer; schar : String) : Integer;
+begin
+   Result := 0;
+   if (ichar<32) and (ichar>255) then
+   exit;
+   if GetGUIElementVisible(elmHandle) then
+   begin
+      var className : String = GetObjectClassNameByHandle(elmHandle);
+      if (SameText(className, 'TOSWBaseGuiTextControl') or SameText(className, 'TXGuiListBox')) then
+      begin
+         Result := elmHandle;
+         var text : String = GetGUIElementText(Result);
+         if (text<>'') then
+         begin
+            if (StrPos(schar, text)>0) {and (StrLength(text)>20)} then
+            begin
+               var font : String = GetGUIElementFont(elmHandle);
+               if (font<>'') then
+               begin
+                  if (IntRegister7>=0) and (IntRegister7<=31) then
+                  begin
+                     var ifont : Integer;
+                     var i : Integer;
+                     for i:=0 to 31 do
+                     begin
+                        if (font=gFonts[i].font) then
+                        begin
+                           //IntRegister6 := ClampInt(i, 0, 31);
+                           ifont := i;
+                           //Log(IntToStr(IntRegister6)+' font = '+font);
+                           break;
+                        end;
+                     end;
+                     ifont := ClampInt(IntRegister7, 0, 31);
+                     if (ifont=IntRegister7) then
+                     begin
+                        var restext : String;
+                        restext := StrReplace(text, schar, gc_font_color_orange+schar+gc_font_color_default);
+                        SetGUIElementText(Result, restext);
+                     end;
+                  end;
+               end;
+            end;
+         end;
+      end
+      else
+      begin
+         var count : Integer = GetGUIElementChildrenCount(elmHandle);
+         var i : Integer;
+         for i:=0 to count-1 do
+         Result := FindModifyElementTextHandle(GetGUIElementChildrenByIndex(elmHandle, i), ichar, schar);
+      end;
+   end;
+end;
+
+// _gui_FindChildHandleByName
+//
+function _gui_FindChildHandleByName(parent : Integer; var childname : String) : Integer;
+begin
+   Result := 0;
+   if (childname='') then
+   begin
+      ErrorLog('_gui_FindChildHandleByName childname = ""');
+      exit;
+   end;
+   var rparent : Integer;
+   if (parent=0) then rparent := _gui_GetTop
+   else rparent := parent;
+   if SameText(GetGUIElementNameByIndex(rparent), childname) then
+   begin
+      Result := rparent;
+      exit;
+   end;
+   var i : Integer;
+   for i:=0 to GetGUIElementChildrenCount(rparent)-1 do
+   begin
+      var elmChildHnd : Integer = GetGUIElementChildrenByIndex(rparent, i);
+      Result := _gui_FindChildHandleByName(elmChildHnd, childname);
+      if (Result<>0) then
+      break;
+   end;
+end;
+
+// _gui_InputBoxSetupStrCharFilter
+//
+procedure _gui_InputBoxSetupStrCharFilter(elmInputBox : Integer; bPickTextChild : Boolean; const sCustomFilterString : String);
+begin
+   var elmTextInputBox : Integer;
+   if (bPickTextChild) then
+   elmTextInputBox := GetGUIElementIndexByNameParent('text', elmInputBox)
+   else
+   elmTextInputBox := elmInputBox;
+   var text : String = GetGUIElementText(elmTextInputBox);
+   var sFilterString : String = sCustomFilterString;
+   SetGUIElementEditFilter(elmTextInputBox, sFilterString);
+end;
+
+// _gui_InputBoxSetupNumCharFilter
+//
+procedure _gui_InputBoxSetupNumCharFilter(elmInputBox : Integer; bPickTextChild, bNegative : Boolean);
+begin
+   var elmTextInputBox : Integer;
+   if (bPickTextChild) then
+   elmTextInputBox := GetGUIElementIndexByNameParent('text', elmInputBox)
+   else
+   elmTextInputBox := elmInputBox;
+   var text : String = GetGUIElementText(elmTextInputBox);
+   var sFilterString : String = gc_gui_charfilter_numeric;
+   if (bNegative) then
+   sFilterString := '-'+sFilterString;
+   SetGUIElementEditFilter(elmTextInputBox, sFilterString);
+end;
+
+// _gui_AddScroller
+//
+function _gui_AddScroller(parent : Integer; hAlign, vAlign : Integer; posX, posY, width, height : Integer; bEnabled : Boolean) : Integer;
+begin
+   const cBtnDummy = 'btn.dummy';
+   const cMaterialScrollerTile = 'scroller.tile';
+   const cMaterialScrollerUp = 'scroller.btn.up';
+   const cMaterialScrollerDown = 'scroller.btn.down';
+   const cMaterialScroller = 'scroller.btn';
+   var curind : Integer = GetGUICursorIndexByName('crPress');
+   
+   var iwidth : Integer = _misc_SwitchInt(width, GetGUITextureWidth(cMaterialScrollerTile), width=0);
+   var iheight : Integer = _misc_SwitchInt(height-GetGUITextureHeight(cMaterialScrollerDown)*2, GetGUIElementHeight(parent)-GetGUITextureHeight(cMaterialScrollerDown)*2, height=0);
+   
+   var elmVScroll : Integer;
+   var className : String = GetObjectClassNameByHandle(parent);
+   var bListBox : Boolean = (SameText(className, 'TXGuiListBox'));
+   if (bListBox) then
+   elmVScroll := GetGUIListBoxScrollerHandle(parent)
+   else
+   // if (SameText(className, 'TXGuiLayer') then
+   elmVScroll := GetGUIElementVScroll(parent);
+   
+   SetGUIElementAlign(elmVScroll, gUIConst.halign[hAlign], gUIConst.valign[vAlign]);
+   SetGUIElementCursorByName(elmVScroll, 'crDefault');
+   SetGUIAllowEvents(elmVScroll, True, False, False);
+   
+   SetGUIElementMaterialOffset(elmVScroll, 0, 0);
+   SetGUIElementAllPositionRect(elmVScroll, posX, posY, GetGUITextureWidth(cMaterialScrollerTile), iheight);
+   SetGUIElementLogicHeight(elmVScroll, iheight);
+   
+   SetGUIElementMaterial(elmVScroll, cMaterialScrollerTile);
+   SetGUIScrollButtonSource(elmVScroll, 0, cBtnDummy, true); // cMaterialScrollerUp
+   SetGUIScrollButtonSource(elmVScroll, 2, cBtnDummy, true); // cMaterialScrollerDown
+   SetGUIScrollButtonSource(elmVScroll, 1, cBtnDummy, true); // cMaterialScroller
+   
+   var i : Integer;
+   for i :=0 to 2 do
+   begin
+      var mat : String;
+      case i of
+         0 : mat := cMaterialScrollerUp;
+         1 : begin
+            if (not bEnabled) then
+            mat := gc_gui_material_blank
+            else
+            mat := cMaterialScroller;
+         end;
+         2 : mat := cMaterialScrollerDown;
+      end;
+      var tmpElm : Integer = GetGUIElementScrollButtonIndex(elmVScroll, i);
+      SetGUIElementAllRect(tmpElm, GetGUITextureWidth(mat), GetGUITextureHeight(mat));
+      SetGUIElementVisibleProperties(tmpElm, 'UpProperty', mat, 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'HoverProperty', mat, 0, 0, 0, 0, curind, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'DownProperty', mat, 0, 0, 0, 0, curind, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'DisableProperty', mat, 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'CheckOnProperty', mat, 0, 0, 0, 0, curind, 0.5, 0.5, 0.5, 1);
+      case i of
+         0 : begin
+            SetGUIElementPositionY(tmpElm, -GetGUITextureHeight(mat));
+            SetGUIElementAlign(tmpElm, 'halParentLeft', 'valParentTop'); // halParentLeft
+         end;
+         1 : begin
+            SetGUIElementPositionX(tmpElm, 1);
+            SetGUIElementAlign(tmpElm, 'halParentMiddle', 'valParentTop'); // valParentTop
+         end;
+         2 : begin
+            if (bListBox) then
+            SetGUIElementPositionY(tmpElm, GetGUITextureHeight(mat))
+            else
+            SetGUIElementPositionY(tmpElm, -GetGUITextureHeight(mat));
+            SetGUIElementAlign(tmpElm, 'halParentLeft', 'valParentBottomHeight'); // halParentLeft
+         end;
+      end;
+      if (not bEnabled) then
+      begin
+         SetGUIElementUseUserColor(tmpElm, True);
+         SetGUIElementUserColor(tmpElm, 0.6, 0.6, 0.6, 0.5);
+      end
+      else
+      begin
+         SetGUIElementUseUserColor(tmpElm, False);
+         SetGUIElementUserColor(tmpElm, 1, 1, 1, 1);
+      end;
+   end;
+   if (not bEnabled) then
+   begin
+      SetGUIElementUseUserColor(elmVScroll, True);
+      SetGUIElementUserColor(elmVScroll, 0.6, 0.6, 0.6, 0.5);
+      SetGUIElementVisible(elmVScroll, True);
+   end
+   else
+   begin
+      SetGUIElementUseUserColor(elmVScroll, False);
+      SetGUIElementUserColor(elmVScroll, 1, 1, 1, 1);
+   end;
+   Result := elmVScroll;
+end;
+
+// _gui_CreateScrollLayer
+//
+function _gui_CreateScrollLayer(const elementName : String; parent, halign, valign : Integer; posX, posY, sizeX, sizeY, scrollX, scrollY, scrollW, scrollH : Integer; showScroller, bGetUpdate : Boolean) : Integer;
+begin
+   var iparent : Integer = parent;
+   if (iparent=0) then iparent := _gui_GetTop;
+   
+   var rsizex, rsizey : Integer;
+   if (sizeX=0) then rsizex := GetGUIElementWidth(iparent)
+   else rsizex := sizeX;
+   if (sizeY=0) then rsizey := GetGUIElementHeight(iparent)
+   else rsizey := sizeY;
+   const cScrollerMarginY = 0;
+   
+   const cMaterialScroller = 'scroller';
+   const cBtnDummy = 'btn.dummy';
+   var elmScrollLayer : Integer;
+   if (bGetUpdate) then
+   elmScrollLayer := GetGUIElementIndexByNameParent(elementName, iparent);
+   if (elmScrollLayer=0) then
+   elmScrollLayer := AddNewElementByClassNameParent(elementName, 'TXGuiLayer', 0, iparent);
+   SetGUIElementAlign(elmScrollLayer, gUIConst.halign[halign], gUIConst.valign[valign]);
+   SetGUIElementAllPositionRect(elmScrollLayer, posX, posY, rsizeX, rsizeY);
+   SetGUIElementMaterial(elmScrollLayer, gc_gui_material_blank);
+   SetGUIScrollEnabled(elmScrollLayer, True);
+   
+   // - setup scroller
+   const cMaterialScrollerUp = 'scroller.btn.up';
+   const cMaterialScrollerTile = 'scroller.tile';
+   const cMaterialScrollerDown = 'scroller.btn.down';
+   if (showScroller) then
+   _gui_AddScroller(elmScrollLayer, gc_halParentRightWidth, gc_valParentTop, GetGUITextureWidth(cMaterialScrollerTile)+scrollX, GetGUITextureHeight(cMaterialScrollerUp)+scrollY, GetGUITextureWidth(cMaterialScrollerTile), GetGUIElementHeight(elmScrollLayer), True);
+   {var elmVScroll : Integer = GetGUIElementVScroll(elmScrollLayer);
+   SetGUIElementAlign(elmVScroll, 'halParentRightWidth', 'valParentTop');
+   SetGUIElementCursorByIndex(elmVScroll, 1);
+   SetGUIAllowEvents(elmVScroll, True, False, False);
+   
+   SetGUIElementMaterialOffset(elmVScroll, 0, 0);
+   SetGUIElementAllPositionRect(elmVScroll, 0, GetGUITextureHeight(cMaterialScrollerUp)+cScrollerMarginY, GetGUITextureWidth(cMaterialScrollerTile), GetGUIElementHeight(elmScrollLayer)-GetGUITextureHeight(cMaterialScrollerDown)*2-cScrollerMarginY*2);
+   SetGUIElementLogicHeight(elmVScroll, GetGUIElementHeight(elmVScroll)+GetGUITextureHeight(cMaterialScrollerUp));
+   
+   SetGUIElementMaterial(elmVScroll, cMaterialScrollerTile);
+   SetGUIScrollButtonSource(elmVScroll, 0, cBtnDummy, true); // cMaterialScrollerUp
+   SetGUIScrollButtonSource(elmVScroll, 2, cBtnDummy, true); // cMaterialScrollerDown
+   SetGUIScrollButtonSource(elmVScroll, 1, cBtnDummy, true); // cMaterialScroller
+   
+   var i : Integer;
+   for i :=0 to 2 do
+   begin
+      var mat : String;
+      case i of
+         0 : mat := cMaterialScrollerUp;
+         1 : mat := cMaterialScroller;
+         2 : mat := cMaterialScrollerDown;
+      end;
+      var tmpElm : Integer = GetGUIElementScrollButtonIndex(elmVScroll, i);
+      SetGUIElementAllRect(tmpElm, GetGUITextureWidth(mat), GetGUITextureHeight(mat));
+      SetGUIElementVisibleProperties(tmpElm, 'UpProperty', mat, 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'HoverProperty', mat, 0, 0, 0, 0, 2, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'DownProperty', mat, 0, 0, 0, 0, 2, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'DisableProperty', mat, 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'CheckOnProperty', mat, 0, 0, 0, 0, 2, 0.5, 0.5, 0.5, 1);
+      case i of
+         0 : begin
+            SetGUIElementPositionY(tmpElm, -GetGUITextureHeight(mat));
+            SetGUIElementAlign(tmpElm, 'halParentLeft', 'valParentTop'); // halParentLeft
+         end;
+         1 : begin
+            SetGUIElementAlign(tmpElm, 'halParentMiddle', 'valParentTop'); // valParentTop
+         end;
+         2 : begin
+            SetGUIElementPositionY(tmpElm, -GetGUITextureHeight(mat));
+            SetGUIElementAlign(tmpElm, 'halParentLeft', 'valParentBottomHeight'); // halParentLeft
+         end;
+      end;
+   end;}
+   
+   Result := elmScrollLayer;
+end;
+
+// _gui_CreateScrollLayerOLD
+//
+function _gui_CreateScrollLayerOLD(const elementName : String; parent, halign, valign : Integer; posX, posY, sizeX, sizeY, scrollX, scrollY, scrollW, scrollH : Integer; showScroller, bGetUpdate : Boolean) : Integer;
+begin
+   var iparent : Integer = parent;
+   if (iparent=0) then iparent := _gui_GetTop;
+   var rsizex : Integer;
+   if (sizeX=0) then rsizex :=  GetGUIElementWidth(iparent);
+   var rsizey : Integer;
+   if (sizeY=0) then rsizey :=  GetGUIElementHeight(iparent);
+   const cScrollerMarginY = 0;
+   const cMaterialScrollerTile = 'scroller.tile';
+   const cMaterialScrollerUp = 'scroller.up';
+   const cMaterialScrollerDown = 'scroller.down';
+   const cMaterialScroller = 'scroller';
+   const cBtnDummy = 'btn.dummy';
+   var elmScrollLayer : Integer;
+   if (bGetUpdate) then
+   elmScrollLayer := GetGUIElementIndexByNameParent(elementName, iparent)
+   else
+   elmScrollLayer := AddNewElementByClassNameParent(elementName, 'TXGuiLayer', 0, iparent);
+   SetGUIElementAlign(elmScrollLayer, gUIConst.halign[halign], gUIConst.valign[valign]);
+   SetGUIElementAllPositionRect(elmScrollLayer, posX, posY, rsizeX, rsizeY);
+   SetGUIElementMaterial(elmScrollLayer, gc_gui_material_blank);
+   SetGUIScrollEnabled(elmScrollLayer, True);
+   
+   // - setup scroller
+   var elmVScroll : Integer = GetGUIElementVScroll(elmScrollLayer);
+   SetGUIElementAlign(elmVScroll, 'halParentRightWidth', 'valParentTop');
+   SetGUIElementCursorByIndex(elmVScroll, 1);
+   SetGUIAllowEvents(elmVScroll, True, False, False);
+   
+   SetGUIElementMaterialOffset(elmVScroll, 0, 0);
+   SetGUIElementAllPositionRect(elmVScroll, 0, GetGUITextureHeight(cMaterialScrollerUp)+cScrollerMarginY, GetGUITextureWidth(cMaterialScrollerTile), GetGUIElementHeight(elmScrollLayer)-GetGUITextureHeight(cMaterialScrollerDown)*2-cScrollerMarginY*2);
+   SetGUIElementLogicHeight(elmVScroll, GetGUIElementHeight(elmVScroll)+GetGUITextureHeight(cMaterialScrollerUp));
+   
+   SetGUIElementMaterial(elmVScroll, cMaterialScrollerTile);
+   SetGUIScrollButtonSource(elmVScroll, 0, cBtnDummy, true); // cMaterialScrollerUp
+   SetGUIScrollButtonSource(elmVScroll, 2, cBtnDummy, true); // cMaterialScrollerDown
+   SetGUIScrollButtonSource(elmVScroll, 1, cBtnDummy, true); // cMaterialScroller
+   
+   var i : Integer;
+   for i :=0 to 2 do
+   begin
+      var mat : String;
+      case i of
+         0 : mat := cMaterialScrollerUp;
+         1 : mat := cMaterialScroller;
+         2 : mat := cMaterialScrollerDown;
+      end;
+      var tmpElm : Integer = GetGUIElementScrollButtonIndex(elmVScroll, i);
+      SetGUIElementAllRect(tmpElm, GetGUITextureWidth(mat), GetGUITextureHeight(mat));
+      SetGUIElementVisibleProperties(tmpElm, 'UpProperty', mat, 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'HoverProperty', mat, 0, 0, 0, 0, 2, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'DownProperty', mat, 0, 0, 0, 0, 2, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'DisableProperty', mat, 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'CheckOnProperty', mat, 0, 0, 0, 0, 2, 0.5, 0.5, 0.5, 1);
+      case i of
+         0 : begin
+            SetGUIElementPositionY(tmpElm, -GetGUITextureHeight(mat));
+            SetGUIElementAlign(tmpElm, 'halParentLeft', 'valParentTop'); // halParentLeft
+         end;
+         1 : begin
+            SetGUIElementAlign(tmpElm, 'halParentMiddle', 'valParentTop'); // valParentTop
+         end;
+         2 : begin
+            SetGUIElementPositionY(tmpElm, -GetGUITextureHeight(mat));
+            SetGUIElementAlign(tmpElm, 'halParentLeft', 'valParentBottomHeight'); // halParentLeft
+         end;
+      end;
+   end;
+   Result := elmScrollLayer;
+end;
+
+// _gui_UpdateListBoxScrollerPos
+//
+procedure _gui_UpdateListBoxScrollerPos(elmHnd : Integer);
+begin
+   var count : Integer = GetGUIListBoxItemsCount(elmHnd);
+   var topIndex : Integer = GetGUIListBoxTopIndex(elmHnd);
+   var elmScrollHnd : Integer = GetGUIListBoxScrollerHandle(elmHnd);
+   var rowheight : Integer = GetGUIListBoxRowHeight(elmHnd);
+   var step : Float = ((GetGUIElementHeight(elmHnd)-rowheight)/rowheight);
+   var pos : Float = ((topIndex)/((count-1)-step));
+   SetGUIScrollBarPosition(elmScrollHnd, pos);
+   GUIInvokeMouseMove;
+end;
+
+// _gui_CreateCheckBox
+//
+function _gui_CreateCheckBox(const elementName : String; parent : Integer; bChecked : Boolean; hAlign, vAlign : Integer; posX, posY : Integer; var eventState, hint : String; tag : Integer; bGetUpdate : Boolean) : Integer;
+begin
+   const cMaterialCheckbox = 'checkbox';
+   const cxOff = 0;
+   const cyOff = 0;
+   const ctxOff = 0;
+   const ctyOff = 0;
+   //const cLogicWidth = 182;
+   //const cLogicHeight = 23;
+   var curind : Integer = GetGUICursorIndexByName('crPress');
+   {var tmpText : String = text;
+   _misc_StringToText(text, tmpText);}
+   var elmHnd : Integer = _gui_CreateButton(elementName, parent, cMaterialCheckbox, hAlign, vAlign, posX, posY, 0, 0, eventState, hint, tag, bGetUpdate);
+   SetGUIElementChecked(elmHnd, bChecked);
+   SetGUIElementTextFormatted(elmHnd, True);
+   {SetGUIElementTextAlign(elmHnd, 'halLeft', 'valMiddle', 0, 0);
+   SetGUIElementText(elmHnd, tmpText);
+   SetGUIElementTextFormatted(elmHnd, True);
+   SetGUIElementFont(elmHnd, gUIConst.font[gc_font_default_serif]);
+   SetGUIElementLogicRect(elmHnd, cLogicWidth, cLogicHeight);}
+   var cTColorNormal : TColor;
+   var cTColorHover : TColor;
+   var cTColorPressed : TColor;
+   var cTColorDisabled : TColor;
+   var cTColorChecked : TColor;
+   _gui_ConvertHexToTColor(gc_font_hex_color_lightgrey, cTColorNormal);
+   _gui_ConvertHexToTColor(gc_font_hex_color_darkgrey, cTColorHover);
+   _gui_ConvertHexToTColor(gc_font_hex_color_lightgrey, cTColorPressed);
+   _gui_ConvertHexToTColor(gc_font_hex_color_lightgrey, cTColorDisabled);
+   _gui_ConvertHexToTColor(gc_font_hex_color_lightgrey, cTColorChecked);
+   SetGUIElementVisibleProperties(elmHnd, 'UpProperty', cMaterialCheckbox+'.normal', cxOff, cyOff, ctxOff, ctyOff, -1, cTColorNormal.r, cTColorNormal.g, cTColorNormal.b, cTColorNormal.a);
+   SetGUIElementVisibleProperties(elmHnd, 'HoverProperty', cMaterialCheckbox+'.hover', cxOff, cyOff, ctxOff, ctyOff, curind, cTColorHover.r, cTColorHover.g, cTColorHover.b, 1);
+   SetGUIElementVisibleProperties(elmHnd, 'DownProperty', cMaterialCheckbox+'.pressed', cxOff, cyOff, ctxOff, ctyOff, curind, cTColorPressed.r, cTColorPressed.g, cTColorPressed.b, 1);
+   SetGUIElementVisibleProperties(elmHnd, 'DisableProperty', cMaterialCheckbox+'.disabled', cxOff, cyOff, ctxOff, ctyOff, -1, cTColorDisabled.r, cTColorDisabled.g, cTColorDisabled.b, 1);
+   SetGUIElementVisibleProperties(elmHnd, 'CheckOnProperty', cMaterialCheckbox+'.checked', cxOff, cyOff, ctxOff, ctyOff, curind, cTColorChecked.r, cTColorChecked.g, cTColorChecked.b, 1);
+   Result := elmHnd;
+end;
+
+// _gui_CreateComboBox
+//
+function _gui_CreateComboBox(const elementName : String; parent : Integer; count, minScrollCount : Integer; hAlign, vAlign : Integer; posX, posY, width : Integer; textHAlign, textVAlign : Integer; tOffX, tOffY, font : Integer; bshowbtn : Boolean; var eventState : String; bGetUpdate, bClear : Boolean) : Integer;
+begin
+   Result := 0;
+   if (bGetUpdate) and (elementName='') then log('_gui_Create function with bGet flag must have specified elementName, to work properly');
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this ca.se we are not able to get element handle by name. elmname='+elementName);
+   
+   var rfont : String = gUIConst.font[font];
+   if (font=gc_font_none) then
+   rfont := gUIConst.font[gc_font_serif_12];
+   const cListOffY = 5;
+   const cScrollerMarginY = 0;
+   var cMaterialMiddle : String = 'combobox.background.'+IntToStr(floor(1+RandomExt*6));
+   const cMaterialBtn = 'combobox.btn.pressed';
+   const cMaterialListSelected = 'combobox.list.selected';
+   const cMaterialListHover = 'combobox.list.hover';
+   const cMaterialListBackground = 'combobox.list.background';
+   const cMaterialScrollerTile = 'scroller.tile';
+   const cMaterialScrollerUp = 'scroller.btn.up';
+   const cMaterialScrollerDown = 'scroller.btn.down';
+   const cMaterialScroller = 'scroller.btn';
+   
+   var cMaterialListSelectedHeight : Integer = GetGUITextureHeight(cMaterialListSelected)-4;
+   var cMaterialMiddleHeight : Integer = GetGUITextureHeight(cMaterialMiddle)+3;
+   
+   const cBtnDummy = 'btn.dummy';
+   var curind : Integer = GetGUICursorIndexByName('crPress');
+   
+   var iposX : Integer = posX;
+   var iposY : Integer = posY;
+   
+   var iwidth : Integer;
+   if (width<>0) then
+   iwidth := width
+   else
+   iwidth := GetGUITextureWidth(cMaterialMiddle);
+   var iminScrollCount : Integer = minScrollCount;
+   if (iminScrollCount=0) then
+   iminScrollCount := count;
+   
+   var color : TColor;
+   var colorhover : TColor;
+   _gui_SetupTColorInteger(255, 220, 170, 255, 0.875, color);
+   _gui_SetupTColorInteger(255, 220, 170, 255, 1, colorhover);
+   
+   // - setup combobox
+   if (bGetUpdate) then
+   begin
+      Result := GetGUIElementIndexByNameParent(elementName, parent);
+      if (bClear) then
+      GUIListBoxClearSilent(Result);
+   end;
+   
+   if (Result=0) then
+   Result := AddNewElementByClassNameParent(elementName, 'TXGuiComboBox', 0, parent);
+   SetGUIElementCursorByName(Result, 'crPress');
+   SetGUIElementPressState(Result, eventState);
+   SetGUIElementFont(Result, rfont);
+   SetGUIElementColor(Result, color.r, color.g, color.b, color.a);
+   SetGUIElementTextAlign(Result, gUIConst.halign[textHAlign], gUIConst.valign[textVAlign], tOffX, tOffY-1);
+   SetGUIElementTextFormatted(Result, True);
+   SetGUIElementAlign(Result, gUIConst.halign[hAlign], gUIConst.valign[vAlign]);
+   SetGUIElementPosition(Result, iposX, iposY);
+   SetGUIElementLogicRect(Result, iwidth, cMaterialMiddleHeight);
+   SetGUIElementRect(Result, iwidth, cMaterialMiddleHeight);
+   SetGUIElementMaterial(Result, cMaterialMiddle);
+   
+   SetGUIListBoxSelectedMaterialName(Result, cMaterialListSelected); // selected
+   SetGUIListBoxRowHeight(Result, cMaterialListSelectedHeight);
+   SetGUIListBoxVisibleRows(Result, iminScrollCount);
+   
+   SetGUIListBoxMouseTrack(Result, 3); // 1 - only text change color on hover, 2 - only material appears, 3 - text and material on hover
+   SetGUIListBoxMouseTrackMaterialName(Result, cMaterialListHover); // hover
+   SetGUIListBoxMouseTrackFontColor(Result, colorhover.r, colorhover.g, colorhover.b, colorhover.a);
+   
+   {var middleMatW : Integer = GetGUITextureWidth(cMaterialMiddle);
+   var side : Integer = GetGUITextureWidth(cMaterialLeft);
+   var middleW : Integer = iwidth-side-side;
+   if (middleW<>0) then
+   begin
+      var tileW : Integer = (middleW div middleMatW);
+      if ((middleW mod middleMatW)>0) then tileW := tileW+1;
+      var i : Integer;
+      for i:=0 to tileW-1 do
+      begin
+         GUIElementSendToBack(_gui_CreateTileScaleImage('t_'+IntToStr(i), Result, cMaterialMiddle, gc_halParentLeft, gc_valParentTop, i*middleMatW, 0, Min(middleMatW, middleW-i*middleMatW), 0, bGetUpdate));
+      end;
+   end;}
+   
+   // - setup combobox list
+   var tmpHnd : Integer = GetGUIComboBoxListBoxHandle(Result);
+   SetGUIElementCursorByName(tmpHnd, 'crPress');
+   SetGUIElementAlign(tmpHnd, 'halParentMiddle', 'valParentTop');
+   SetGUIElementFont(tmpHnd, rfont);
+   SetGUIElementColor(tmpHnd, color.r, color.g, color.b, color.a);
+   SetGUIElementTextAlign(tmpHnd, gUIConst.halign[textHAlign], gUIConst.valign[textVAlign], tOffx, tOffY);
+   SetGUIElementTextFormatted(tmpHnd, True);
+   SetGUIElementMaterial(tmpHnd, cMaterialListBackground);
+   SetGUIElementAllPositionRect(tmpHnd, 0 ,GetGUIElementHeight(Result)+cListOffY, GetGUIElementLogicWidth(Result), cMaterialListSelectedHeight*(Min(count, iminScrollCount)));
+   
+   // - setup scroller
+   var elmVScroll : Integer = GetGUIListBoxScrollerHandle(tmpHnd);
+   SetGUIElementAlign(elmVScroll, 'halParentRightWidth', 'valParentTop');
+   SetGUIElementCursorByName(elmVScroll, 'crDefault');
+   SetGUIAllowEvents(elmVScroll, True, False, False);
+   
+   SetGUIElementMaterialOffset(elmVScroll, 0, 0);
+   SetGUIElementAllPositionRect(elmVScroll, 0, GetGUITextureHeight(cMaterialScrollerUp)+cScrollerMarginY, GetGUITextureWidth(cMaterialScrollerTile), GetGUIElementHeight(tmpHnd)-GetGUITextureHeight(cMaterialScrollerDown)*2-cScrollerMarginY*2);
+   SetGUIElementLogicHeight(elmVScroll, GetGUIElementHeight(elmVScroll)+GetGUITextureHeight(cMaterialScrollerUp));
+   
+   SetGUIElementMaterial(elmVScroll, cMaterialScrollerTile);
+   SetGUIScrollButtonSource(elmVScroll, 0, cBtnDummy, true); // cMaterialScrollerUp
+   SetGUIScrollButtonSource(elmVScroll, 2, cBtnDummy, true); // cMaterialScrollerDown
+   SetGUIScrollButtonSource(elmVScroll, 1, cBtnDummy, true); // cMaterialScroller
+   
+   var i : Integer;
+   for i :=0 to 2 do
+   begin
+      var mat : String;
+      case i of
+         0 : mat := cMaterialScrollerUp;
+         1 : mat := cMaterialScroller;
+         2 : mat := cMaterialScrollerDown;
+      end;
+      var tmpElm : Integer = GetGUIElementScrollButtonIndex(elmVScroll, i);
+      SetGUIElementAllRect(tmpElm, GetGUITextureWidth(mat), GetGUITextureHeight(mat));
+      SetGUIElementVisibleProperties(tmpElm, 'UpProperty', mat, 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'HoverProperty', mat, 0, 0, 0, 0, curind, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'DownProperty', mat, 0, 0, 0, 0, curind, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'DisableProperty', mat, 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'CheckOnProperty', mat, 0, 0, 0, 0, curind, 0.5, 0.5, 0.5, 1);
+      case i of
+         0 : begin
+            SetGUIElementPositionY(tmpElm, -GetGUITextureHeight(mat));
+            SetGUIElementAlign(tmpElm, 'halParentLeft', 'valParentTop'); // halParentLeft
+         end;
+         1 : begin
+            SetGUIElementAlign(tmpElm, 'halParentMiddle', 'valParentTop'); // valParentTop
+         end;
+         2 : begin
+            SetGUIElementAlign(tmpElm, 'halParentLeft', 'valParentBottomHeight'); // halParentLeft
+         end;
+      end;
+   end;
+   if (bshowbtn) then
+   _gui_CreateImage('btn', Result, cMaterialBtn, gc_halParentRightWidth, gc_valParentMiddle, -2, 1, 0, 0, 0, True)
+   else
+   begin
+      var elm : Integer = GetGUIElementIndexByNameParent('btn', Result);
+      if (elm<>0) and GetGUIElementVisible(elm) then
+      SetGUIElementVisible(elm, False);
+   end;
+end;
+
+// _gui_CreateListBox
+//
+function _gui_CreateListBox(const elementName : String; parent : Integer; hAlign, vAlign : Integer; posX, posY, width, height : Integer; textHAlign, textVAlign : Integer; tOffX, tOffY, font : Integer; var eventState : String; bAddScroller, bGetUpdate : Boolean) : Integer;
+begin
+   Result := 0;
+   if (bGetUpdate) and (elementName='') then log('_gui_Create function with bGet flag must have specified elementName, to work properly');
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this ca.se we are not able to get element handle by name. elmname='+elementName);
+   
+   var rfont : String = gUIConst.font[font];
+   if (font=gc_font_none) then
+   rfont := gUIConst.font[gc_font_serif_12];
+   const cMaterialListSelected = 'combobox.list.selected';
+   const cMaterialListHover = 'combobox.list.hover';
+   const cMaterialScrollerUp = 'scroller.btn.up';
+   const cMaterialScrollerTile = 'scroller.tile';
+   var rowHeight : Integer = GetGUIElementFontHeight(rfont)+4;
+   
+   var iposX : Integer = posX;
+   var iposY : Integer = posY;
+   
+   var iwidth : Integer;
+   if (width<>0) then
+   iwidth := width
+   else
+   iwidth := GetGUIElementWidth(parent);
+   
+   iwidth := iwidth-GetGUITextureWidth(cMaterialScrollerTile);
+   
+   var iheight : Integer;
+   if (height<>0) then
+   iheight := height
+   else
+   iheight := GetGUIElementHeight(parent);
+   
+   var color : TColor;
+   var colorhover : TColor;
+   _gui_SetupTColorInteger(255, 220, 170, 255, 0.875, color);
+   _gui_SetupTColorInteger(255, 220, 170, 255, 1, colorhover);
+   
+   // - setup combobox
+   if (bGetUpdate) then
+   Result := GetGUIElementIndexByNameParent(elementName, parent);
+   
+   if (Result=0) then
+   Result := AddNewElementByClassNameParent(elementName, 'TXGuiListBox', 0, parent);
+   SetGUIElementCursorByName(Result, 'crPress');
+   SetGUIElementPressState(Result, eventState);
+   SetGUIElementFont(Result, rfont);
+   SetGUIElementColor(Result, color.r, color.g, color.b, color.a);
+   SetGUIElementTextAlign(Result, gUIConst.halign[textHAlign], gUIConst.valign[textVAlign], tOffX, tOffY-1);
+   SetGUIElementTextFormatted(Result, True);
+   SetGUIElementAlign(Result, gUIConst.halign[hAlign], gUIConst.valign[vAlign]);
+   SetGUIElementPosition(Result, iposX, iposY);
+   SetGUIElementLogicRect(Result, iwidth, iheight);
+   SetGUIElementRect(Result, iwidth, iheight);
+   SetGUIElementMaterial(Result, gc_gui_material_blank{cMaterialMiddle});
+   
+   SetGUIListBoxSelectedMaterialName(Result, cMaterialListSelected); // selected
+   SetGUIListBoxRowHeight(Result, rowHeight);
+   SetGUIListBoxVisibleRows(Result, -1);
+   SetGUIListBoxItemIndexSilent(Result, -1);
+   
+   SetGUIListBoxMouseTrack(Result, 3); // 1 - only text change color on hover, 2 - only material appears, 3 - text and material on hover
+   SetGUIListBoxMouseTrackMaterialName(Result, cMaterialListHover); // hover
+   SetGUIListBoxMouseTrackFontColor(Result, colorhover.r, colorhover.g, colorhover.b, colorhover.a);
+   
+   if (bAddScroller) then
+   _gui_AddScroller(Result, gc_halParentRightWidth, gc_valParentTop, GetGUITextureWidth(cMaterialScrollerTile), GetGUITextureHeight(cMaterialScrollerUp), GetGUITextureWidth(cMaterialScrollerTile), GetGUIElementHeight(Result), True);
+end;
+
+// _gui_CreateListBox
+//
+function _gui_CreateListBox_OLD(const elementName : String; parent : Integer; hAlign, vAlign : Integer; posX, posY, width, height : Integer; textHAlign, textVAlign : Integer; tOffX, tOffY, font : Integer; var eventState : String; bGetUpdate : Boolean) : Integer;
+begin
+   Result := 0;
+   if (bGetUpdate) and (elementName='') then log('_gui_Create function with bGet flag must have specified elementName, to work properly');
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this ca.se we are not able to get element handle by name. elmname='+elementName);
+   
+   var rfont : String = gUIConst.font[font];
+   if (font=gc_font_none) then
+   rfont := gUIConst.font[gc_font_serif_12];
+   const cScrollerMarginY = 0;
+   var cMaterialMiddle : String = 'combobox.background.'+IntToStr(floor(1+RandomExt*6));
+   const cMaterialBtn = 'combobox.btn.pressed';
+   const cMaterialListSelected = 'combobox.list.selected';
+   const cMaterialListHover = 'combobox.list.hover';
+   const cMaterialListBackground = 'combobox.list.background';
+   const cMaterialScrollerTile = 'scroller.tile';
+   const cMaterialScrollerUp = 'scroller.btn.up';
+   const cMaterialScrollerDown = 'scroller.btn.down';
+   const cMaterialScroller = 'scroller.btn';
+   
+   var cMaterialListSelectedHeight : Integer = GetGUITextureHeight(cMaterialListSelected)-4;
+   
+   const cBtnDummy = 'btn.dummy';
+   var curind : Integer = GetGUICursorIndexByName('crPress');
+   
+   var iposX : Integer = posX;
+   var iposY : Integer = posY;
+   
+   var iwidth : Integer;
+   if (width<>0) then
+   iwidth := width
+   else
+   iwidth := GetGUIElementWidth(parent);
+   
+   var iheight : Integer;
+   if (height<>0) then
+   iheight := height
+   else
+   iheight := GetGUIElementHeight(parent);
+   
+   var color : TColor;
+   var colorhover : TColor;
+   _gui_SetupTColorInteger(255, 220, 170, 255, 0.875, color);
+   _gui_SetupTColorInteger(255, 220, 170, 255, 1, colorhover);
+   
+   // - setup combobox
+   if (bGetUpdate) then
+   Result := GetGUIElementIndexByNameParent(elementName, parent);
+   
+   if (Result=0) then
+   Result := AddNewElementByClassNameParent(elementName, 'TXGuiListBox', 0, parent);
+   SetGUIElementCursorByName(Result, 'crPress');
+   SetGUIElementPressState(Result, eventState);
+   SetGUIElementFont(Result, rfont);
+   SetGUIElementColor(Result, color.r, color.g, color.b, color.a);
+   SetGUIElementTextAlign(Result, gUIConst.halign[textHAlign], gUIConst.valign[textVAlign], tOffX, tOffY-1);
+   SetGUIElementTextFormatted(Result, True);
+   SetGUIElementAlign(Result, gUIConst.halign[hAlign], gUIConst.valign[vAlign]);
+   SetGUIElementPosition(Result, iposX, iposY);
+   SetGUIElementLogicRect(Result, iwidth, iheight);
+   SetGUIElementRect(Result, iwidth, iheight);
+   SetGUIElementMaterial(Result, gc_gui_material_blank{cMaterialMiddle});
+   
+   SetGUIListBoxSelectedMaterialName(Result, cMaterialListSelected); // selected
+   SetGUIListBoxRowHeight(Result, cMaterialListSelectedHeight);
+   SetGUIListBoxVisibleRows(Result, -1);
+   SetGUIListBoxItemIndexSilent(Result, -1);
+   
+   SetGUIListBoxMouseTrack(Result, 3); // 1 - only text change color on hover, 2 - only material appears, 3 - text and material on hover
+   SetGUIListBoxMouseTrackMaterialName(Result, cMaterialListHover); // hover
+   SetGUIListBoxMouseTrackFontColor(Result, colorhover.r, colorhover.g, colorhover.b, colorhover.a);
+   
+   // - setup scroller
+   var elmVScroll : Integer = GetGUIListBoxScrollerHandle(Result);
+   SetGUIElementAlign(elmVScroll, 'halParentRightWidth', 'valParentTop');
+   SetGUIElementCursorByName(elmVScroll, 'crDefault');
+   SetGUIAllowEvents(elmVScroll, True, False, False);
+   
+   SetGUIElementMaterialOffset(elmVScroll, 0, 0);
+   SetGUIElementAllPositionRect(elmVScroll, 0, GetGUITextureHeight(cMaterialScrollerUp)+cScrollerMarginY, GetGUITextureWidth(cMaterialScrollerTile), GetGUIElementHeight(Result)-GetGUITextureHeight(cMaterialScrollerDown)*2-cScrollerMarginY*2);
+   SetGUIElementLogicHeight(elmVScroll, GetGUIElementHeight(elmVScroll)+GetGUITextureHeight(cMaterialScrollerUp));
+   
+   SetGUIElementMaterial(elmVScroll, cMaterialScrollerTile);
+   SetGUIScrollButtonSource(elmVScroll, 0, cBtnDummy, true); // cMaterialScrollerUp
+   SetGUIScrollButtonSource(elmVScroll, 2, cBtnDummy, true); // cMaterialScrollerDown
+   SetGUIScrollButtonSource(elmVScroll, 1, cBtnDummy, true); // cMaterialScroller
+   
+   var i : Integer;
+   for i :=0 to 2 do
+   begin
+      var mat : String;
+      case i of
+         0 : mat := cMaterialScrollerUp;
+         1 : mat := cMaterialScroller;
+         2 : mat := cMaterialScrollerDown;
+      end;
+      var tmpElm : Integer = GetGUIElementScrollButtonIndex(elmVScroll, i);
+      SetGUIElementAllRect(tmpElm, GetGUITextureWidth(mat), GetGUITextureHeight(mat));
+      SetGUIElementVisibleProperties(tmpElm, 'UpProperty', mat, 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'HoverProperty', mat, 0, 0, 0, 0, curind, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'DownProperty', mat, 0, 0, 0, 0, curind, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'DisableProperty', mat, 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'CheckOnProperty', mat, 0, 0, 0, 0, curind, 0.5, 0.5, 0.5, 1);
+      case i of
+         0 : begin
+            SetGUIElementPositionY(tmpElm, -GetGUITextureHeight(mat));
+            SetGUIElementAlign(tmpElm, 'halParentLeft', 'valParentTop'); // halParentLeft
+         end;
+         1 : begin
+            SetGUIElementAlign(tmpElm, 'halParentMiddle', 'valParentTop'); // valParentTop
+         end;
+         2 : begin
+            SetGUIElementAlign(tmpElm, 'halParentLeft', 'valParentBottomHeight'); // halParentLeft
+         end;
+      end;
+   end;
+end;
+
+// _gui_SetListBoxHeight
+//
+function _gui_SetListBoxHeight(elmList, maxcount : Integer) : Boolean;
+begin
+   var bNeedScroll : Boolean;
+   if (elmList<>0) then
+   begin
+      const cMaterialScrollerDown = 'scroller.btn.down';
+      var count : Integer = GetGUIListBoxItemsCount(elmList);
+      if (count>maxcount) then
+      begin
+         bNeedScroll := True;
+         count := maxcount;
+      end;
+      SetGUIElementAllPositionRect(elmList, GetGUIElementPositionX(elmList), GetGUIElementPositionY(elmList), GetGUIElementWidth(elmList), GetGUIListBoxRowHeight(elmList)*count);
+      SetGUIElementLogicHeight(elmList, GetGUIListBoxRowHeight(elmList)*count);
+      var elmScroll : Integer = GetGUIListBoxScrollerHandle(elmList);
+      if (elmScroll<>0) then
+      begin
+         var height : Integer = GetGUIElementHeight(elmScroll)-GetGUITextureHeight(cMaterialScrollerDown);
+         SetGUIElementHeight(elmScroll, height);
+         SetGUIElementLogicHeight(elmScroll, height);
+      end
+      else
+      ErrorLog('_gui_SetListBoxHeight : elmScroll=0');
+   end;
+   Result := bNeedScroll;
+end;
+
+// _gui_CreateComboBoxOLD
+//
+function _gui_CreateComboBoxOLD(const elementName : String; parent : Integer; count, minScrollCount : Integer; hAlign, vAlign : Integer; posX, posY, width : Integer; textHAlign, textVAlign : Integer; tOffX, tOffY, font : Integer; var eventState : String; bGetUpdate : Boolean) : Integer;
+begin
+   Result := 0;
+   if (bGetUpdate) and (elementName='') then log('_gui_Create function with bGet flag must have specified elementName, to work properly');
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this ca.se we are not able to get element handle by name. elmname='+elementName);
+   
+   var rfont : String = gUIConst.font[font];
+   if (font=gc_font_none) then
+   rfont := gUIConst.font[gc_font_serif_13];
+   const cListOffY = 3;
+   const cScrollerMarginY = 0;
+   const cMaterialLeft = 'combobox.left';
+   const cMaterialMiddle = 'combobox.middle';
+   const cMaterialRight = 'combobox.right';
+   const cMaterialBtn = 'combobox.btn';
+   const cMaterialListSelected = 'combobox.list.selected';
+   const cMaterialListHover = 'combobox.list.hover';
+   const cMaterialListBackground = 'combobox.list.background';
+   const cMaterialScrollerTile = 'scroller.tile';
+   const cMaterialScrollerUp = 'scroller.up';
+   const cMaterialScrollerDown = 'scroller.down';
+   const cMaterialScroller = 'scroller';
+   const cBtnDummy = 'btn.dummy';
+   var curind : Integer = GetGUICursorIndexByName('crPress');
+   
+   var iposX : Integer = posX+GetGUITextureWidth(cMaterialLeft);
+   var iposY : Integer = posY;
+   
+   var iwidth : Integer;
+   if (width<>0) then
+   iwidth := width-GetGUITextureWidth(cMaterialLeft)-GetGUITextureWidth(cMaterialRight)
+   else
+   iwidth := 200;
+   var iminScrollCount : Integer = minScrollCount;
+   if (iminScrollCount=0) then
+   iminScrollCount := count;
+   
+   var color : TColor;
+   var colorhover : TColor;
+   _gui_ConvertHexToTColor('EEEEEE', color);
+   _gui_ConvertHexToTColor(gc_font_hex_color_white, colorhover);
+   
+   // - setup combobox
+   if (bGetUpdate) then
+   Result := GetGUIElementIndexByNameParent(elementName, parent);
+   
+   if (Result=0) then
+   Result := AddNewElementByClassNameParent(elementName, 'TXGuiComboBox', 0, parent);
+   SetGUIElementCursorByName(Result, 'crPress');
+   SetGUIElementPressState(Result, eventState);
+   SetGUIElementFont(Result, rfont);
+   SetGUIElementColor(Result, color.r, color.g, color.b, color.a);
+   SetGUIElementTextAlign(Result, gUIConst.halign[textHAlign], gUIConst.valign[textVAlign], tOffX, tOffY);
+   SetGUIElementTextFormatted(Result, True);
+   SetGUIElementAlign(Result, gUIConst.halign[hAlign], gUIConst.valign[vAlign]);
+   SetGUIElementPosition(Result, iposX, iposY);
+   SetGUIElementLogicRect(Result, iwidth, GetGUITextureHeight(cMaterialMiddle));
+   SetGUIElementRect(Result, iwidth, GetGUITextureHeight(cMaterialMiddle));
+   SetGUIElementMaterial(Result, cMaterialMiddle);
+   
+   SetGUIListBoxSelectedMaterialName(Result, cMaterialListSelected); // selected
+   SetGUIListBoxRowHeight(Result, GetGUITextureHeight(cMaterialListSelected));
+   SetGUIListBoxVisibleRows(Result, iminScrollCount);
+   
+   SetGUIListBoxMouseTrack(Result, 3); // 1 - only text change color on hover, 2 - only material appears, 3 - text and material on hover
+   SetGUIListBoxMouseTrackMaterialName(Result, cMaterialListHover); // hover
+   SetGUIListBoxMouseTrackFontColor(Result, colorhover.r, colorhover.g, colorhover.b, colorhover.a);
+   
+   {var middleMatW : Integer = GetGUITextureWidth(cMaterialMiddle);
+   var side : Integer = GetGUITextureWidth(cMaterialLeft);
+   var middleW : Integer = iwidth-side-side;
+   if (middleW<>0) then
+   begin
+      var tileW : Integer = (middleW div middleMatW);
+      if ((middleW mod middleMatW)>0) then tileW := tileW+1;
+      var i : Integer;
+      for i:=0 to tileW-1 do
+      begin
+         GUIElementSendToBack(_gui_CreateTileScaleImage('t_'+IntToStr(i), Result, cMaterialMiddle, gc_halParentLeft, gc_valParentTop, i*middleMatW, 0, Min(middleMatW, middleW-i*middleMatW), 0, bGetUpdate));
+      end;
+   end;}
+   
+   // - setup combobox list
+   var tmpHnd : Integer = GetGUIComboBoxListBoxHandle(Result);
+   SetGUIElementCursorByName(tmpHnd, 'crPress');
+   SetGUIElementAlign(tmpHnd, 'halParentMiddle', 'valParentTop');
+   SetGUIElementFont(tmpHnd, rfont);
+   SetGUIElementColor(tmpHnd, color.r, color.g, color.b, color.a);
+   SetGUIElementTextAlign(tmpHnd, gUIConst.halign[textHAlign], gUIConst.valign[textVAlign], tOffx+GetGUITextureWidth(cMaterialLeft), tOffY);
+   SetGUIElementTextFormatted(tmpHnd, True);
+   SetGUIElementMaterial(tmpHnd, cMaterialListBackground);
+   SetGUIElementAllPositionRect(tmpHnd, 0 ,GetGUIElementHeight(Result)+cListOffY, GetGUIElementLogicWidth(Result)+GetGUITextureWidth(cMaterialLeft)*2, GetGUITextureHeight(cMaterialListSelected)*(Min(count, iminScrollCount)));
+   
+   // - setup scroller
+   var elmVScroll : Integer = GetGUIListBoxScrollerHandle(tmpHnd);
+   SetGUIElementAlign(elmVScroll, 'halParentRightWidth', 'valParentTop');
+   SetGUIElementCursorByName(elmVScroll, 'crDefault');
+   SetGUIAllowEvents(elmVScroll, True, False, False);
+   
+   SetGUIElementMaterialOffset(elmVScroll, 0, 0);
+   SetGUIElementAllPositionRect(elmVScroll, 0, GetGUITextureHeight(cMaterialScrollerUp)+cScrollerMarginY, GetGUITextureWidth(cMaterialScrollerTile), GetGUIElementHeight(tmpHnd)-GetGUITextureHeight(cMaterialScrollerDown)*2-cScrollerMarginY*2);
+   SetGUIElementLogicHeight(elmVScroll, GetGUIElementHeight(elmVScroll)+GetGUITextureHeight(cMaterialScrollerUp));
+   
+   SetGUIElementMaterial(elmVScroll, cMaterialScrollerTile);
+   SetGUIScrollButtonSource(elmVScroll, 0, cBtnDummy, true); // cMaterialScrollerUp
+   SetGUIScrollButtonSource(elmVScroll, 2, cBtnDummy, true); // cMaterialScrollerDown
+   SetGUIScrollButtonSource(elmVScroll, 1, cBtnDummy, true); // cMaterialScroller
+   
+   var i : Integer;
+   for i :=0 to 2 do
+   begin
+      var mat : String;
+      case i of
+         0 : mat := cMaterialScrollerUp;
+         1 : mat := cMaterialScroller;
+         2 : mat := cMaterialScrollerDown;
+      end;
+      var tmpElm : Integer = GetGUIElementScrollButtonIndex(elmVScroll, i);
+      SetGUIElementAllRect(tmpElm, GetGUITextureWidth(mat), GetGUITextureHeight(mat));
+      SetGUIElementVisibleProperties(tmpElm, 'UpProperty', mat, 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'HoverProperty', mat, 0, 0, 0, 0, curind, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'DownProperty', mat, 0, 0, 0, 0, curind, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'DisableProperty', mat, 0, 0, 0, 0, -1, 0.5, 0.5, 0.5, 1);
+      SetGUIElementVisibleProperties(tmpElm, 'CheckOnProperty', mat, 0, 0, 0, 0, curind, 0.5, 0.5, 0.5, 1);
+      case i of
+         0 : begin
+            SetGUIElementPositionY(tmpElm, -GetGUITextureHeight(mat));
+            SetGUIElementAlign(tmpElm, 'halParentLeft', 'valParentTop'); // halParentLeft
+         end;
+         1 : begin
+            SetGUIElementAlign(tmpElm, 'halParentMiddle', 'valParentTop'); // valParentTop
+         end;
+         2 : begin
+            SetGUIElementAlign(tmpElm, 'halParentLeft', 'valParentBottomHeight'); // halParentLeft
+         end;
+      end;
+   end;
+   _gui_CreateImage('btn', Result, cMaterialBtn, gc_halParentRightWidth, gc_valParentMiddle, 2, 0, 0, 0, 0, True);
+   _gui_CreateImage('left', Result, cMaterialLeft, gc_halParentLeft, gc_valParentTop, -GetGUITextureWidth(cMaterialLeft), 0, 0, 0, 0, True);
+   _gui_CreateImage('right', Result, cMaterialRight, gc_halParentRight, gc_valParentTop, 0, 0, 0, 0, 0, True);
+end;
+
+// _gui_TileScaleElementToSize
+//
+procedure _gui_TileScaleElementToSize(const elmHnd : Integer; const sizeX, sizeY : Integer);
+begin
+   var fScaleX, fScaleY : Float = 1;
+   var elmWidth, elmHeight : Integer;
+   if (sizeX<>0) then
+   begin
+      elmWidth := GetGUIElementWidth(elmHnd);
+      fScaleX := sizeX/elmWidth;
+      SetGUIElementWidth(elmHnd, sizeX);
+   end;
+   if (sizeY<>0) then
+   begin
+      elmHeight := GetGUIElementHeight(elmHnd);
+      fScaleY := sizeY/elmHeight;
+      SetGUIElementHeight(elmHnd, sizeY);
+   end;
+   if (sizeX<0) then fScaleX := -fScaleX;
+   if (sizeY<0) then fScaleY := -fScaleY;
+   SetGUIElementTileScales(elmHnd, fScaleX, fScaleY);
+end;
+
+// _gui_CreateInputBox
+//
+function _gui_CreateInputBox(const inputboxid : String; parent : Integer; var text : String; halign, valign : Integer; posX, posY, width, maxlength : Integer; eventState, hint : String; enabled : Boolean; tposx, tposy, thalign, tvalign, font : Integer; r, g, b, a : Float; bGetUpdate : Boolean) : Integer;
+begin
+   const cMaterialLeft = 'inputbox.l';
+   const cMaterialMiddle = 'inputbox.m';
+   const cMaterialRight = 'inputbox.r';
+   var sidel : Integer = GetGUITextureWidth(cMaterialLeft);
+   var sider : Integer = GetGUITextureWidth(cMaterialRight);
+   var rwidth : Integer;
+   var matHeight : Integer = floor(GetGUITextureHeight(cMaterialMiddle)*1.5);
+   if width=0 then
+   rwidth := GetGUIElementWidth(parent)
+   else
+   rwidth := width;
+   var elminputbox : Integer = _gui_CreateImage(inputboxid, parent, gc_gui_material_blank, halign, valign, posX, posY, rwidth, matHeight, 0, bGetUpdate);
+   SetGUIElementStringTag(elminputbox, inputboxid);
+   var elmHnd : Integer = _gui_CreateImage('l', elminputbox, cMaterialLeft, gc_halParentLeft, gc_valParentTop, 0, 0, 0, matHeight, 0, bGetUpdate);
+   var middleMatW : Integer = GetGUITextureWidth(cMaterialMiddle);
+   var middleW : Integer = rwidth-sidel;
+   if (middleW<>0) then
+   begin
+      var tileW : Integer = (middleW div middleMatW);
+      if ((middleW mod middleMatW)>0) then tileW := tileW+1;
+      var i : Integer;
+      for i:=0 to tileW-1 do
+      elmHnd := _gui_CreateTileScaleImage('t_'+IntToStr(i), elminputbox, cMaterialMiddle, gc_halParentLeft, gc_valParentTop, sidel+i*middleMatW, 0, Min(middleMatW, middleW-i*middleMatW), matHeight, bGetUpdate);
+   end;
+   elmHnd := _gui_CreateImage('r', elminputbox, cMaterialRight, gc_halParentLeft, gc_valParentTop, rwidth-sider, 0, 0, matHeight, 0, bGetUpdate);
+   var elminputtext : Integer;
+   if (bGetUpdate) then
+   begin
+      elminputtext := GetGUIElementIndexByNameParent('text', elminputbox);
+      if elminputtext<>0 then
+      begin
+         var className : String = GetObjectClassNameByHandle(elminputtext);
+         if ((enabled) and (not SameText(className, 'TXEditControl')))
+         or ((not enabled) and (SameText(className, 'TXEditControl'))) then
+         begin
+            RemoveGUIElement(elminputtext);
+            elminputtext := 0;
+         end;
+      end;
+   end;
+   var bInit : Boolean;
+   if (elminputtext=0) then
+   begin
+      bInit := True;
+      if (enabled) then
+      elminputtext := AddNewElementByClassNameParent('text', 'TXEditControl', 0, elminputbox)
+      else
+      elminputtext := AddNewElementByClassNameParent('text', 'TOSWBaseGuiTextControl', 0, elminputbox);
+   end;
+   SetGUIElementMaxTextLength(elminputtext, maxLength);
+   SetGUIElementHint(elminputtext, hint);
+   SetGUIElementPressState(elminputtext, eventState);
+   SetGUIElementFont(elminputtext, gUIConst.font[font]);
+   SetGUIElementColor(elminputtext, 1, 1, 1, 1);
+   SetGUIElementAlign(elminputtext, 'halParentLeft', 'valParentTop');
+   SetGUIElementAllPositionRect(elminputtext, tposX, tposY, rwidth-tposX*2, GetGUIElementHeight(elminputbox));
+   SetGUIElementTextAlign(elminputtext, gUIConst.halign[thalign], gUIConst.valign[tvalign], 0, 0);
+   var prevText : String = GetGUIElementText(elminputtext);
+   if (prevText<>text) or (bInit) then // need to init text := '' first time, to make text cursor start from 1 char and not from 0
+   SetGUIElementText(elminputtext, text);
+   SetGUIElementTextFormatted(elminputtext, True);
+   //SetGUIElementCursorByIndex(elminputtext, 2);
+   SetGUIElementCursorByName(elminputtext, 'crPress');
+   if (not enabled) then
+   begin
+      SetGUIElementUserBlend(elminputbox, 0.9);
+      SetGUIElementColor(elminputtext, 0.54, 0.476, 0.296, 1);
+   end;
+   
+   Result := elminputbox;
+end;
+
+// _gui_CreateMainWindow
+//
+function _gui_CreateMainWindow(const elementName : String; parent : Integer; hAlign, vAlign : Integer; posX, posY, iwidth, iheight : Integer; bgalpha : Float; bGetUpdate : Boolean) : Integer;
+begin
+   var width, height : Integer;
+   if (iwidth<457) then
+   begin
+      width := 457;
+      ErrorLog('_gui_CreateMainWindow width<457, unsupported');
+   end
+   else
+   width := iwidth;
+   if (iheight<509) then
+   begin
+      height := 509;
+      ErrorLog('_gui_CreateMainWindow height<509, unsupported');
+   end
+   else
+   height := iheight;
+   const bordersize = 106;
+   const materialBase = 'mainframe';
+   var cMaterialBackground : String = materialBase+'.background';
+   var cMaterialHeader : String = materialBase+'.header';
+   var cMaterialLeft : String = materialBase+'.left';
+   var cMaterialRight : String = materialBase+'.right';
+   var cMaterialTop : String = materialBase+'.top';
+   var cMaterialBottom : String = materialBase+'.bottom';
+   var cMaterialCornerLT : String = materialBase+'.corner_lt';
+   var cMaterialCornerRT : String = materialBase+'.corner_rt';
+   var cMaterialCornerLB : String = materialBase+'.corner_lb';
+   var cMaterialCornerRB : String = materialBase+'.corner_rb';
+   
+   // cache width
+   var twBackground : Integer = GetGUITextureWidth(cMaterialBackground);
+   var twLeft : Integer = GetGUITextureWidth(cMaterialLeft);
+   var twRight : Integer = GetGUITextureWidth(cMaterialRight);
+   var twTop : Integer = GetGUITextureWidth(cMaterialTop);
+   var twBottom : Integer = GetGUITextureWidth(cMaterialBottom);
+   
+   // cache height
+   var thBackground : Integer = GetGUITextureHeight(cMaterialBackground);
+   var thLeft : Integer = GetGUITextureHeight(cMaterialLeft);
+   var thRight : Integer = GetGUITextureHeight(cMaterialRight);
+   var thTop : Integer = GetGUITextureHeight(cMaterialTop);
+   var thBottom : Integer = GetGUITextureHeight(cMaterialBottom);
+   
+   // cache width
+   var twCornerLT : Integer = GetGUITextureWidth(cMaterialCornerLT);
+   var twCornerRT : Integer = GetGUITextureWidth(cMaterialCornerRT);
+   var twCornerLB : Integer = GetGUITextureWidth(cMaterialCornerLB);
+   var twCornerRB : Integer = GetGUITextureWidth(cMaterialCornerRB);
+   
+   // cache height
+   var thCornerLT : Integer = GetGUITextureHeight(cMaterialCornerLT);
+   var thCornerRT : Integer = GetGUITextureHeight(cMaterialCornerRT);
+   var thCornerLB : Integer = GetGUITextureHeight(cMaterialCornerLB);
+   var thCornerRB : Integer = GetGUITextureHeight(cMaterialCornerRB);
+   
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this cas.e we are not able to get element handle by name. elmname='+elementName);
+   var iwidth : Integer = width;
+   var iheight : Integer = height;
+   var iparent : Integer = parent;
+   if (iparent=0) then iparent := _gui_GetTop;
+   
+   var elmWindowHnd : Integer = _gui_CreateParent(elementName, iparent, hAlign, vAlign, posX, posY, iwidth, iheight, bGetUpdate);
+   var elmBgHnd : Integer = _gui_CreateImage('bg', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   var elmLHnd : Integer = _gui_CreateImage('l', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, -bordersize+1, -bordersize, iwidth, iheight, 0, bGetUpdate);
+   var elmRHnd : Integer = _gui_CreateImage('r', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, bordersize, -bordersize, iwidth, iheight, 0, bGetUpdate);
+   var elmTHnd : Integer = _gui_CreateImage('t', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, -bordersize, -bordersize, iwidth, iheight, 0, bGetUpdate);
+   var elmBHnd : Integer = _gui_CreateImage('b', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, -bordersize, bordersize-1, iwidth, iheight, 0, bGetUpdate);
+   var elmBackgroundHnd : Integer = _gui_CreateImage('background', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   var elmHeaderHnd : Integer = _gui_CreateImage('head', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   SetGUIElementUserBlend(elmBgHnd, bgalpha);
+   SetGUIElementVisible(elmHeaderHnd, width>845);
+   
+   var backgroundWidth : Integer = iwidth;
+   var backgroundHeight : Integer = iheight;
+   var tileW, tileH : Integer;
+   tileW := (backgroundWidth div twBackground);
+   if ((backgroundWidth mod twBackground)>0) then tileW := tileW+1;
+   tileH := (backgroundHeight div thBackground);
+   if ((backgroundHeight mod thBackground)>0) then tileH := tileH+1;
+   var i : Integer;
+   for i:=0 to tileW-1 do
+   begin
+      var tmpX, tmpY : Float;
+      var fscaleX : Float = 1;
+      var fscaleY : Float = 1;
+      var j : Integer;
+      for j:=0 to tileH-1 do
+      begin
+         var elmHnd : Integer = _gui_CreateTileScaleImage('bg_'+IntToStr(i)+'_'+IntToStr(j), elmBgHnd, cMaterialBackground, gc_halParentLeft, gc_valParentTop, i*twBackground, j*thBackground, Min(backgroundWidth-i*twBackground, twBackground), Min(backgroundHeight-j*thBackground, thBackground), bGetUpdate);
+         var elmwidth : Integer = twBackground;
+         if (iwidth<>0) and (iwidth<(elmwidth+i*twBackground)) then
+         fscaleX := (iwidth-i*twBackground)/elmwidth;
+         var elmheight : Integer = thBackground;
+         if (iheight<>0) and (iheight<(elmheight*(iheight div backgroundHeight)+j*thBackground)) then
+         fscaleY := (iheight-j*thBackground)/(elmheight*(iheight div backgroundHeight));
+         if (iwidth<0) then fscaleX := -fscaleX;
+         if (iheight<0) then fscaleY := -fscaleY;
+         SetGUIElementTileScales(elmHnd, fscaleX, fscaleY);
+      end;
+   end;
+   SetGUIElementAllPositionRect(elmBackgroundHnd, 0, 0, iwidth, iheight);
+   
+   var tmpwidth : Integer = (iwidth-twCornerLT-twCornerRT+bordersize*2);
+   var tmpheight : Integer = (iheight-thCornerLT-thCornerRB+bordersize*2);
+   tileW := (tmpwidth div twTop);
+   if ((tmpwidth mod twTop)>0) then tileW := tileW+1;
+   tileH := (tmpheight div thLeft);
+   if ((tmpheight mod thLeft)>0) then tileH := tileH+1;
+   for i:=0 to tileH-1 do
+   begin
+      _gui_CreateTileScaleImage('l_'+IntToStr(i), elmLHnd, cMaterialLeft, gc_halParentLeft, gc_valParentTop, 0, thCornerLT+i*thLeft, 0, Min(thLeft, tmpheight-i*thLeft), bGetUpdate);
+      _gui_CreateTileScaleImage('r_'+IntToStr(i), elmRHnd, cMaterialRight, gc_halParentRightWidth, gc_valParentTop, 0, thCornerRT+i*thRight, 0, Min(thRight, +tmpheight-i*thRight), bGetUpdate);
+   end;
+   for i:=0 to tileW-1 do
+   begin
+      _gui_CreateTileScaleImage('t_'+IntToStr(i), elmTHnd, cMaterialTop, gc_halParentLeft, gc_valParentTop, twCornerLT+i*twTop, 0, Min(twTop, tmpwidth-i*twTop), 0, bGetUpdate);
+      _gui_CreateTileScaleImage('b_'+IntToStr(i), elmBHnd, cMaterialBottom, gc_halParentLeft, gc_valParentBottomHeight, twCornerLB+i*twTop, 0, Min(twBottom, tmpwidth-i*twBottom), 0, bGetUpdate);
+   end;
+   if (iheight>0) then
+   begin
+      _gui_CreateImage('clt', elmBackgroundHnd, cMaterialCornerLT, gc_halParentLeft, gc_valParentTop, -bordersize, -bordersize, 0, 0, 0, bGetUpdate);
+      _gui_CreateImage('clb', elmBackgroundHnd, cMaterialCornerLB, gc_halParentLeft, gc_valParentBottomHeight, -bordersize, bordersize, 0, 0, 0, bGetUpdate);
+   end;
+   if (iwidth>0) then
+   begin
+      _gui_CreateImage('crt', elmBackgroundHnd, cMaterialCornerRT, gc_halParentRightWidth, gc_valParentTop, bordersize, -bordersize, 0, 0, 0, bGetUpdate);
+      _gui_CreateImage('crb', elmBackgroundHnd, cMaterialCornerRB, gc_halParentRightWidth, gc_valParentBottomHeight, bordersize, bordersize, 0, 0, 0, bGetUpdate);
+   end;
+   //_gui_CreateImage('head', elmHeaderHnd, cMaterialHeader, gc_halParentMiddle, gc_valParentTop, 0, GetGUITextureHeight(cMaterialHeader)-4, 0, -GetGUITextureHeight(cMaterialHeader), 0, bGetUpdate);
+   _gui_CreateImage('head', elmHeaderHnd, cMaterialHeader, gc_halParentMiddle, gc_valParentTop, 0, -25, 0, 0, 0, bGetUpdate);
+   
+   Result := elmWindowHnd;
+end;
+
+// _gui_CreateSkinWindow
+//
+function _gui_CreateSkinWindow(const elementName : String; parent : Integer; hAlign, vAlign : Integer; posX, posY, width, height : Integer; bgalpha : Float; bGetUpdate : Boolean) : Integer;
+begin
+   const bordersize = 0;
+   const materialBase = 'skin';
+   var cMaterialBackground : String = materialBase+'.background';
+   var cMaterialLeft : String = materialBase+'.left';
+   var cMaterialRight : String = materialBase+'.right';
+   var cMaterialTop : String = materialBase+'.top';
+   var cMaterialBottom : String = materialBase+'.bottom';
+   var cMaterialCornerLT : String = materialBase+'.corner_lt';
+   var cMaterialCornerRT : String = materialBase+'.corner_rt';
+   var cMaterialCornerLB : String = materialBase+'.corner_lb';
+   var cMaterialCornerRB : String = materialBase+'.corner_rb';
+   
+   // cache width
+   var twBackground : Integer = GetGUITextureWidth(cMaterialBackground);
+   var twLeft : Integer = GetGUITextureWidth(cMaterialLeft);
+   var twRight : Integer = GetGUITextureWidth(cMaterialRight);
+   var twTop : Integer = GetGUITextureWidth(cMaterialTop);
+   var twBottom : Integer = GetGUITextureWidth(cMaterialBottom);
+   
+   // cache height
+   var thBackground : Integer = GetGUITextureHeight(cMaterialBackground);
+   var thLeft : Integer = GetGUITextureHeight(cMaterialLeft);
+   var thRight : Integer = GetGUITextureHeight(cMaterialRight);
+   var thTop : Integer = GetGUITextureHeight(cMaterialTop);
+   var thBottom : Integer = GetGUITextureHeight(cMaterialBottom);
+   
+   // cache width
+   var twCornerLT : Integer = GetGUITextureWidth(cMaterialCornerLT);
+   var twCornerRT : Integer = GetGUITextureWidth(cMaterialCornerRT);
+   var twCornerLB : Integer = GetGUITextureWidth(cMaterialCornerLB);
+   var twCornerRB : Integer = GetGUITextureWidth(cMaterialCornerRB);
+   
+   // cache height
+   var thCornerLT : Integer = GetGUITextureHeight(cMaterialCornerLT);
+   var thCornerRT : Integer = GetGUITextureHeight(cMaterialCornerRT);
+   var thCornerLB : Integer = GetGUITextureHeight(cMaterialCornerLB);
+   var thCornerRB : Integer = GetGUITextureHeight(cMaterialCornerRB);
+   
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this cas.e we are not able to get element handle by name. elmname='+elementName);
+   var iwidth : Integer = width;
+   var iheight : Integer = height;
+   var iparent : Integer = parent;
+   if (iparent=0) then iparent := _gui_GetTop;
+   
+   var elmWindowHnd : Integer = _gui_CreateParent(elementName, iparent, hAlign, vAlign, posX, posY, iwidth, iheight, bGetUpdate);
+   var elmBgHnd : Integer = _gui_CreateImage('bg', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   var elmLHnd : Integer = _gui_CreateImage('l', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, -bordersize, -bordersize, iwidth, iheight, 0, bGetUpdate);
+   var elmRHnd : Integer = _gui_CreateImage('r', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, bordersize, -bordersize, iwidth, iheight, 0, bGetUpdate);
+   var elmTHnd : Integer = _gui_CreateImage('t', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, -bordersize, -bordersize, iwidth, iheight, 0, bGetUpdate);
+   var elmBHnd : Integer = _gui_CreateImage('b', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, -bordersize, bordersize, iwidth, iheight, 0, bGetUpdate);
+   var elmBackgroundHnd : Integer = _gui_CreateImage('background', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   var elmHeaderHnd : Integer = _gui_CreateImage('head', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   SetGUIElementUserBlend(elmBgHnd, bgalpha);
+   
+   var backgroundWidth : Integer = iwidth;
+   var backgroundHeight : Integer = iheight;
+   var tileW, tileH : Integer;
+   tileW := (backgroundWidth div twBackground);
+   if ((backgroundWidth mod twBackground)>0) then tileW := tileW+1;
+   tileH := (backgroundHeight div thBackground);
+   if ((backgroundHeight mod thBackground)>0) then tileH := tileH+1;
+   var i : Integer;
+   for i:=0 to tileW-1 do
+   begin
+      var tmpX, tmpY : Float;
+      var fscaleX : Float = 1;
+      var fscaleY : Float = 1;
+      var j : Integer;
+      for j:=0 to tileH-1 do
+      begin
+         var elmHnd : Integer = _gui_CreateTileScaleImage('bg_'+IntToStr(i)+'_'+IntToStr(j), elmBgHnd, cMaterialBackground, gc_halParentLeft, gc_valParentTop, i*twBackground, j*thBackground, Min(backgroundWidth-i*twBackground, twBackground), Min(backgroundHeight-j*thBackground, thBackground), bGetUpdate);
+         var elmwidth : Integer = twBackground;
+         if (iwidth<>0) and (iwidth<(elmwidth+i*twBackground)) then
+         fscaleX := (iwidth-i*twBackground)/elmwidth;
+         var elmheight : Integer = thBackground;
+         if (iheight<>0) and (iheight<(elmheight*(iheight div backgroundHeight)+j*thBackground)) then
+         fscaleY := (iheight-j*thBackground)/(elmheight*(iheight div backgroundHeight));
+         if (iwidth<0) then fscaleX := -fscaleX;
+         if (iheight<0) then fscaleY := -fscaleY;
+         SetGUIElementTileScales(elmHnd, fscaleX, fscaleY);
+      end;
+   end;
+   SetGUIElementAllPositionRect(elmBackgroundHnd, 0, 0, iwidth, iheight);
+   
+   var tmpwidth : Integer = (iwidth-twCornerLT-twCornerRT+bordersize*2);
+   var tmpheight : Integer = (iheight-thCornerLT-thCornerRB+bordersize*2);
+   tileW := (tmpwidth div twTop);
+   if ((tmpwidth mod twTop)>0) then tileW := tileW+1;
+   tileH := (tmpheight div thLeft);
+   if ((tmpheight mod thLeft)>0) then tileH := tileH+1;
+   for i:=0 to tileH-1 do
+   begin
+      _gui_CreateTileScaleImage('l_'+IntToStr(i), elmLHnd, cMaterialLeft, gc_halParentLeft, gc_valParentTop, 0, thCornerLT+i*thLeft, 0, Min(thLeft, tmpheight-i*thLeft), bGetUpdate);
+      _gui_CreateTileScaleImage('r_'+IntToStr(i), elmRHnd, cMaterialRight, gc_halParentRightWidth, gc_valParentTop, 0, thCornerRT+i*thRight, 0, Min(thRight, +tmpheight-i*thRight), bGetUpdate);
+   end;
+   for i:=0 to tileW-1 do
+   begin
+      _gui_CreateTileScaleImage('t_'+IntToStr(i), elmTHnd, cMaterialTop, gc_halParentLeft, gc_valParentTop, twCornerLT+i*twTop, 0, Min(twTop, tmpwidth-i*twTop), 0, bGetUpdate);
+      _gui_CreateTileScaleImage('b_'+IntToStr(i), elmBHnd, cMaterialBottom, gc_halParentLeft, gc_valParentBottomHeight, twCornerLB+i*twTop, 0, Min(twBottom, tmpwidth-i*twBottom), 0, bGetUpdate);
+   end;
+   if (iheight>0) then
+   begin
+      _gui_CreateTileScaleImage('clt', elmBackgroundHnd, cMaterialCornerLT, gc_halParentLeft, gc_valParentTop, -bordersize, -bordersize, min(twCornerLT, iwidth), 0, bGetUpdate);
+      _gui_CreateTileScaleImage('clb', elmBackgroundHnd, cMaterialCornerLB, gc_halParentLeft, gc_valParentBottomHeight, -bordersize, bordersize, min(twCornerLT, iwidth), 0, bGetUpdate);
+   end;
+   if (iwidth>0) then
+   begin
+      _gui_CreateTileScaleImage('crt', elmBackgroundHnd, cMaterialCornerRT, gc_halParentRightWidth, gc_valParentTop, bordersize, -bordersize, min(twCornerRT, iwidth), 0, bGetUpdate);
+      _gui_CreateTileScaleImage('crb', elmBackgroundHnd, cMaterialCornerRB, gc_halParentRightWidth, gc_valParentBottomHeight, bordersize, bordersize, min(twCornerRT, iwidth), 0, bGetUpdate);
+   end;
+   
+   Result := elmWindowHnd;
+end;
+
+// _gui_CreateSkinHeadWindow
+//
+function _gui_CreateSkinHeadWindow(const elementName : String; parent : Integer; hAlign, vAlign : Integer; posX, posY, width : Integer; bGetUpdate : Boolean) : Integer;
+begin
+   Result := _gui_CreateTileScaleImage(elementName+'_shl', parent, 'skin.header.l', hAlign, vAlign, posx, posy, width, 0, bGetUpdate);
+   _gui_CreateTileScaleImage(elementName+'_shr', Result, 'skin.header.r', gc_halParentRight, gc_valParentTop, -GetGUITextureWidth('skin.header.r'), 0, 0, 0, bGetUpdate);
+end;
+
+// _gui_CreatePaperWindow
+//
+function _gui_CreatePaperWindow(const elementName : String; parent : Integer; hAlign, vAlign : Integer; posX, posY, width, height : Integer; bgalpha : Float; bShowBlick : Boolean; bGetUpdate : Boolean) : Integer;
+begin
+   if (width>946) then
+   ErrorLog('_gui_CreatePaperWindow unsupported size iwidth>946');
+   const bordersize = 0;
+   const borderoverlap = 24;
+   const materialBase = 'paper';
+   var cMaterialBackground : String = materialBase+'.background';
+   var cMaterialLeft : String = materialBase+'.left';
+   var cMaterialRight : String = materialBase+'.right';
+   var cMaterialTop : String = materialBase+'.top';
+   var cMaterialBottom : String = materialBase+'.bottom';
+   var cMaterialCornerLT : String = materialBase+'.corner_lt';
+   var cMaterialCornerRT : String = materialBase+'.corner_rt';
+   var cMaterialCornerLB : String = materialBase+'.corner_lb';
+   var cMaterialCornerRB : String = materialBase+'.corner_rb';
+   var cMaterialBlick : String = materialBase+'.background.blick';
+   
+   // cache width
+   var twBackground : Integer = GetGUITextureWidth(cMaterialBackground);
+   var twLeft : Integer = GetGUITextureWidth(cMaterialLeft);
+   var twRight : Integer = GetGUITextureWidth(cMaterialRight);
+   var twTop : Integer = GetGUITextureWidth(cMaterialTop);
+   var twBottom : Integer = GetGUITextureWidth(cMaterialBottom);
+   
+   // cache height
+   var thBackground : Integer = GetGUITextureHeight(cMaterialBackground);
+   var thLeft : Integer = GetGUITextureHeight(cMaterialLeft);
+   var thRight : Integer = GetGUITextureHeight(cMaterialRight);
+   var thTop : Integer = GetGUITextureHeight(cMaterialTop);
+   var thBottom : Integer = GetGUITextureHeight(cMaterialBottom);
+   
+   // cache width
+   var twCornerLT : Integer = GetGUITextureWidth(cMaterialCornerLT);
+   var twCornerRT : Integer = GetGUITextureWidth(cMaterialCornerRT);
+   var twCornerLB : Integer = GetGUITextureWidth(cMaterialCornerLB);
+   var twCornerRB : Integer = GetGUITextureWidth(cMaterialCornerRB);
+   
+   // cache height
+   var thCornerLT : Integer = GetGUITextureHeight(cMaterialCornerLT);
+   var thCornerRT : Integer = GetGUITextureHeight(cMaterialCornerRT);
+   var thCornerLB : Integer = GetGUITextureHeight(cMaterialCornerLB);
+   var thCornerRB : Integer = GetGUITextureHeight(cMaterialCornerRB);
+   
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this cas.e we are not able to get element handle by name. elmname='+elementName);
+   var iwidth : Integer = width;
+   var iheight : Integer = height;
+   var iparent : Integer = parent;
+   if (iparent=0) then iparent := _gui_GetTop;
+   
+   var elmWindowHnd : Integer = _gui_CreateParent(elementName, iparent, hAlign, vAlign, posX, posY, iwidth, iheight, bGetUpdate);
+   var elmBgHnd : Integer = _gui_CreateImage('bg', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   var elmLHnd : Integer = _gui_CreateImage('l', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, -bordersize, -bordersize, iwidth, iheight, 0, bGetUpdate);
+   var elmRHnd : Integer = _gui_CreateImage('r', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, bordersize, -bordersize, iwidth, iheight, 0, bGetUpdate);
+   var elmTHnd : Integer = _gui_CreateImage('t', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, -bordersize, -bordersize, iwidth, iheight, 0, bGetUpdate);
+   var elmBHnd : Integer = _gui_CreateImage('b', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, -bordersize, bordersize, iwidth, iheight, 0, bGetUpdate);
+   var elmBackgroundHnd : Integer = _gui_CreateImage('background', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   var elmBlickHnd : Integer = _gui_CreateImage('blick', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   //var elmHeaderHnd : Integer = _gui_CreateImage('head', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   
+   var backgroundWidth : Integer = iwidth-borderoverlap*2;
+   var backgroundHeight : Integer = iheight-borderoverlap*2;
+   var tileW, tileH : Integer;
+   tileW := (backgroundWidth div twBackground);
+   if ((backgroundWidth mod twBackground)>0) then tileW := tileW+1;
+   tileH := (backgroundHeight div thBackground);
+   if ((backgroundHeight mod thBackground)>0) then tileH := tileH+1;
+   var i : Integer;
+   for i:=0 to tileW-1 do
+   begin
+      var tmpX, tmpY : Float;
+      var fscaleX : Float = 1;
+      var fscaleY : Float = 1;
+      var j : Integer;
+      for j:=0 to tileH-1 do
+      begin
+         var elmHnd : Integer = _gui_CreateTileScaleImage('bg_'+IntToStr(i)+'_'+IntToStr(j), elmBgHnd, cMaterialBackground, gc_halParentLeft, gc_valParentTop, borderoverlap+i*twBackground, borderoverlap+j*thBackground, Min(twBackground, (backgroundWidth-i*twBackground)), Min(thBackground, (backgroundHeight-j*thBackground)), bGetUpdate);
+         var elmwidth : Integer = twBackground;
+         if (iwidth<>0) and (iwidth<(elmwidth+i*twBackground)) then
+         fscaleX := (iwidth-i*twBackground)/elmwidth;
+         var elmheight : Integer = thBackground;
+         if (iheight<>0) and (iheight<(elmheight*(iheight div backgroundHeight)+j*thBackground)) then
+         fscaleY := (iheight-j*thBackground)/(elmheight*(iheight div backgroundHeight));
+         if (iwidth<0) then fscaleX := -fscaleX;
+         if (iheight<0) then fscaleY := -fscaleY;
+         SetGUIElementTileScales(elmHnd, fscaleX, fscaleY);
+      end;
+   end;
+   SetGUIElementAllPositionRect(elmBackgroundHnd, 0, 0, iwidth, iheight);
+   
+   var tmpwidth : Integer = (iwidth-twCornerLT-twCornerRT+bordersize*2+borderoverlap*2);
+   var tmpheight : Integer = (iheight-thCornerLT-thCornerRB+bordersize*2+borderoverlap*2);
+   tileW := (tmpwidth div twTop);
+   if ((tmpwidth mod twTop)>0) then tileW := tileW+1;
+   tileH := (tmpheight div thLeft);
+   if ((tmpheight mod thLeft)>0) then tileH := tileH+1;
+   for i:=0 to tileH-1 do
+   begin
+      _gui_CreateTileScaleImage('l_'+IntToStr(i), elmLHnd, cMaterialLeft, gc_halParentLeft, gc_valParentTop, 0, thCornerLT+i*thLeft-borderoverlap, 0, Min(thLeft, tmpheight-i*thLeft), bGetUpdate);
+      _gui_CreateTileScaleImage('r_'+IntToStr(i), elmRHnd, cMaterialRight, gc_halParentRightWidth, gc_valParentTop, 0, thCornerRT+i*thRight-borderoverlap, 0, Min(thRight, +tmpheight-i*thRight), bGetUpdate);
+   end;
+   for i:=0 to tileW-1 do
+   begin
+      _gui_CreateTileScaleImage('t_'+IntToStr(i), elmTHnd, cMaterialTop, gc_halParentLeft, gc_valParentTop, twCornerLT+i*twTop-borderoverlap, 0, Min(twTop, tmpwidth-i*twTop), 0, bGetUpdate);
+      _gui_CreateTileScaleImage('b_'+IntToStr(i), elmBHnd, cMaterialBottom, gc_halParentLeft, gc_valParentBottomHeight, twCornerLB+i*twTop-borderoverlap, 0, Min(twBottom, tmpwidth-i*twBottom), 0, bGetUpdate);
+   end;
+   if (iheight>0) then
+   begin
+      _gui_CreateTileScaleImage('clt', elmBackgroundHnd, cMaterialCornerLT, gc_halParentLeft, gc_valParentTop, -bordersize, -bordersize, min(twCornerLT, iwidth), 0, bGetUpdate);
+      _gui_CreateTileScaleImage('clb', elmBackgroundHnd, cMaterialCornerLB, gc_halParentLeft, gc_valParentBottomHeight, -bordersize, bordersize, min(twCornerLT, iwidth), 0, bGetUpdate);
+   end;
+   if (iwidth>0) then
+   begin
+      _gui_CreateTileScaleImage('crt', elmBackgroundHnd, cMaterialCornerRT, gc_halParentRightWidth, gc_valParentTop, bordersize, -bordersize, min(twCornerRT, iwidth), 0, bGetUpdate);
+      _gui_CreateTileScaleImage('crb', elmBackgroundHnd, cMaterialCornerRB, gc_halParentRightWidth, gc_valParentBottomHeight, bordersize, bordersize, min(twCornerRT, iwidth), 0, bGetUpdate);
+   end;
+   if (bShowBlick) then
+   begin
+      //_gui_CreateTileScaleImage('bli', elmBlickHnd, cMaterialBlick, gc_halParentLeft, gc_valParentTop, dbgx, dbgz, dbgy, dbgy, bGetUpdate);
+      var elmHnd : Integer = _gui_CreateImage('bli', elmBlickHnd, cMaterialBlick, gc_halParentLeft, gc_valParentTop, twCornerLT-borderoverlap*2, thCornerLT-borderoverlap*2, Min(GetGUITextureWidth(cMaterialBlick), Min(tmpwidth, tmpheight)), Min(GetGUITextureWidth(cMaterialBlick), Min(tmpwidth, tmpheight)), 0, bGetUpdate);
+      SetGUIElementUserBlend(elmHnd, bgalpha);
+   end;
+   Result := elmWindowHnd;
+end;
+
+// _gui_CreateMetalLine
+//
+function _gui_CreateMetalLine(const elementName : String; parent : Integer; hAlign, vAlign : Integer; posX, posY, width, height : Integer; blefttop, bGetUpdate : Boolean) : Integer;
+begin
+   Result := 0;
+   
+   const materialBase = 'metalframe';
+   var cMaterialTop : String = materialBase+'.top';
+   var cMaterialBottom : String = materialBase+'.bottom';
+   var cMaterialLeft : String = materialBase+'.left';
+   var cMaterialRight : String = materialBase+'.right';
+   
+   // cache width
+   var twLeft : Integer = GetGUITextureWidth(cMaterialLeft);
+   var twTop : Integer = GetGUITextureWidth(cMaterialTop);
+   
+   // cache height
+   var thLeft : Integer = GetGUITextureHeight(cMaterialLeft);
+   var thTop : Integer = GetGUITextureHeight(cMaterialTop);
+   
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this cas.e we are not able to get element handle by name. elmname='+elementName);
+   var iwidth : Integer = width;
+   var iheight : Integer = height;
+   var iparent : Integer = parent;
+   if (iparent=0) then iparent := _gui_GetTop;
+   
+   var elmHnd : Integer;
+   var i : Integer;
+   if (iwidth<>0) then
+   begin
+      var tileW : Integer = (iwidth div twTop);
+      if ((iwidth mod twTop)>0) then tileW := tileW+1;
+      for i:=0 to tileW-1 do
+      if (blefttop) then
+      elmHnd := _gui_CreateTileScaleImage(elementName+'t_'+IntToStr(i), parent, cMaterialTop, hAlign, vAlign, posx+i*twTop, posy, Min(twTop, iwidth-i*twTop), 0, bGetUpdate)
+      else
+      elmHnd := _gui_CreateTileScaleImage(elementName+'b_'+IntToStr(i), parent, cMaterialBottom, hAlign, vAlign, posx+i*twTop, posy, Min(twTop, iwidth-i*twTop), 0, bGetUpdate);
+      if (Result=0) then
+      Result := elmHnd;
+   end
+   else
+   begin
+      var tileH : Integer = (iheight div thLeft);
+      if ((iheight mod thLeft)>0) then tileH := tileH+1;
+      for i:=0 to tileH-1 do
+      if (blefttop) then
+      elmHnd := _gui_CreateTileScaleImage(elementName+'l_'+IntToStr(i), parent, cMaterialLeft, hAlign, vAlign, posx, posy+i*thLeft, 0, Min(thLeft, iheight-i*thLeft), bGetUpdate)
+      else
+      elmHnd := _gui_CreateTileScaleImage(elementName+'r_'+IntToStr(i), parent, cMaterialRight, hAlign, vAlign, posx, posy+i*thLeft, 0, Min(thLeft, iheight-i*thLeft), bGetUpdate);
+      if (Result=0) then
+      Result := elmHnd;
+   end;
+end;
+
+// _gui_CreateFrameLine
+//
+function _gui_CreateFrameLine(const elementName : String; parent : Integer; hAlign, vAlign : Integer; posX, posY, width, height : Integer; bGetUpdate : Boolean) : Integer;
+begin
+   const materialBase = 'frame';
+   var cMaterialLeft : String = materialBase+'.left';
+   var cMaterialTop : String = materialBase+'.top';
+   
+   // cache width
+   var twLeft : Integer = GetGUITextureWidth(cMaterialLeft);
+   var twTop : Integer = GetGUITextureWidth(cMaterialTop);
+   
+   // cache height
+   var thLeft : Integer = GetGUITextureHeight(cMaterialLeft);
+   var thTop : Integer = GetGUITextureHeight(cMaterialTop);
+   
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this cas.e we are not able to get element handle by name. elmname='+elementName);
+   var iwidth : Integer = width;
+   var iheight : Integer = height;
+   var iparent : Integer = parent;
+   if (iparent=0) then iparent := _gui_GetTop;
+   
+   var elmHnd : Integer;
+   if (iwidth<>0) then
+   begin
+      var tileW : Integer = (iwidth div twTop);
+      if ((iwidth mod twTop)>0) then tileW := tileW+1;
+      var i : Integer;
+      for i:=0 to tileW-1 do
+      elmHnd := _gui_CreateTileScaleImage('t_'+IntToStr(i), parent, cMaterialTop, hAlign, vAlign, posx+i*twTop, posy, Min(twTop, iwidth-i*twTop), 0, bGetUpdate);
+   end
+   else
+   begin
+      var tileH : Integer = (iheight div thLeft);
+      if ((iheight mod thLeft)>0) then tileH := tileH+1;
+      var i : Integer;
+      for i:=0 to tileH-1 do
+      elmHnd := _gui_CreateTileScaleImage('l_'+IntToStr(i), parent, cMaterialLeft, hAlign, vAlign, posx, posy+i*thLeft, 0, Min(thLeft, iheight-i*thLeft), bGetUpdate);
+   end;
+   
+   Result := elmHnd;
+end;
+
+// _gui_CreateFrameWindow
+//
+function _gui_CreateFrameWindow(const elementName : String; parent : Integer; hAlign, vAlign : Integer; posX, posY, width, height, bordersize : Integer; bgalpha : Float; bGetUpdate : Boolean) : Integer;
+begin
+   const materialBase = 'frame';
+   var cMaterialBackground : String = materialBase+'.background';
+   var cMaterialLeft : String = materialBase+'.left';
+   var cMaterialRight : String = materialBase+'.right';
+   var cMaterialTop : String = materialBase+'.top';
+   var cMaterialBottom : String = materialBase+'.bottom';
+   var cMaterialCornerLT : String = materialBase+'.corner_lt';
+   var cMaterialCornerRT : String = materialBase+'.corner_rt';
+   var cMaterialCornerLB : String = materialBase+'.corner_lb';
+   var cMaterialCornerRB : String = materialBase+'.corner_rb';
+   
+   // cache width
+   var twBackground : Integer = GetGUITextureWidth(cMaterialBackground);
+   var twLeft : Integer = GetGUITextureWidth(cMaterialLeft);
+   var twRight : Integer = GetGUITextureWidth(cMaterialRight);
+   var twTop : Integer = GetGUITextureWidth(cMaterialTop);
+   var twBottom : Integer = GetGUITextureWidth(cMaterialBottom);
+   
+   // cache height
+   var thBackground : Integer = GetGUITextureHeight(cMaterialBackground);
+   var thLeft : Integer = GetGUITextureHeight(cMaterialLeft);
+   var thRight : Integer = GetGUITextureHeight(cMaterialRight);
+   var thTop : Integer = GetGUITextureHeight(cMaterialTop);
+   var thBottom : Integer = GetGUITextureHeight(cMaterialBottom);
+   
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this cas.e we are not able to get element handle by name. elmname='+elementName);
+   var iwidth : Integer = width;
+   var iheight : Integer = height;
+   var iparent : Integer = parent;
+   if (iparent=0) then iparent := _gui_GetTop;
+   
+   var elmWindowHnd : Integer = _gui_CreateParent(elementName, iparent, hAlign, vAlign, posX, posY, iwidth, iheight, bGetUpdate);
+   var elmBackgroundHnd : Integer = _gui_CreateImage('background', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   var elmBgHnd : Integer = _gui_CreateImage('bg', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, -bordersize, -bordersize, iwidth+bordersize*2, iheight+bordersize*2, 0, bGetUpdate);
+   var elmLHnd : Integer = _gui_CreateImage('l', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, -bordersize, -bordersize, iwidth, iheight, 0, bGetUpdate);
+   var elmRHnd : Integer = _gui_CreateImage('r', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, bordersize, -bordersize, iwidth, iheight, 0, bGetUpdate);
+   var elmTHnd : Integer = _gui_CreateImage('t', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, -bordersize, -bordersize, iwidth, iheight, 0, bGetUpdate);
+   var elmBHnd : Integer = _gui_CreateImage('b', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, -bordersize, bordersize, iwidth, iheight, 0, bGetUpdate);
+   //SetGUIElementUserBlend(elmWindowHnd, bgalpha);
+   SetGUIElementUserBlend(elmBgHnd, bgalpha);
+   
+   var i : Integer;
+   var backgroundWidth : Integer = iwidth-twLeft-twRight+bordersize*2;
+   var backgroundHeight : Integer = iheight-thTop-thBottom+bordersize*2;
+   var tileW, tileH : Integer;
+   tileW := (backgroundWidth div twBackground);
+   if ((backgroundWidth mod twBackground)>0) then tileW := tileW+1;
+   tileH := (backgroundHeight div thBackground);
+   if ((backgroundHeight mod thBackground)>0) then tileH := tileH+1;
+   for i:=0 to tileW-1 do
+   begin
+      var tmpX, tmpY : Float;
+      var fscaleX : Float = 1;
+      var fscaleY : Float = 1;
+      var j : Integer;
+      for j:=0 to tileH-1 do
+      begin
+         var elmHnd : Integer = _gui_CreateTileScaleImage('bg_'+IntToStr(i)+'_'+IntToStr(j), elmBgHnd, cMaterialBackground, gc_halParentLeft, gc_valParentTop, twLeft+i*twBackground, thTop+j*thBackground, Min(backgroundWidth-i*twBackground, twBackground), Min(backgroundHeight-j*thBackground, thBackground), bGetUpdate);
+         var elmwidth : Integer = twBackground;
+         if (iwidth<>0) and (iwidth<(elmwidth+i*twBackground)) then
+         fscaleX := (iwidth-i*twBackground)/elmwidth;
+         var elmheight : Integer = thBackground;
+         if (iheight<>0) and (iheight<(elmheight*(iheight div backgroundHeight)+j*thBackground)) then
+         fscaleY := (iheight-j*thBackground)/(elmheight*(iheight div backgroundHeight));
+         if (iwidth<0) then fscaleX := -fscaleX;
+         if (iheight<0) then fscaleY := -fscaleY;
+         SetGUIElementTileScales(elmHnd, fscaleX, fscaleY);
+      end;
+   end;
+   SetGUIElementAllPositionRect(elmBackgroundHnd, 0, 0, iwidth, iheight);
+   
+   var tmpwidth : Integer = (iwidth-twLeft-twRight+bordersize*2);
+   var tmpheight : Integer = (iheight-thTop-thBottom+bordersize*2);
+   tileW := (tmpwidth div twTop);
+   if ((tmpwidth mod twTop)>0) then tileW := tileW+1;
+   tileH := (tmpheight div thLeft);
+   if ((tmpheight mod thLeft)>0) then tileH := tileH+1;
+   for i:=0 to tileH-1 do
+   begin
+      _gui_CreateTileScaleImage('l_'+IntToStr(i), elmLHnd, cMaterialLeft, gc_halParentLeft, gc_valParentTop, 0, thTop+i*thLeft, 0, Min(thLeft, tmpheight-i*thLeft), bGetUpdate);
+      _gui_CreateTileScaleImage('r_'+IntToStr(i), elmRHnd, cMaterialRight, gc_halParentRightWidth, gc_valParentTop, 0, thTop+i*thRight, 0, Min(thRight, +tmpheight-i*thRight), bGetUpdate);
+   end;
+   for i:=0 to tileW-1 do
+   begin
+      _gui_CreateTileScaleImage('t_'+IntToStr(i), elmTHnd, cMaterialTop, gc_halParentLeft, gc_valParentTop, twLeft+i*twTop, 0, Min(twTop, tmpwidth-i*twTop), 0, bGetUpdate);
+      _gui_CreateTileScaleImage('b_'+IntToStr(i), elmBHnd, cMaterialBottom, gc_halParentLeft, gc_valParentBottomHeight, twLeft+i*twTop, 0, Min(twBottom, tmpwidth-i*twBottom), 0, bGetUpdate);
+   end;
+   if (iheight>0) then
+   begin
+      _gui_CreateImage('clt', elmBackgroundHnd, cMaterialCornerLT, gc_halParentLeft, gc_valParentTop, -bordersize, -bordersize, 0, 0, 0, bGetUpdate);
+      _gui_CreateImage('clb', elmBackgroundHnd, cMaterialCornerLB, gc_halParentLeft, gc_valParentBottomHeight, -bordersize, bordersize, 0, 0, 0, bGetUpdate);
+   end;
+   if (iwidth>0) then
+   begin
+      _gui_CreateImage('crt', elmBackgroundHnd, cMaterialCornerRT, gc_halParentRightWidth, gc_valParentTop, bordersize, -bordersize, 0, 0, 0, bGetUpdate);
+      _gui_CreateImage('crb', elmBackgroundHnd, cMaterialCornerRB, gc_halParentRightWidth, gc_valParentBottomHeight, bordersize, bordersize, 0, 0, 0, bGetUpdate);
+   end;
+   
+   Result := elmWindowHnd;
+end;
+
+// _gui_CreateWindowByTemplate
+//
+function _gui_CreateWindowByTemplate(const elementName : String; parent : Integer; const materialBase : String; hAlign, vAlign : Integer; posX, posY, width, height : Integer; alpha : Float; bGradientWidth, bGradientHeight, bGetUpdate : Boolean) : Integer;
+begin
+   var cMaterialBackground : String = materialBase+'.background';
+   var cMaterialLeft : String = materialBase+'.left';
+   var cMaterialRight : String = materialBase+'.right';
+   var cMaterialTop : String = materialBase+'.top';
+   var cMaterialBottom : String = materialBase+'.bottom';
+   var cMaterialCornerLT : String = materialBase+'.corner_lt';
+   var cMaterialCornerRT : String = materialBase+'.corner_rt';
+   var cMaterialCornerLB : String = materialBase+'.corner_lb';
+   var cMaterialCornerRB : String = materialBase+'.corner_rb';
+   
+   // cache width
+   var twBackground : Integer = GetGUITextureWidth(cMaterialBackground);
+   var twLeft : Integer = GetGUITextureWidth(cMaterialLeft);
+   var twRight : Integer = GetGUITextureWidth(cMaterialRight);
+   var twTop : Integer = GetGUITextureWidth(cMaterialTop);
+   var twBottom : Integer = GetGUITextureWidth(cMaterialBottom);
+   
+   // cache height
+   var thBackground : Integer = GetGUITextureHeight(cMaterialBackground);
+   var thLeft : Integer = GetGUITextureHeight(cMaterialLeft);
+   var thRight : Integer = GetGUITextureHeight(cMaterialRight);
+   var thTop : Integer = GetGUITextureHeight(cMaterialTop);
+   var thBottom : Integer = GetGUITextureHeight(cMaterialBottom);
+   
+   if (elementName<>'') and (StrExists(elementName, '.')) then ErrorLog('_gui_Create element name should not have dot char. I this cas.e we are not able to get element handle by name. elmname='+elementName);
+   var iwidth : Integer = width;
+   var iheight : Integer = height;
+   var iparent : Integer = parent;
+   if (iparent=0) then iparent := _gui_GetTop;
+   
+   var elmWindowHnd : Integer = _gui_CreateParent(elementName, iparent, hAlign, vAlign, posX, posY, iwidth, iheight, bGetUpdate);
+   var elmBackgroundHnd : Integer = _gui_CreateImage('background', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   var elmBgHnd : Integer = _gui_CreateImage('bg', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   var elmLHnd : Integer = _gui_CreateImage('l', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   var elmRHnd : Integer = _gui_CreateImage('r', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   var elmTHnd : Integer = _gui_CreateImage('t', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   var elmBHnd : Integer = _gui_CreateImage('b', elmWindowHnd, gc_gui_material_blank, gc_halParentLeft, gc_valParentTop, 0, 0, iwidth, iheight, 0, bGetUpdate);
+   SetGUIElementUserBlend(elmWindowHnd, alpha);
+   
+   var i : Integer;
+   var backgroundWidth : Integer = iwidth-twLeft-twRight;
+   var backgroundHeight : Integer = iheight-thTop-thBottom;
+   var tileW, tileH : Integer;
+   tileW := (backgroundWidth div twBackground);
+   if ((backgroundWidth mod twBackground)>0) then tileW := tileW+1;
+   tileH := (backgroundHeight div thBackground);
+   if ((backgroundHeight mod thBackground)>0) then tileH := tileH+1;
+   for i:=0 to tileW-1 do
+   begin
+      var tmpX, tmpY : Float;
+      var fscaleX : Float = 1;
+      var fscaleY : Float = 1;
+      var j : Integer;
+      for j:=0 to tileH-1 do
+      begin
+         var elmHnd : Integer = _gui_CreateTileScaleImage('bg_'+IntToStr(i)+'_'+IntToStr(j), elmBgHnd, cMaterialBackground, gc_halParentLeft, gc_valParentTop, twLeft+i*twBackground, thTop+j*thBackground, Min(backgroundWidth-i*twBackground, twBackground), Min(backgroundHeight-j*thBackground, thBackground), bGetUpdate);
+         var elmwidth : Integer = twBackground;
+         if (iwidth<>0) and (iwidth<elmwidth) then
+         fscaleX := iwidth/elmwidth;
+         var elmheight : Integer = thBackground;
+         if (iheight<>0) and (iheight<(elmheight*(iheight div backgroundHeight))) then
+         fscaleY := iheight/(elmheight*(iheight div backgroundHeight));
+         if (iwidth<0) then fscaleX := -fscaleX;
+         if (iheight<0) then fscaleY := -fscaleY;
+         if (bGradientWidth) then fscaleX := 1;
+         if (bGradientHeight) then fscaleY := 1;
+         SetGUIElementTileScales(elmHnd, fscaleX, fscaleY);
+      end;
+   end;
+   SetGUIElementAllPositionRect(elmBackgroundHnd, 0, 0, iwidth, iheight);
+   
+   var tmpwidth : Integer = (iwidth-twLeft-twRight);
+   var tmpheight : Integer = (iheight-thTop-thBottom);
+   if (twTop<>0) and (thLeft<>0) then
+   begin
+      tileW := (tmpwidth div twTop);
+      if ((tmpwidth mod twTop)>0) then tileW := tileW+1;
+      tileH := (tmpheight div thLeft);
+      if ((tmpheight mod thLeft)>0) then tileH := tileH+1;
+      for i:=0 to tileH-1 do
+      begin
+         if (bGradientHeight) then
+         begin
+            _gui_CreateImage('l_'+IntToStr(i), elmLHnd, cMaterialLeft, gc_halParentLeft, gc_valParentTop, 0, thTop+i*thLeft, 0, Min(thLeft, tmpheight-i*thLeft), 0, bGetUpdate);
+            _gui_CreateImage('r_'+IntToStr(i), elmRHnd, cMaterialRight, gc_halParentRightWidth, gc_valParentTop, 0, thTop+i*thRight, 0, Min(thRight, +tmpheight-i*thRight), 0, bGetUpdate);
+         end
+         else
+         begin
+            _gui_CreateTileScaleImage('l_'+IntToStr(i), elmLHnd, cMaterialLeft, gc_halParentLeft, gc_valParentTop, 0, thTop+i*thLeft, 0, Min(thLeft, tmpheight-i*thLeft), bGetUpdate);
+            _gui_CreateTileScaleImage('r_'+IntToStr(i), elmRHnd, cMaterialRight, gc_halParentRightWidth, gc_valParentTop, 0, thTop+i*thRight, 0, Min(thRight, +tmpheight-i*thRight), bGetUpdate);
+         end;
+      end;
+      for i:=0 to tileW-1 do
+      begin
+         if (bGradientWidth) then
+         begin
+            _gui_CreateImage('t_'+IntToStr(i), elmTHnd, cMaterialTop, gc_halParentLeft, gc_valParentTop, twLeft+i*twTop, 0, Min(twTop, tmpwidth-i*twTop), 0, 0, bGetUpdate);
+            _gui_CreateImage('b_'+IntToStr(i), elmBHnd, cMaterialBottom, gc_halParentLeft, gc_valParentBottomHeight, twLeft+i*twTop, 0, Min(twBottom, tmpwidth-i*twBottom), 0, 0, bGetUpdate);
+         end
+         else
+         begin
+            _gui_CreateTileScaleImage('t_'+IntToStr(i), elmTHnd, cMaterialTop, gc_halParentLeft, gc_valParentTop, twLeft+i*twTop, 0, Min(twTop, tmpwidth-i*twTop), 0, bGetUpdate);
+            _gui_CreateTileScaleImage('b_'+IntToStr(i), elmBHnd, cMaterialBottom, gc_halParentLeft, gc_valParentBottomHeight, twLeft+i*twTop, 0, Min(twBottom, tmpwidth-i*twBottom), 0, bGetUpdate);
+         end;
+      end;
+   end;
+   if (iheight>0) then
+   begin
+      _gui_CreateImage('clt', elmBackgroundHnd, cMaterialCornerLT, gc_halParentLeft, gc_valParentTop, 0, 0, 0, 0, 0, bGetUpdate);
+      _gui_CreateImage('clb', elmBackgroundHnd, cMaterialCornerLB, gc_halParentLeft, gc_valParentBottomHeight, 0, 0, 0, 0, 0, bGetUpdate);
+   end;
+   if (iwidth>0) then
+   begin
+      _gui_CreateImage('crt', elmBackgroundHnd, cMaterialCornerRT, gc_halParentRightWidth, gc_valParentTop, 0, 0, 0, 0, 0, bGetUpdate);
+      _gui_CreateImage('crb', elmBackgroundHnd, cMaterialCornerRB, gc_halParentRightWidth, gc_valParentBottomHeight, 0, 0, 0, 0, 0, bGetUpdate);
+   end;
+   
+   Result := elmWindowHnd;
+end;
+
+// _gui_GetGUIElementVisibleInherited
+//
+function _gui_GetGUIElementVisibleInherited(const elmHnd : Integer) : Boolean;
+begin
+   Result := True;
+   if (not GetGUIElementVisible(elmHnd)) then
+   begin
+      Result := False;
+      exit;
+   end;
+   var top : Integer = _gui_GetTop;
+   var parent : Integer = elmHnd;
+   var i : Integer;
+   for i:=0 to 15 do
+   begin
+      var tmpHnd : Integer = GetGUIElementParentByIndex(parent);
+      if (tmpHnd<>0) then
+      begin
+         if (tmpHnd=top) then
+         exit;
+         if (not GetGUIElementVisible(tmpHnd)) then
+         begin
+            Result := False;
+            exit;
+         end;
+         parent := tmpHnd;
+      end;
+   end;
+end;
+
+// _gui_SetGUIElementVisibleByName
+//
+function _gui_SetGUIElementVisibleByName(const elmname : String; bVisible : Boolean) : Boolean;
+begin
+   Result := False;
+   var elmHnd : Integer = GetGUIElementIndexByNameParent(elmname, _gui_GetTop);
+   if (elmHnd<>0) and (GetGUIElementVisible(elmHnd)<>bVisible) then
+   begin
+      SetGUIElementVisible(elmHnd, bVisible);
+      Result := True;
+   end;
+end;
+
+// _gui_SetGUIElementEnabledByName
+//
+function _gui_SetGUIElementEnabledByName(const elmname : String; bEnabled : Boolean) : Boolean;
+begin
+   Result := False;
+   var elmHnd : Integer = GetGUIElementIndexByNameParent(elmname, _gui_GetTop);
+   if (elmHnd<>0) and (GetGUIElementEnabled(elmHnd)<>bEnabled) then
+   begin
+      SetGUIElementEnabled(elmHnd, bEnabled);
+      Result := True;
+   end;
+end;
+
+// _gui_GetProgressBarWidthHeight
+//
+procedure _gui_GetProgressBarWidthHeight(var width, height : Integer);
+begin
+   var viewerheight : Integer = GetViewerHeight;
+   if (viewerheight<850) then
+   begin
+      height := 768;
+      width := 1440;
+   end
+   else
+   if (viewerheight<950) then
+   begin
+      height := 900;
+      width := 1687;
+   end
+   else
+   begin
+      height := 1024;
+      width := 1920;
+   end;
+end;
+
+// _gui_ProcessProgressBar
+//
+procedure _gui_ProcessProgressBar(const customtext : String; const curval, maxval : Integer; bdoprocessmessages : Boolean);
+begin
+   var barHnd : Integer = GetGUIProgressBarElementHandle;
+   var prevtext : String;
+   var bUpdate : Boolean = True;
+   RemoveGUIChildren(barHnd);
+   
+   var w : Integer = GetViewerWidth;
+   var h : Integer = GetViewerHeight;
+   var xArt : Integer;
+   
+   const cMinYArt = 902;
+   var yArt : Integer;
+   if (h<cMinYArt) then
+   yArt := (cMinYArt-h) div 2;
+
+   var backgroundwidth, backgroundheight : Integer;
+   _gui_GetProgressBarWidthHeight(backgroundwidth, backgroundheight);
+   var elmBackground : Integer = _gui_CreateImage('background', barHnd, 'progressbar'+IntToStr(gint_gui_progressbar_picnum), gc_halMiddle, gc_valMiddle, 0, 0, backgroundwidth, backgroundheight, 0, bupdate);
+   _gui_AbsScaleByDPI(barHnd);
+   var elmTextBackground : Integer = _gui_CreateImage('paper_background', elmBackground, 'header.paper.large', gc_halParentMiddle, gc_valBottomHeight, 0, -120, round(GetGUITextureWidth('header.paper.large')*1.25), round(GetGUITextureHeight('header.paper.large')*1.25), 0, bupdate);
+   
+   var color : TColor;
+   color.r := 0.2;
+   color.g := 0.1;
+   color.b := 0.1;
+   color.a := 1;
+   var text : String;
+   if (customtext='') and (maxval<=0) then
+   text := GetLocaleTableListItemByID('gui', 'progress.pleasewait')
+   else
+   if (curval>maxval) then
+   text := '100%'
+   else
+   if (maxval>0) then
+   text := IntToStr(floor(100*curval/maxval))+'%';
+   if (customtext<>'') then
+   text := customtext+gc_gui_breakline+text;
+   var elmHnd : Integer = GetGUIElementIndexByNameParent('txt', barHnd);
+   if (elmHnd<>0) then
+   prevtext := GetGUIElementText(elmHnd);
+   if (prevtext<>text) then
+   begin
+      var twidth : Integer = _gui_GetFontTextWidth(text, gc_font_serif_15);
+      var theight : Integer = _gui_GetFontTextHeight(text,gc_font_serif_15);
+      elmHnd := _gui_CreateText('txt', elmTextBackground, text, gc_halParentMiddle, gc_valParentMiddle, 0, -7, twidth, theight, gc_halMiddle, gc_valMiddle, gc_font_serif_15, color, bUpdate);
+   end;
+   SetGUIElementVisible(barHnd, True);
+   SetGUICursorByName('crWait');
+   ViewerBufferRender;
+   if (bdoprocessmessages) then
+   ApplicationProcessMessages;
+   SetGUICursorByName('crWait');
+end;
+
+// _gui_InvokeMouseMove
+//
+procedure _gui_InvokeMouseMove();
+begin
+   GUIInvalidateChildrenPositions(0);
+   GUIUpdateElementUnderMouse();
+   GUIInvokeMouseMove();
+end;
+
+// _gui_ShowModalMessage
+//
+function _gui_ShowModalMessage(const header, msg, btn1, btn2 : String; tag1, tag2 : Integer) : Integer;
+begin
+   StringRegister0 := header;
+   StringRegister1 := msg;
+   StringRegister2 := btn1;
+   StringRegister3 := btn2;
+   IntRegister0 := tag1;
+   IntRegister1 := tag2;
+   GUIExecuteState('ShowModalMessage');
+   Result := IntRegister2;
+end;
+
+// _gui_ShowModalMessage
+//
+procedure _gui_ShowConnectStateMessage(const connectstateid : Integer);
+begin
+   gConnectState := connectstateid;
+   GUIExecuteState('ShowConnectStateMessage');
+end;
+
+// _gui_FindCurrentVideoPreset
+//
+procedure _gui_FindCurrentVideoPreset(pConfig : Integer; var curPreset : String; var presetIndex : Integer);
+begin
+   const cProjOptionsPreset = 'Preset';
+   const cProjOptionsPresetLow = 'guiSetLow';
+   const cProjOptionsPresetMedium = 'guiSetMedium';
+   const cProjOptionsPresetHigh = 'guiSetHigh';
+   const cProjOptionsPresetCustom = 'guiSetCustom';
+   const cProjOptionsResolution = 'Resolution';
+   const cProjOptionsAntiAliasing = 'AntiAliasing';
+   const cProjOptionsFXAAEnable = 'FXAAEnable';
+   const cProjOptionsSSAOEnable = 'SSAOEnable';
+   const cProjOptionsHDRType = 'HDRType';
+   const cProjOptionsVSyncMode = 'VSyncMode';
+   const cProjOptionsShadowMap = 'ShadowMap';
+   const cProjOptionsShadowEnabled = 'ShadowMapEnabled';
+   const cProjOptionsTextureQuality = 'DDSDetailLevel';
+   const cProjOptionsTextureFilter = 'TextureFilteringQuality';
+   const cProjOptionsShaderType = 'ShaderType';
+   const cProjOptionsWaterReflection = 'WaterReflection';
+   
+   curPreset := cProjOptionsPresetCustom;
+   presetIndex := 3;
+   if (pConfig<>0) then
+   begin
+      var pEngine : Integer = ParserSelectByHandleByKey(pConfig, 'engine');
+      if (pEngine<>0) then
+      begin
+         var pEngineConfigs : Integer = ParserSelectByHandleByKey(pEngine, 'config');
+         if (pEngineConfigs<>0) then
+         begin
+            var tmpPreset : String;
+            var i : Integer;
+            for i:=0 to 2 do
+            begin
+               case i of
+                  0 : tmpPreset := cProjOptionsPresetLow;
+                  1 : tmpPreset := cProjOptionsPresetMedium;
+                  2 : tmpPreset := cProjOptionsPresetHigh;
+               end;
+               ParserSelectByHandle(pEngineConfigs);
+               var pEngineConfig : Integer = ParserSelectByHandleByIndex(pEngineConfigs, ParserFindChildIndexByEqualChildKey('Name', tmpPreset));
+               if (pEngineConfig<>0) then
+               begin
+                  var pGui : Integer = ParserSelectByHandleByKey(pEngineConfig, 'Gui');
+                  if (pGui<>0) then
+                  begin
+                     var pOnClick : Integer = ParserSelectByHandleByKey(pGui, 'OnClick');
+                     if (pOnClick<>0) then
+                     begin
+                        if gSettingsTmp.video.hdrtype=ParserGetValueByKeyByHandle(pOnClick, cProjOptionsHDRType)
+                        and gSettingsTmp.video.shadertype=ParserGetValueByKeyByHandle(pOnClick, cProjOptionsShaderType)
+                        and gSettingsTmp.video.antialiasing=ParserGetValueByKeyByHandle(pOnClick, cProjOptionsAntiAliasing)
+                        and gSettingsTmp.video.texturefilter=ParserGetValueByKeyByHandle(pOnClick, cProjOptionsTextureFilter)
+                        and gSettingsTmp.video.texturequality=ParserGetValueByKeyByHandle(pOnClick, cProjOptionsTextureQuality)
+                        and gSettingsTmp.video.waterreflection=ParserGetValueByKeyByHandle(pOnClick, cProjOptionsWaterReflection)
+                        and gSettingsTmp.video.shadowenabled=ParserGetBoolValueByKeyByHandle(pOnClick, cProjOptionsShadowEnabled)
+                        and gSettingsTmp.video.shadowmap=ParserGetValueByKeyByHandle(pOnClick, cProjOptionsShadowMap) then
+                        begin
+                           curPreset := tmpPreset;
+                           presetIndex := i;
+                           exit;
+                        end;
+                     end;
+                  end;
+               end;
+            end;
+         end;
+      end;
+   end;
+end;
+
+// _gui_GetSettingsValues
+//
+procedure _gui_GetSettingsValues();
+begin
+   const cProjOptionsAntiAliasing = 'AntiAliasing';
+   const cProjOptionsFXAAEnable = 'FXAAEnable';
+   const cProjOptionsSSAOEnable = 'SSAOEnable';
+   const cProjOptionsHDRType = 'HDRType';
+   const cProjOptionsVSyncMode = 'VSyncMode';
+   const cProjOptionsShadowMap = 'ShadowMap';
+   const cProjOptionsShadowEnabled = 'ShadowMapEnabled';
+   const cProjOptionsTextureFilter = 'TextureFilteringQuality';
+   const cProjOptionsTextureQuality = 'DDSDetailLevel';
+   const cProjOptionsShaderType = 'ShaderType';
+   const cProjOptionsWaterReflection = 'WaterReflection';
+   
+   gSettings.video.antialiasing := GetProjectOptionAsString(cProjOptionsAntiAliasing);
+   gSettings.video.hdrtype := GetProjectOptionAsString(cProjOptionsHDRType);
+   gSettings.video.vsyncmode := GetProjectOptionAsString(cProjOptionsVSyncMode);
+   gSettings.video.fxaa := GetProjectOptionAsBoolean(cProjOptionsFXAAEnable);
+   gSettings.video.ssao := GetProjectOptionAsBoolean(cProjOptionsSSAOEnable);
+   gSettings.video.shadowmap := GetProjectOptionAsString(cProjOptionsShadowMap);
+   gSettings.video.shadowenabled := GetProjectOptionAsBoolean(cProjOptionsShadowEnabled);
+   gSettings.video.texturefilter := GetProjectOptionAsString(cProjOptionsTextureFilter);
+   gSettings.video.texturequality := GetProjectOptionAsString(cProjOptionsTextureQuality);
+   if (gSettings.video.texturequality='') then
+   gSettings.video.texturequality := '0';
+   gSettings.video.shadertype := GetProjectOptionAsString(cProjOptionsShaderType);
+   gSettings.video.waterreflection := GetProjectOptionAsString(cProjOptionsWaterReflection);
+end;
+
+// _gui_ShowSettingsDialog
+//
+procedure _gui_ShowSettingsDialog();
+begin
+   _gui_GetSettingsValues;
+   
+   gInterface.settings := gc_settings_video;
+   
+   var pConfig : Integer = ParserSelectByKey('Config');
+   if (pConfig=0) then
+   begin
+      pConfig := ParserCreate('Config');
+      ParserLoadFromFile('.\data\resources\config.res');
+   end;
+   
+   var presetIndex : Integer;
+   _gui_FindCurrentVideoPreset(pConfig, gSettings.video.preset, presetIndex);
+   
+   gProfileTmp := gProfile;
+   gSettingsTmp := gSettings;
+   GUIExecuteState('ShowSettings');
+end;
+
+// _gui_InitShowMainMenu
+//
+procedure _gui_InitShowMainMenu(bShow : Boolean);
+begin
+   gInterface.gamemode := gc_gamemode_mainmenu;
+   SetGUIMiniMapVisible(False);
+   var minimapHnd : Integer = GetGUIElementIndexByNameParent('minimap', _gui_GetTop);
+   if (minimapHnd<>0) then
+   SetGUIElementVisible(minimapHnd, False);
+   var camera : Integer = GetGUIElementTopIndexByName(gc_gui_element_camera);
+   SetGUIElementVisible(camera, False);
+   gbool_editor_placeunits := True;
+   gbool_editor_placeunitsmaximized := False;
+   gstring_editor_selectedunitsid := '';
+   gint_editor_selectedunitid := 0;
+   if (bShow) then
+   begin
+      GUIExecuteState('ShowMainMenu');
+      GUIExecuteState('ShowNews');
+   end;
+end;
+
+// _gui_SaveGUIElementToFile
+//
+procedure _gui_SaveGUIElementToFile(const elmHnd : Integer; const filename : String);
+begin
+   // very uncommon command name
+   GUIStoreElementToFile(elmHnd, filename);
+end;
+
+// _gui_SetShellChatInputBoxFocused
+//
+procedure _gui_SetShellChatInputBoxFocused();
+begin
+   var inputhnd : Integer;
+   if (gInternetShell.bshowroom) then
+   begin
+      if gInternetShell.bhistoricalbattle then
+      inputhnd := GetGUIElementIndexByNameParent('HistoricalBattle.chatplace.chatback.chatinput.text', _gui_GetTop)
+      else
+      inputhnd := GetGUIElementIndexByNameParent('CustomGame.chatplace.chatback.chatinput.text', _gui_GetTop);
+      if (inputhnd<>0) then
+      begin
+         SetGUIElementFocusedHandle(inputhnd);
+         SetGUIEventStateOnKeyDown('EventMultiplayerChat');
+      end
+      else
+      SetGUIEventStateOnKeyDown('');
+   end
+   else
+   begin
+      inputhnd := GetGUIElementIndexByNameParent('InternetShell.chatplace.chatback.chatinput.text', _gui_GetTop);
+      if (inputhnd<>0) then
+      begin
+         SetGUIElementFocusedHandle(inputhnd);
+         SetGUIEventStateOnKeyDown('EventMultiplayerChat');
+      end
+      else
+      SetGUIEventStateOnKeyDown('');
+   end;
+end;
+
+// _gui_SetShellChatInputText
+//
+procedure _gui_SetShellChatInputText(const text : String);
+begin
+   var inputhnd : Integer;
+   if (gInternetShell.bshowroom) then
+   begin
+      if gInternetShell.bhistoricalbattle then
+      inputhnd := GetGUIElementIndexByNameParent('HistoricalBattle.chatplace.chatback.chatinput.text', _gui_GetTop)
+      else
+      inputhnd := GetGUIElementIndexByNameParent('CustomGame.chatplace.chatback.chatinput.text', _gui_GetTop);
+   end
+   else
+   inputhnd := GetGUIElementIndexByNameParent('InternetShell.chatplace.chatback.chatinput.text', _gui_GetTop);
+   if (inputhnd<>0) then
+   SetGUIElementText(inputhnd, text);
+end;
+
+// _gui_DoProgressSoundControlCounters
+//
+procedure _gui_DoProgressSoundControlCounters();
+begin
+   // _sound_EmitterPlaySound
+   //
+   function _sound_EmitterPlayWalkSound(const emitterHnd : Integer; const libind, sndlibind : Integer; vol, interval : Float; bplayuniq : Boolean) : Integer;
+   begin
+      if (emitterHnd<>0) then
+      begin
+         var newind : Integer;
+         var rndind : Integer;
+         var maxind : Integer = gSoundLibrary[sndlibind].count-1;
+         if (maxind>0) then
+         rndind := floor(random*(maxind+1));
+         
+         // test hack, make different counters for different types and support several counters on one type at once
+         if maxind<0 then
+         ErrorLog('_sound_EmitterPlayWalkSound maxind<0');
+         rndind := gint_soundsteptick mod (maxind+1);
+         gint_soundsteptick := gint_soundsteptick+1;
+         //
+         
+         var i : Integer;
+         for i:=0 to maxind do
+         begin
+            newind := rndind+i;
+            if (newind>maxind) then
+            newind := newind-maxind-1;
+            var libname : String;
+            case libind of
+               gc_sndlib_ind_units : libname := 'units';
+               gc_sndlib_ind_interface : libname := 'interface';
+               gc_sndlib_ind_ambient : libname := 'ambient';
+            end;
+            var sndTag : Integer;
+            if (not bplayuniq) then
+            sndtag := _sound_GetTagByIndexes(sndlibind, newind)
+            else
+            sndtag := 1000000+sndlibind;
+            Result := sndtag;
+            
+            var sndHnd : Integer = SndGetOrCreateSound(sndtag, libname, emitterHnd);
+            if (not GetSndSoundPlaying(sndHnd)) then
+            begin
+               SetSndSoundSourceName(gSoundLibrary[sndlibind].list[newind], sndHnd);
+               SetSndSoundVolume(vol, sndHnd);
+               //log('_sound_EmitterPlaySound : '+gSoundLibrary[sndlibind].list[newind]);
+               SetSndSoundRadius(8000, sndHnd); //80 - for 3D sound, 8000 for isometric sound
+               SetSndSoundPlaying(True, sndHnd);
+               break;
+            end
+            else
+            SetSndSoundVolume(vol, sndHnd);
+         end;
+      end
+      else
+      Result := 0;
+   end;
+   
+   procedure GetScreenListenerPos(var lx, ly, lz : Float);
+   begin
+      var rx, ry, rz : Float;
+      var px, py, pz : Float;
+      ScreenToWorldRayCast(GetViewerWidth div 2, GetViewerHeight div 2{floor((GetViewerHeight div 7)*3)}, rx, ry, rz);
+      GetCameraTargetPosition(px, py, pz);
+      var dst : Float = VectorDistance(px, py, pz, rx, ry, rz);
+      var dirx : Float = rx-px;
+      var diry : Float = ry-py;
+      var dirz : Float = rz-pz;
+      VectorNormalize(dirx, diry, dirz);
+      // listner pos
+      lx := rx-dst*dirx*0.3;
+      ly := ry-dst*diry*0.15;
+      lz := rz-dst*dirz*(0.0);
+   end;
+   
+   function GetOrCreateSoundEmitterInListenerPos(lx, ly, lz : Float) : Integer;
+   begin
+      Result := gSoundManager.emitterhnd;
+      if (Result=0) then
+      begin
+         if (GetCountOfPlayers>=gc_playerind_misc) then
+         begin
+            var miscplhnd : Integer = GetPlayerHandleByIndex(gc_playerind_misc);
+            Result := CreatePlayerGameObjectHandleByHandle(miscplhnd, gc_racename_misc, 'soundemitter', lx, ly, lz);
+            SetGameObjectVisibleByHandle(Result, False);
+            gSoundManager.emitterhnd := Result;
+         end;
+      end
+      else
+      SetGameObjectPositionByHandle(Result, lx, ly, lz);
+   end;
+   
+   var lastprogresstime : Float = gProgress.soundcounterlastprogresstime;
+   var deltatime : Float = GetCurrentTime-lastprogresstime;
+   
+   if (deltatime>0) and ((MinFloat((GetTimeSpeedFactor/10), 2)*deltatime)>0.09) then // not on pause
+   begin
+      var lx, ly, lz : Float;
+      var lheight : Float;
+      GetScreenListenerPos(lx, ly, lz);
+      
+      var listenerEmitterHnd : Integer = GetOrCreateSoundEmitterInListenerPos(lx, ly, lz);
+      var basevol : Float;
+      var progresstick : Integer = gProgress.soundcounterprogresstick;
+      const minind = 0;
+      const maxind = 7;
+      var i : Integer;
+      for i:=minind to maxind do
+      begin
+         var counter, sndlibind, ifreq : Integer;
+         var dst : Float;
+         case i of
+            0 : counter := gSoundManager.counter.walkinfcloth;
+            1 : counter := gSoundManager.counter.walkinfmetal;
+            2 : counter := gSoundManager.counter.walkartwheels;
+            3 : counter := gSoundManager.counter.walkartmortar;
+            4 : counter := gSoundManager.counter.walkcavfast;
+            5 : counter := gSoundManager.counter.walkcavslow;
+            6 : counter := gSoundManager.counter.walkpea;
+            7 : counter := gSoundManager.counter.walkpeastone;
+         end;
+         case i of
+            0 : dst := gSoundManager.counter.walkdstinfcloth;
+            1 : dst := gSoundManager.counter.walkdstinfmetal;
+            2 : dst := gSoundManager.counter.walkdstartwheels;
+            3 : dst := gSoundManager.counter.walkdstartmortar;
+            4 : dst := gSoundManager.counter.walkdstcavfast;
+            5 : dst := gSoundManager.counter.walkdstcavslow;
+            6 : dst := gSoundManager.counter.walkdstpea;
+            7 : dst := gSoundManager.counter.walkdstpeastone;
+         end;
+         case i of
+            0 : sndlibind := gc_snd_ind_walkinfcloth;
+            1 : sndlibind := gc_snd_ind_walkinfmetal;
+            2 : sndlibind := gc_snd_ind_walkartwheels;
+            3 : sndlibind := gc_snd_ind_walkartmortar;
+            4 : sndlibind := gc_snd_ind_walkcavfast;
+            5 : sndlibind := gc_snd_ind_walkcavslow;
+            6 : sndlibind := gc_snd_ind_walkpea;
+            7 : sndlibind := gc_snd_ind_walkpeastone;
+         end;
+         case i of
+            0 : ifreq := 3;
+            1 : ifreq := Max(3-((counter-1) div 5), 2);
+            2 : ifreq := Max(5-((counter-1) div 3), 3);
+            3 : ifreq := Max(5-((counter-1) div 3), 3);
+            4 : ifreq := Max(5-counter+1, 3);
+            5 : ifreq := Max(6-counter+1, 4);
+            6 : ifreq := 3;
+            7 : ifreq := 3;
+         end;
+         case i of
+            0 : basevol := 1;
+            1 : basevol := 1;
+            2 : basevol := 0.35;
+            3 : basevol := 0.35;
+            4 : basevol := 1;
+            5 : basevol := 1;
+            6 : basevol := 0.1;
+            7 : basevol := 1;
+         end;
+         // temp fix
+         ifreq := 3;
+         if (counter>0) then
+         begin
+            //var gametime : Float = GetGameTime;
+            //if gametime>gProgress.lastsoundprogresscounterfreqtime[i] then
+            //gProgress.lastsoundprogresscounterfreqtime[i] := gametime+ifreq*gc_progress_TimeSoundProgressCounterFreq;
+            if ((progresstick mod ifreq)=0) then
+            begin
+               const interval = 100;
+               var vol : Float = basevol*((gSoundManager.frustumrad-(dst/counter))/gSoundManager.frustumrad);
+               vol := Clamp(vol, 0, 1);
+               var sndtag : Integer = _sound_EmitterPlayWalkSound(listenerEmitterHnd, gc_sndlib_ind_units, sndlibind, vol, interval, False);
+               // log
+               gint_dbg_logsoundcount := gint_dbg_logsoundcount+1;
+               if False then
+               begin
+                  var sndHnd : Integer = SndGetOrCreateSound(sndtag, 'units', listenerEmitterHnd);
+                  SetSndSoundVolume(vol, sndHnd);
+                  var sndName : String = GetSndSoundSourceName(sndHnd);
+                  if sndName<>'' then
+                  TimeLog('listenerEmitterHnd:'+' sndlibind='+IntToStr(sndlibind)+' count='+IntToStr(counter)+' vol='+FloatToStr(vol)+' sndname='+sndName);
+               end;
+            end;
+         end;
+      end;
+      
+      gProgress.soundcounterprogresstick := gProgress.soundcounterprogresstick + 1;
+      gProgress.soundcounterlastprogresstime := GetCurrentTime;
+   end;
+end;
+
+// _gui_DoProgressSoundControl
+//
+procedure _gui_DoProgressSoundControl();
+begin
+   procedure GetScreenListenerPos(var lx, ly, lz : Float);
+   begin
+      var rx, ry, rz : Float;
+      var px, py, pz : Float;
+      ScreenToWorldRayCast(GetViewerWidth div 2, GetViewerHeight div 2{floor((GetViewerHeight div 7)*3)}, rx, ry, rz);
+      GetCameraTargetPosition(px, py, pz);
+      var dst : Float = VectorDistance(px, py, pz, rx, ry, rz);
+      var dirx : Float = rx-px;
+      var diry : Float = ry-py;
+      var dirz : Float = rz-pz;
+      VectorNormalize(dirx, diry, dirz);
+      // listner pos
+      lx := rx-dst*dirx*0.3;
+      ly := ry-dst*diry*0.15;
+      lz := rz-dst*dirz*(0.0);
+      //DebugDrawClean('a');
+      //DebugDrawBox('a', lx, ly, lz, 1, 1, 1, 1);
+   end;
+   
+   // _sound_EmitterPlaySound
+   //
+   function _sound_EmitterPlaySound(const emitterHnd : Integer; const libind, sndlibind : Integer; bplayuniq : Boolean) : Integer;
+   begin
+      if (emitterHnd<>0) then
+      begin
+         var newind : Integer;
+         var rndind : Integer;
+         var maxind : Integer = gSoundLibrary[sndlibind].count-1;
+         if (maxind>0) then
+         rndind := floor(random*(maxind+1));
+         var i : Integer;
+         for i:=0 to maxind do
+         begin
+            newind := rndind+i;
+            if (newind>maxind) then
+            newind := newind-maxind-1;
+            var libname : String;
+            case libind of
+               gc_sndlib_ind_units : libname := 'units';
+               gc_sndlib_ind_interface : libname := 'interface';
+               gc_sndlib_ind_ambient : libname := 'ambient';
+            end;
+            var sndTag : Integer;
+            if (not bplayuniq) then
+            sndtag := _sound_GetTagByIndexes(sndlibind, newind)
+            else
+            sndtag := 1000000+sndlibind;
+            //var sndtag : Integer = floor(random*1000000);
+            Result := sndtag;
+            //SndRemoveSound(sndtag, emitterHnd);
+            
+            var sndHnd : Integer = SndGetOrCreateSound(sndtag, libname, emitterHnd);
+            
+            var loudness : Float = gSoundLibrary[sndlibind].loudness*1.25;
+            SetSndSoundRadiuses(0, loudness, sndHnd);
+            
+            if (not GetSndSoundPlaying(sndHnd)) then
+            begin
+               SetSndSoundSourceName(gSoundLibrary[sndlibind].list[newind], sndHnd);
+               //log('_sound_EmitterPlaySound : '+gSoundLibrary[sndlibind].list[newind]);
+               SetSndSoundPlaying(True, sndHnd);
+               break;
+            end;
+         end;
+      end
+      else
+      Result := 0;
+   end;
+   
+   //_misc_ProfilerBegin('SoundControl');
+   
+   var lastprogresstime : Float = gProgress.soundlastprogresstime;
+   var progresstick : Integer = gProgress.soundcounterprogresstick;
+   
+   procedure IntegerListMove(var fromlist, tolist : TIntegerList);
+   begin
+      var i : Integer;
+      for i:=fromlist.GetCount-1 downto 0 do
+      begin
+         tolist.Add(fromlist.Get(i));
+         fromlist.Delete(i);
+      end;
+   end;
+   
+   function GetOrCreateSoundEmitterInPos(posx, posz : Float) : Integer;
+   begin
+      Result := 0;
+      GetGameObjectsInRadius(posx, posz, gc_epsilon, false, false, 0, -1, 0, false, false, false, false, false, false);
+      var i : Integer;
+      for i:=GetGameObjectListCount-1 downto 0 do
+      begin
+         var goHnd : Integer = GetGameObjectListByIndex(i);
+         if (GetGameObjectStringPropertyTag(goHnd)=gc_properties_stringtag_soundemitter) then
+         begin
+            Result := goHnd;
+            break;
+         end;
+      end;
+      if (Result=0) then
+      begin
+         Result := CreatePoolGameObjectHandle(gc_racename_misc, 'soundemitter', posx, RayCastHeight(posx, posz), posz);
+         GameObjectDelayExecuteStateByHandle(Result, 'FreeToPool', 10);
+         SetGameObjectVisibleByHandle(Result, False);
+      end;
+   end;
+   function GetOrCreateSoundEmitterInListenerPos(lx, ly, lz : Float) : Integer;
+   begin
+      Result := gSoundManager.emitterhnd;
+      if (Result=0) then
+      begin
+         Result := CreatePoolGameObjectHandle(gc_racename_misc, 'soundemitter', lx, ly, lz);
+         //FreeToPoolGameObjectTimeoutHandle(Result, 10);
+         SetGameObjectVisibleByHandle(Result, False);
+         gSoundManager.emitterhnd := Result;
+      end
+      else
+      SetGameObjectPositionByHandle(Result, lx, ly, lz);
+   end;
+   
+   var lx, ly, lz, plx, ply, plz : Float;
+   var lheight : Float;
+   GetScreenListenerPos(lx, ly, lz);
+   GetPosSoundManagerListenerAsObject(plx, ply, plz);
+   if (VectorDistance(plx, ply, plz, lx, ly, lz)>1) then
+   SetPosSoundManagerListenerAsObject(lx, ly, lz);
+   lheight := ly;
+   ScreenToWorldRayCast(GetViewerWidth div 2, GetViewerHeight div 2, lx, ly, lz);
+   
+   //log('----');
+   var gridx, gridy : Integer;
+   // combine
+   const tries = 1;
+   var enum : Integer;
+   var bfreqok : array [0..3] of Boolean;
+   //var gametime : Float = GetGameTime;
+   var i : Integer;
+   {for i:=0 to 3 do
+   begin
+      if gametime>gProgress.lastsoundprogressfreqtime[i] then
+      begin
+         gProgress.lastsoundprogressfreqtime[i] := gametime+(i+1)*gc_progress_TimeSoundProgressFreq;
+         bfreqok[i] := True;
+      end
+      else
+      bfreqok[i] := False;
+   end;}
+   for i:=0 to 3 do
+   bfreqok[i] := ((progresstick mod (i+1))=0);
+   
+   for i:=0 to 3 do
+   bfreqok[i] := True;
+   
+   for enum:=0 to tries-1 do
+   begin
+      for gridy:=0 to gc_soundgrid_county-1 do
+      for gridx:=0 to gc_soundgrid_countx-1 do
+      begin
+         if (gSoundGrid[gridx, gridy].bsndrequestexist) then
+         begin
+            var maxdst : Float = 40;
+            var gposx, gposz : Float;
+            _misc_SoundGridIndicesToPos(gridx, gridy, gposx, gposz);
+            var lenx : Float = VectorLength(lx-gposx, 0, 0);
+            var lenz : Float = VectorLength(0, 0, lz-gposz);
+            var dst : Float = VectorDistance(0, 0, 0, lenx, 0, lenz);
+            var m : Integer;
+            {if (dst>(maxdst+lheight)) then
+            begin
+               for m:=gc_snd_ind_count-1 downto 0 do
+               if (gSoundGrid[gridx, gridy].sndrequests[m]>0) then
+               gSoundGrid[gridx, gridy].sndrequests[m] := 0;
+            end
+            else}
+            begin
+               for m:=gc_snd_ind_count-1 downto 0 do
+               begin
+                  if (gSoundGrid[gridx, gridy].sndrequests[m]>0) and bfreqok[gSoundLibrary[m].sndfreq] then
+                  begin
+                     var loudness : Float = gSoundLibrary[m].loudness*1.25;
+                     if (dst>(maxdst+lheight+loudness)) then
+                     gSoundGrid[gridx, gridy].sndrequests[m] := 0
+                     else
+                     begin
+                        const rad = 4+4;
+                        var maxcount : Integer;
+                        var maxx, maxy : Integer = -1;
+                        var i, j : Integer;
+                        for i:=-rad to rad do
+                        for j:=-rad to rad do
+                        begin
+                           var testx, testy : Integer;
+                           testx := gridx+i;
+                           testy := gridy+j;
+                           if (i=0) and (j=0) then
+                           continue;
+                           if (testx<0) or (testx>=gc_soundgrid_countx) or (testy<0) or (testy>=gc_soundgrid_county) then
+                           continue;
+                           if (gSoundGrid[testx, testy].sndrequests[m]>maxcount) then
+                           begin
+                              maxcount := gSoundGrid[testx, testy].sndrequests[m];
+                              maxx := testx;
+                              maxy := testy;
+                           end;
+                        end;
+                        if (maxcount>0) and ((maxx>=0) or (maxx<gc_soundgrid_countx) or (maxy>=0) or (maxy<gc_soundgrid_county)) then
+                        begin
+                           if (maxcount>=gSoundGrid[gridx, gridy].sndrequests[m]) then
+                           begin
+                              gSoundGrid[maxx, maxy].sndrequests[m] := gSoundGrid[maxx, maxy].sndrequests[m]+gSoundGrid[gridx, gridy].sndrequests[m];
+                              gSoundGrid[gridx, gridy].sndrequests[m] := 0;
+                           end
+                           else
+                           begin
+                              gSoundGrid[gridx, gridy].sndrequests[m] := gSoundGrid[gridx, gridy].sndrequests[m]+gSoundGrid[maxx, maxy].sndrequests[m];
+                              gSoundGrid[maxx, maxy].sndrequests[m] := 0;
+                           end;
+                        end;
+                     end;
+                  end;
+               end;
+            end;
+         end;
+      end;
+   end;
+   // play
+   for gridy:=0 to gc_soundgrid_county-1 do
+   for gridx:=0 to gc_soundgrid_countx-1 do
+   begin
+      if (gSoundGrid[gridx, gridy].bsndrequestexist) then
+      begin
+         var i, j : Integer;
+         for i:=gc_snd_ind_count-1 downto 0 do
+         if (gSoundGrid[gridx, gridy].sndrequests[i]>0) and bfreqok[gSoundLibrary[i].sndfreq] then
+         begin
+            //_misc_ProfilerBegin('s2');
+            var posx, posy, posz : Float;
+            _misc_SoundGridIndicesToPos(gridx, gridy, posx, posz);
+            var emitterHnd : Integer = GetOrCreateSoundEmitterInPos(posx, posz);
+            //var emitterHnd : Integer = GetOrCreateSoundEmitter;
+            var sndlibind : Integer = i;
+            
+            var bgroup : Boolean;
+            var c : Integer = gSoundGrid[gridx, gridy].sndrequests[i];
+            for j:=gSoundLibrary[sndlibind].groupscount-1 downto 0 do
+            begin
+               if (gSoundLibrary[sndlibind].groups[j].maxcount>0) and (c>=gSoundLibrary[sndlibind].groups[j].mincount) and (c<=gSoundLibrary[sndlibind].groups[j].maxcount) then
+               begin
+                  bgroup := True;
+                  sndlibind := gSoundLibrary[sndlibind].groups[j].sndind;
+                  break;
+               end;
+            end;
+            
+            var sndtag : Integer = _sound_EmitterPlaySound(emitterHnd, gc_sndlib_ind_units, sndlibind, False);
+            gSoundGrid[gridx, gridy].sndrequests[i] := 0;
+            
+            // log
+            gint_dbg_logsoundcount := gint_dbg_logsoundcount+1;
+            if False then
+            begin
+               var sndHnd : Integer = SndGetOrCreateSound(sndtag, 'units', emitterHnd);
+               var sndName : String = GetSndSoundSourceName(sndHnd);
+               if sndName<>'' then
+               begin
+                  if (bgroup) then
+                  TimeLog('posx='+FloatToStr(round(posx))+' posz='+FloatToStr(round(posz))+' sndlibind='+IntToStr(sndlibind)+' count='+IntToStr(c)+' sndname='+sndName+' [group]')
+                  else
+                  TimeLog('posx='+FloatToStr(round(posx))+' posz='+FloatToStr(round(posz))+' sndlibind='+IntToStr(sndlibind)+' count='+IntToStr(c)+' sndname='+sndName);
+               end;
+            end;
+         end;
+      end;
+      gSoundGrid[gridx, gridy].bsndrequestexist := False;
+   end;
+   //_misc_ProfilerEnd('SoundControl');
+   
+   gProgress.soundprogresstick := gProgress.soundprogresstick + 1;
+   gProgress.soundlastprogresstime := GetGameTime;
+end;
+
+// _gui_DoProgressSound
+//
+procedure _gui_DoProgressSound();
+begin
+   if (gSoundManager.bprocess) then
+   _gui_DoProgressSoundControlCounters;
+   const cSoundFreq = 0.067+0.02; // 0.05
+   
+   // used even if sound muted
+   if (Abs(GetCurrentTime-gSoundManager.lastprogresstime)>cSoundFreq) then
+   begin
+      gSoundManager.lastprogresstime := GetCurrentTime; // real life time
+      gSoundManager.CalcFrustum;
+      if (gSoundManager.bprocess) then
+      begin
+         _gui_DoProgressSoundControl;
+         
+         const cMill = 'amb_windmill';
+         const cTown = 'amb_towneur';
+         const cSea = 'amb_sea';
+         
+         var ambmill, sndmill, ambtown, sndtown, ambsea, sndsea : Integer;
+         ambmill := GetSndAmbientThreadHandleByName(cMill);
+         if (ambmill<>0) then
+         sndmill := GetSndAmbientThreadSoundHandleByIndex(0, ambmill);
+         
+         ambtown := GetSndAmbientThreadHandleByName(cTown);
+         if (ambmill<>0) then
+         sndtown := GetSndAmbientThreadSoundHandleByIndex(0, ambtown);
+         
+         ambsea := GetSndAmbientThreadHandleByName(cSea);
+         if (ambsea<>0) then
+         sndsea := GetSndAmbientThreadSoundHandleByIndex(0, ambsea);
+         
+         var rx, ry, rz : Float;
+         var px, py, pz : Float;
+         ScreenToWorldRayCast(GetViewerWidth div 2, GetViewerHeight div 2, rx, ry, rz);
+         GetCameraTargetPosition(px, py, pz);
+         var dst : Float = VectorDistance(px, py, pz, rx, ry, rz);
+         var dirx : Float = rx-px;
+         var diry : Float = ry-py;
+         var dirz : Float = rz-pz;
+         VectorNormalize(dirx, diry, dirz);
+         // listner pos
+         var lx : Float = rx-dst*dirx*0.1;
+         var ly : Float = ry-dst*diry*0.3;
+         var lz : Float = rz-dst*dirz*0.1;
+         var i, j : Integer;
+         
+         const cBaseVolumeMill = 0.3;
+         const cBaseVolumeTown = 1.0;
+         const maxdstmill = 60;
+         const mindstmill = 20;
+         const maxdsttown = 60;
+         const mindsttown = 20;
+         
+         var vol, maxvolmill, maxvoltown, maxvolsea : Float;
+         for i:=0 to gc_MaxPlayerCount-1 do
+         for j:=gPlayer[i].lists.storehouses.GetCount-1 downto 0 do
+         begin
+            var hnd : Integer = gPlayer[i].lists.storehouses.Get(j);
+            var pobj : Pointer = _unit_GetTObj(hnd);
+            if (pobj<>nil) and (TObj(pobj).bbuilt) then
+            begin
+               var dst : Float = VectorDistance(GetGameObjectPositionXByHandle(hnd), GetGameObjectPositionYByHandle(hnd), GetGameObjectPositionZByHandle(hnd), lx, ly, lz);
+               //if (dst>maxdst) then vol := 0
+               //else if (dst<mindst) then vol := 1 else
+               var usage : Integer = gObjProp[TObj(pobj).cid][TObj(pobj).id].usage;
+               if (usage=gc_obj_usage_mill) then
+               begin
+                  vol := 1-((dst-mindstmill)/(maxdstmill-mindstmill));
+                  vol := Clamp(vol, 0, 1);
+                  maxvolmill := MaxFloat(vol, maxvolmill);
+               end
+               else
+               if (usage=gc_obj_usage_center) then
+               begin
+                  vol := 1-((dst-mindsttown)/(maxdsttown-mindsttown));
+                  vol := Clamp(vol, 0, 1);
+                  maxvoltown := MaxFloat(vol, maxvoltown);
+               end;
+            end;
+         end;
+         //_misc_LogFloat(maxvoltown);
+         SetSndAmbientThreadSoundVolume(maxvolmill*cBaseVolumeMill, sndmill);
+         SetSndAmbientThreadSetPlaying(maxvolmill>0, ambmill);
+         SetSndAmbientThreadSoundVolume(maxvoltown*cBaseVolumeTown, sndtown);
+         SetSndAmbientThreadSetPlaying(maxvoltown>0, ambtown);
+         // sea
+         const cBaseVolumeSea = 0.5;
+         const maxdstsea = 60;
+         const mindstsea = 20;
+         const cSeaBorder = 40;
+         const cOptimizer = 4;
+         var seafactor : Float;
+         var theight : Float;
+         for [MAIN]j:=(round(gSoundManager.frustumlty-cSeaBorder) div cOptimizer) to (round(gSoundManager.frustumrby+cSeaBorder) div cOptimizer) do
+         for i:=(round(gSoundManager.frustumltx-cSeaBorder) div cOptimizer) to (round(gSoundManager.frustumrtx+cSeaBorder) div cOptimizer) do
+         begin
+            var testX : Float = i*cOptimizer;
+            var testZ : Float = j*cOptimizer;
+            if (RayCastWater(testX, testZ, theight)) then
+            begin
+               if (testX>gSoundManager.frustumltx) and (testX<gSoundManager.frustumrtx) and (testZ>gSoundManager.frustumlty) and (testZ<gSoundManager.frustumrby) then
+               seafactor := seafactor+1;
+               var dst : Float = VectorDistance(testX, theight, testZ, lx, ly, lz);
+               vol := 1-((dst-mindstsea)/(maxdstsea-mindstsea));
+               vol := Clamp(vol, 0, 1);
+               maxvolsea := MaxFloat(vol, maxvolsea);
+            end;
+         end;
+         seafactor := Clamp(seafactor/200, 0, 1);
+         var curvolsea : Float = GetSndAmbientThreadSoundVolume(sndsea);
+         var delta : Float = maxvolsea*cBaseVolumeSea*seafactor-curvolsea;
+         const cDeltaSpeed = 0.075;
+         delta := Clamp(delta, -cDeltaSpeed*2, cDeltaSpeed);
+         var newvol : Float = curvolsea+delta*cBaseVolumeSea;
+         SetSndAmbientThreadSoundVolume(newvol, sndsea);
+         SetSndAmbientThreadSetPlaying(newvol>0.01, ambsea);
+         //SetSndAmbientThreadSoundVolume(maxvolsea*cBaseVolumeSea, sndsea);
+         //SetSndAmbientThreadSoundVolume(maxvolsea*cBaseVolumeSea, sndsea);
+      end;
+   end;
+end;
+
+// _gui_ForceShowUnitControl
+//
+procedure _gui_ForceShowUnitControl(bResetTimer : Boolean);
+begin
+   if (bResetTimer) then
+   gint_gui_update_unitcontrol_progresstick := 0;
+   
+   gbool_gui_update_unitcontrol := True;
+   GUIExecuteState('ShowUnitControl');
+
+   //if (bResetTimer) then
+   //gint_gui_update_unitcontrol_progresstick := 0;
+
+   gbool_gui_updateprogress_unitcontrol := True;
+   gbool_gui_update_unitcontrol := False;
+   GUIExecuteState('ShowUnitControl');
+end;
+
+// _gui_UpdateHighlights
+//
+procedure _gui_UpdateHighlights(bResetTimer : Boolean);
+begin
+   if (bResetTimer) then
+   gint_gui_update_highlights_progresstick := 0;
+   
+   if (gint_gui_progresstick=gint_gui_update_highlights_progresstick) then
+   exit
+   else
+   gint_gui_update_highlights_progresstick := gint_gui_progresstick;
+
+   const cHighlightSelected = 'selection.friend';
+   const cHighlightSelectedBuilding = 'selection.building';
+   const cHighlightSelectedShip = 'selection.ship';
+   const cHighlightFriend = 'highlight.friend';
+   const cHighlightAlly = 'highlight.ally';
+   const cHighlightEnemy = 'highlight.enemy';
+
+   var myPlHnd : Integer = GetPlayerHandleInterfaceIO;
+   var myPlInd : Integer = GetPlayerIndexByHandle(myPlHnd);
+   if (myPlHnd<>0) then
+   begin
+      var count : Integer = gGuiUpdateHighlights.GetCount;
+      if (count>0) then
+      begin
+         var i : Integer;
+         for i:=count-1 downto 0 do
+         begin
+            var goHnd : Integer = gGuiUpdateHighlights.Get(i);
+            case _misc_GetBaseObjID(goHnd) of
+               gc_baseid_obj : begin
+                  var pobj : Pointer = _unit_GetTObj(goHnd);
+                  if (pobj<>nil) and (not TObj(pobj).bdead) then
+                  begin
+                     var bPicked, visible : Boolean;
+                     var plHnd : Integer = GetGameObjectPlayerHandleByHandle(goHnd);
+                     if (myPlHnd=plHnd) and GetGameObjectPickedByHandle(goHnd) then
+                     bPicked := True;
+                     if (_unit_GetTagStateByType(goHnd, gc_statetag_essential)<>gc_statetag_essential_birth) then
+                     visible := True;
+
+                     var mat : String = cHighlightFriend;
+                     if (bPicked) then
+                     begin
+                        if (gObjProp[TObj(pObj).cid][TObj(pObj).id].bbuilding) and not (gObjProp[TObj(pobj).cid][TObj(pobj).id].bwall) then
+                        begin
+                           visible := True;
+                           var w : Integer = GetGameObjectCollisionMaskWidthByHandle(goHnd);
+                           var h : Integer = GetGameObjectCollisionMaskHeightByHandle(goHnd);
+                           var cmaxh, cmaxw : Integer;
+                           var cminh, cminw : Integer = gc_MaxInt;
+                           var x, y : Integer;
+                           for x := 0 to h-1 do
+                           for y := 0 to w-1 do
+                           if GetGameObjectCollisionMaskValueByHandle(goHnd, x, y) then
+                           begin
+                              cminw := Min(cminw, x);
+                              cminh := Min(cminh, y);
+                              cmaxw := Max(cmaxw, x);
+                              cmaxh := Max(cmaxh, y);
+                           end;
+                           var cw : Integer = cmaxw-cminw+1;
+                           var ch : Integer = cmaxh-cminh+1;
+                           var mid : Integer = ((cw+ch) div 2);
+                           var size : Integer;
+                           if (mid>2) then
+                           begin
+                              if (mid<5) then
+                              size := 0
+                              else
+                              if (mid<8) then
+                              size := 1
+                              else
+                              if (mid<12) then
+                              size := 2
+                              else
+                              size := 3;
+                              mat := cHighlightSelectedBuilding+'.'+IntToStr(size);
+                           end
+                           else
+                           visible := False;
+                        end
+                        else
+                        {if (gObjProp[TObj(pObj).cid][TObj(pObj).id].media=gc_obj_media_water) then
+                        begin
+                           var size : Integer = 0;
+                           mat := cHighlightSelectedShip+'.'+IntToStr(size);
+                        end
+                        else}
+                        mat := cHighlightSelected
+                     end
+                     else
+                     if (TObj(pObj).cid=gc_country_ind_mis) then
+                     visible := False
+                     else
+                     if (myPlHnd=plHnd) then
+                     mat := cHighlightFriend
+                     else
+                     begin
+                        if ((gPlayer[TObj(pobj).pl].myplmask and gPlayer[myPlInd].enemyplmask)<>0) then
+                        mat := cHighlightEnemy
+                        else
+                        mat := cHighlightAlly;
+                     end;
+                     if (gProfile.bDbgNoBrushes) then
+                     visible := False;
+                     //if (not bPicked) and (gObjProp[TObj(pobj).cid][TObj(pobj).id].bbuilding) then //bwall
+                     if (gObjProp[TObj(pobj).cid][TObj(pobj).id].bwall) then //bwall
+                     visible := False;
+                     EffectHighlightGetOrCreate(goHnd, 'h', visible, mat);
+
+                     _misc_UnitUpdateMiniMapPrimitive(goHnd, bPicked);
+                  end;
+               end;
+               gc_baseid_res : begin
+                  if (not gbool_gui_screenshotcamera) then
+                  begin
+                     var bGeology : Boolean = (gPlayer[myPlInd].bgeology);
+                     var bNotInFOW : Boolean = (not GetFOWEnable) or (GetFOWLOSData(GetGameObjectPositionXByHandle(goHnd), GetGameObjectPositionZByHandle(goHnd))>0);
+                     var bVisible : Boolean = bGeology or (bNotInFOW);
+                     var top : Integer = _gui_GetTop;
+                     var hudCollection : Integer = GetGUIElementIndexByNameParent('envhud', top);
+                     if (hudCollection<>0) then
+                     begin
+                        var hudHnd, elmHnd : Integer;
+                        var userBlend, newUserBlend : Float;
+                        var bElmIsVisible : Boolean;
+                        if (bVisible) and (not bNotInFOW) then
+                        newUserBlend := 0.5
+                        else
+                        newUserBlend := 1;
+                        hudHnd := GetGUIGroupHUDCollectionItemByGameObject(hudCollection, goHnd);
+                        if (hudHnd<>0) then
+                        elmHnd := GetGUIElementIndexByNameParent('hud_img', hudHnd);
+                        if (elmHnd<>0) then
+                        begin
+                           bElmIsVisible := GetGUIElementVisible(elmHnd);
+                           userBlend := GetGUIElementUserBlend(elmHnd);
+                        end;
+                        if (bVisible) then
+                        begin
+                           if (elmHnd=0) then
+                           begin
+                              IntRegister0 := goHnd;
+                              GUIExecuteState('ShowHUD');
+                              hudHnd := GetGUIGroupHUDCollectionItemByGameObject(hudCollection, goHnd);
+                              elmHnd := GetGUIElementIndexByNameParent('hud_img', hudHnd);
+                           end;
+                        end;
+
+                        if (hudHnd<>0) then
+                        begin
+                           var elmHnd : Integer = GetGUIElementIndexByNameParent('hud_img', hudHnd);
+                           if (elmHnd<>0) then
+                           begin
+                              if (bVisible) and (userBlend<>newUserBlend) then
+                              SetGUIElementUserBlend(elmHnd, newUserBlend);
+                              if (bVisible) and (not bElmIsVisible) and (not GetGUIElementFadeStarted(elmHnd)) or (not GetGUIElementVisible(elmHnd)) then
+                              begin
+                                 SetGUIElementVisible(elmHnd, bVisible);
+                                 _gui_FadeElement(elmHnd, 0.75, True)
+                              end
+                              else
+                              if (not bVisible) and (bElmIsVisible) and (not GetGUIElementFadeStarted(elmHnd)) then
+                              _gui_FadeElement(elmHnd, 0.5, False);
+                           end;
+                        end;
+                     end;
+                  end;
+               end;
+            end;
+
+            if (GameManagerIsBrushMode) and (GetStretchBrushUseGrid) then
+            for i := gPlayer[myPlInd].squads.GetCount-1 downto 0 do
+            begin
+               var pSquad : Pointer = gPlayer[myPlInd].squads.Get(i);
+               if (pSquad<>nil) then
+               begin
+                  var grHnd : Integer = GetPlayerGrHandleByHandle(myPlHnd, TSquad(pSquad).fGroupName);
+
+                  if TSquad(pSquad).fSelected and (grHnd <> 0) then
+                  begin
+                     var goGrid : array [0..gc_formation_maskmaxheight] of array [0..gc_formation_maskmaxwidth] of Integer;
+                     var i, j : Integer;
+                     for i := 0 to gc_formation_maskmaxheight-1 do
+                     for j := 0 to gc_formation_maskmaxwidth-1 do
+                     goGrid[i, j] := TSquad(pSquad).arGrid[i, j];
+
+                     var x : Float = GetPlayerStretchBrushGroupTargetPositionX(grHnd);
+                     var y : Float = GetPlayerStretchBrushGroupTargetPositionY(grHnd);
+                     var angle : Float = GetPlayerStretchBrushGroupTargetAngle(grHnd);
+                     var dirX : Float;
+                     var dirY : Float;
+                     var dirZ : Float = -1;
+                     VectorRotateY(dirX, dirY, dirZ, angle);
+
+                     _squad_RebuildGrid(pSquad, x, y, dirX, dirZ);
+                     _group_Initialize(grHnd, pSquad);
+
+                     for i := 0 to gc_formation_maskmaxheight-1 do
+                     for j := 0 to gc_formation_maskmaxwidth-1 do
+                     TSquad(pSquad).arGrid[i, j] := goGrid[i, j];
+                  end;
+               end
+               else
+               ErrorLog('GUI : DoProgress : pSquad=nil')
+            end;
+         end;
+         gGuiUpdateHighlights.Clear;
+      end;
+   end;
+end;

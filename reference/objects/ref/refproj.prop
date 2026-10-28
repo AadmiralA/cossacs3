@@ -1,0 +1,53 @@
+{refurl=.\data\objects\ref\refmisc.prop}
+
+stringproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=stringproperty}
+   CategorieName = pfx
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=collisionmeshproperty}
+   Static = False
+   Detection = False
+   CollidedStateName = OnCollide
+   CollidedExecRQFr = cerqNone
+   CollidedExecRQFOVFr = 90
+   CollidedExecMMNoneFr = True
+   CollidedExecRQEn = cerqFull
+   CollidedExecRQFOVEn = 90
+   CollidedExecMMNoneEn = True
+   CollidedExecRQNl = cerqNone
+   CollidedExecRQFOVNl = 90
+   CollidedExecMMNoneNl = True
+   UnCollidedExecRQFr = cerqNone
+   UnCollidedExecRQFOVFr = 90
+   //UnCollidedExecRQTestAllFrontFr = True
+   UnCollidedExecMMNoneFr = True
+   UnCollidedExecRQEn = cerqFull
+   UnCollidedExecRQFOVEn = 90
+   UnCollidedExecMMNoneEn = True
+   UnCollidedExecRQNl = cerqNone
+   UnCollidedExecRQFOVNl = 90
+   UnCollidedExecMMNoneNl = True
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=statemachineproperty}
+   Enabled = True
+   Active = True
+   StateMachine.LoadFromFile = .\data\scripts\misc\projectile.aix
+   DefaultInitStateName = Initial
+   AfterLoadStateName = OnAfterLoad
+   BeforeSaveStateName = 
+   TagStatesChangedStateName = OnTagStates
+   StateMachineInterval = 250
+section.end
+
+pfxproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=pfxproperty}
+   Enabled = True
+   Static = True
+   ClassName = PFXProperty
+   BehavioursStored = True
+   EffectsStored = True
+section.end
+
+offsetproperty : section.begin {refurl=.\data\objects\ref\refmisc.prop; refkey=offsetproperty}
+   AutoOffset = False
+section.end

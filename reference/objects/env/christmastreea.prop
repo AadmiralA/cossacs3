@@ -1,0 +1,34 @@
+{refurl=.\data\objects\ref\refenv.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=mainproperty}
+   CustomName = christmastreea
+   BaseName = christmastreea
+section.end
+
+collisionmeshproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=collisionmeshproperty}
+   Enabled = False
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=actorproperty}
+   LODActorName = christmastreea
+   DefaultMeshName = christmastreea.mesh
+   RandomMeshName = False
+   UseableMeshes : struct.begin
+      [0] = True
+   struct.end
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=materialproperty}
+   Mesh[0].DefaultMaterialName = christmastreea
+   Mesh[0].UseableMaterials[0] = christmastreea
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=statemachineproperty}
+   ClassName = StateMachineProperty
+   Enabled = False
+   DefaultInitStateName = 
+section.end
+
+stringproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=stringproperty}
+   CategorieName = decor
+section.end

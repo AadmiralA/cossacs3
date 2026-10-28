@@ -1,0 +1,94 @@
+{refurl=.\data\objects\ref\refenv.prop}
+
+mainproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=mainproperty}
+   CustomName = decortree1.3
+   BaseName = decortree1.3
+section.end
+
+actorproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=actorproperty}
+   LODActorName = decortree1
+   DefaultMeshName = decortree13.mesh
+   RandomMeshName = False
+   UseableMeshes : struct.begin
+      [0] = True
+      [1] = True
+      [2] = True
+   struct.end
+section.end
+
+materialproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=materialproperty}
+   Mesh : struct.begin      
+      [0] : struct.begin
+         Enabled = False
+         Static = False
+         ClassName = MeshMaterialProperty
+         DefaultMaterialName = decortree1
+         RandomMaterialName = True
+         UseableMaterials : struct.begin
+            [0] = decortree1
+         struct.end
+         UseSeasonMaterial = True
+         UseableSummerMaterials : struct.begin
+            [0] = decortree1
+         struct.end
+         UseableWinterMaterials : struct.begin
+            [0] = decortree1w
+         struct.end
+      struct.end
+      [1] : struct.begin {refkey=materialproperty.Mesh[0]}
+         DefaultMaterialName = decortree1
+         RandomMaterialName = True
+         UseableMaterials[0] = decortree1
+         UseableMaterials : struct.begin
+            [0] = decortree1
+         struct.end
+         UseSeasonMaterial = True
+         UseableSummerMaterials : struct.begin
+            [0] = decortree1
+         struct.end
+         UseableWinterMaterials : struct.begin
+            [0] = decortree1w
+         struct.end
+      struct.end
+      [2] : struct.begin {refkey=materialproperty.Mesh[0]}
+         DefaultMaterialName = decortree1
+         RandomMaterialName = True
+         UseableMaterials[0] = decortree1
+         UseableMaterials : struct.begin
+            [0] = decortree1
+         struct.end
+         UseSeasonMaterial = True
+         UseableSummerMaterials : struct.begin
+            [0] = decortree1
+         struct.end
+         UseableWinterMaterials : struct.begin
+            [0] = decortree1w
+         struct.end
+      struct.end
+   struct.end
+section.end
+
+statemachineproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=statemachineproperty}
+   ClassName = StateMachineProperty
+   DefaultInitStateName = InitialDecor
+section.end
+
+stringproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=stringproperty}
+   CategorieName = decor
+section.end
+
+scaleproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=scaleproperty}
+   DefaultScale : struct.begin
+      X = 0.25
+      Y = 0.25
+      Z = 0.25
+   struct.end
+   RandomScale = True
+   MinScaleFactor = 0.85
+   MaxScaleFactor = 1.15
+section.end
+
+directionupproperty : section.begin {refurl=.\data\objects\ref\refenv.prop; refkey=directionupproperty}
+   RandomRollAngle = True
+   DeltaRollAngle = 1
+section.end
