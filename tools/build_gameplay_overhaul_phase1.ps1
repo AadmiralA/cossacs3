@@ -49,7 +49,11 @@ $g = ReplaceOnce $g '      navalLastRamTime = Float' ('      navalLastRamTime = 
 $u = LoadText (Join-Path $root 'reference\scripts\lib\unit.script')
 $nlU = GetNL $u
 $uPost = @'
-      // Gameplay Overhaul phase1. Combat movement/cost modifiers deliberately not here.
+      // Gameplay Overhaul: no passive gold upkeep for soldiers/ships/cannons.
+      // Gold purchase prices and upgrade costs remain unchanged.
+      if (not objprop.bbuilding) then
+      objprop.consume[gc_resource_type_gold] := 0;
+      // Gameplay Overhaul phase1: selected combat, movement and durability modifiers.
       if objprop.usage=gc_obj_usage_tower then
       objbase.maxhp := objbase.maxhp*3;
       if objprop.usage=gc_obj_usage_hardwall then
@@ -132,6 +136,12 @@ $c = LoadText (Join-Path $root 'reference\scripts\lib\country.script')
 $nlC = GetNL $c
 $c = ReplaceOnce $c "      _country_AddMember(country, 'mortar', ind, True, gc_country_editorplace_category_artillery, 30, gc_ai_unit_mortar);" '      // Gameplay Overhaul: no standalone mortar unit.' 'mortar country member'
 $c = ReplaceOnce $c "      _country_AddFixedProduceWithAccessControl(country, fixedproduceind, member, 'mortar', 3, 0, ind, csid+'bla'{, csid+'sta'}, '', '');" '      // Gameplay Overhaul: no mortar production.' 'mortar artillery depot'
+# Rebalance the SECOND stone-cart research: +200 percentage points -> +100.
+# The first +100 research stays unchanged; stone sources remain infinite.
+$stoneUpgradeOld = "_country_AddUpgrade(country, upgplace+'.24', 1, gc_upg_tooltiptype_none, gc_upg_type_effectstoneperc, 200,"
+$stoneUpgradeNew = "_country_AddUpgrade(country, upgplace+'.24', 1, gc_upg_tooltiptype_none, gc_upg_type_effectstoneperc, 100,"
+$c = ReplaceOnce $c $stoneUpgradeOld $stoneUpgradeNew 'Second stone-cart upgrade +100'
+
 
 # Start cavalry at 50% of a faster 0.045 movement step; artillery remains slowed.
 $init = LoadText $outInitial
