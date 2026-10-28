@@ -105,7 +105,7 @@ $unitBlock = @'
       [*] = ;                                 arg_obj.navalLastRamTime := gametime;
       [*] = ;                                 Log('NavalRamming HIT damage='+IntToStr(navalDamage)+' dist='+FloatToStr(navalDist)+' target='+TObjProp(navalTargetProp).sid);
       [*] = ;                                 _misc_DoDamage(myHnd, navalTarget, navalDamage, 0, gc_obj_weapon_kind_cannonball);
-      [*] = ;                                 _misc_DoDamage(navalTarget, myHnd, 900, 0, gc_obj_weapon_kind_cannonball);
+      [*] = ;                                 _misc_DoDamage(0, myHnd, 900, 0, gc_obj_weapon_kind_cannonball);
       [*] = ;                                 break;
       [*] = ;                              end;
       [*] = ;                           end;
