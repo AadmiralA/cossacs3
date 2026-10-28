@@ -107,7 +107,7 @@ def report(text):
                         if 0.95 <= min(factor_before, factor_after)
                         and max(factor_before, factor_after) <= 1.10 else
                         "charge >1.3x"
-                        if min(factor_before, factor_after) > 1.7 else
+                        if min(factor_before, factor_after) > 1.3 else
                         "transition")
             motion[category].append(distance / dt)
     if by_handle:
