@@ -76,6 +76,52 @@ def report(text):
         parts.append("  Raw 8,000 galley rams with HP changes: "+str(len(ship_events)))
         for example in (charge_events[:1] + ship_events[:1]):
             parts.append("  Example: "+example.strip()[:280])
+    # Real displacement from consecutive per-horse x/z snapshots.
+    # Game time and coordinates are logged by the Full diagnostic build.
+    # This detects whether changing TrackPoint MoveStep changes ground speed.
+    by_handle = collections.defaultdict(list)
+    position_pattern = re.compile(
+        r"OVDIAG CAV_STATE hnd=(\d+).*?\bmoving=(True|False)"
+        r".*?\beffectiveFactor=([0-9.]+).*?\bx=(-?[0-9.]+)"
+        r".*?\bz=(-?[0-9.]+).*?\bt=([0-9.]+)"
+    )
+    for line in lines:
+        match = position_pattern.search(line)
+        if match:
+            hnd, moving, factor, x, z, game_time = match.groups()
+            by_handle[hnd].append((float(game_time), float(x), float(z),
+                                   float(factor), moving == "True"))
+    motion = collections.defaultdict(list)
+    for samples in by_handle.values():
+        for old, new in zip(samples, samples[1:]):
+            dt = new[0] - old[0]
+            if dt < 0.15 or dt > 5 or not (old[4] and new[4]):
+                continue
+            distance = ((new[1]-old[1])**2 + (new[2]-old[2])**2)**0.5
+            factor = (old[3]+new[3])/2
+            category = ("initial <0.75x" if factor < 0.75 else
+                        "normal ~1x" if 0.95 <= factor <= 1.10 else
+                        "charge >1.7x" if factor > 1.7 else
+                        "transition")
+            motion[category].append(distance / dt)
+    if by_handle:
+        parts.append("\nREAL CAVALRY GROUND SPEED (coordinate distance / game-time unit):")
+        parts.append("  Unique sampled cavalry objects: "+str(len(by_handle)))
+        for category in ("initial <0.75x", "normal ~1x",
+                         "charge >1.7x", "transition"):
+            speeds = motion[category]
+            if speeds:
+                mean = sum(speeds)/len(speeds)
+                parts.append(f"  {category}: mean={mean:.4f}, max={max(speeds):.4f}, samples={len(speeds)}")
+            else:
+                parts.append(f"  {category}: NOT MEASURED")
+        if motion["normal ~1x"] and motion["charge >1.7x"]:
+            normal = sum(motion["normal ~1x"])/len(motion["normal ~1x"])
+            boost = sum(motion["charge >1.7x"])/len(motion["charge >1.7x"])
+            if normal > 0:
+                parts.append(f"  Measured charge/normal speed ratio: {boost/normal:.2f}x")
+        parts.append("  Note: turning, collisions and congestion affect displacement; "
+                     "use long straight paths for comparable speeds.")
     parts.append("\nNOT IMPLEMENTED in phase 1 (no logs can validate these):")
     parts.extend("  - "+s for s in OUT_OF_SCOPE)
     parts.append("\nTip: on a small offline test map generate the diagnostic build "
