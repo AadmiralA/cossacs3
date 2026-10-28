@@ -243,9 +243,43 @@ $ai = ReplaceOnce $ai (FormatLines $aiMortar $nlAI) ('      [*] = ;      var cur
 $ai = ReplaceOnce $ai '      [*] = ;      ordercount := Min(num_depo_my_cid*2, cannon_count-curcount-ordered_cannon_count);' '      [*] = ;      ordercount := Min(num_depo_my_cid*2, 10-_ai_GetUnitCountAnyFaction(plind, gc_ai_unit_cannon)-_ai_GetUnitCountAnyFaction(plind, gc_ai_unit_howitzer)-_ai_GetUnitCountAnyFaction(plind, gc_ai_unit_mortar)-_ai_GetUnitCountAnyFaction(plind, gc_ai_unit_mbarrel)-ordered_cannon_count-ordered_howitzer_count);' 'AI combined cannon quota'
 $ai = ReplaceOnce $ai '      [*] = ;      ordercount := Min(2, howitzer_count-curcount-ordered_howitzer_count);' '      [*] = ;      ordercount := Min(2, 10-_ai_GetUnitCountAnyFaction(plind, gc_ai_unit_cannon)-_ai_GetUnitCountAnyFaction(plind, gc_ai_unit_howitzer)-_ai_GetUnitCountAnyFaction(plind, gc_ai_unit_mortar)-_ai_GetUnitCountAnyFaction(plind, gc_ai_unit_mbarrel)-ordered_cannon_count-ordered_howitzer_count);' 'AI combined howitzer quota'
 
+# Enforce a combined ownership limit for AI artillery using native artcount[].
+# This supplements (does not replace) the AI plan's order-count cap above.
+$outPlayer = Join-Path $root 'mod\data\scripts\lib\player.script'
+$player = LoadText (Join-Path $root 'reference\scripts\lib\player.script')
+$nlPlayer = GetNL $player
+$playerMarker = @'
+   else
+   Result := gc_result_checkaccesscontrolreq_notenabled;
+end;
+
+// _player_UpdateFOW
+'@
+$playerAddon = @'
+   else
+   Result := gc_result_checkaccesscontrolreq_notenabled;
+
+   // Gameplay Overhaul: maximum 10 physical artillery pieces owned by a bot.
+   // Normal artillery access checks still apply; humans retain original limits.
+   if (Result=gc_result_checkaccesscontrolreq_ok) and gPlayer[plInd].bAI and bMember then
+   if (sid='cannon') or (sid='howitzer') or (sid='mortar') or (sid='multicannon') or (sid='framegun') then
+   begin
+      var aiArtTotal : Integer = 0;
+      var aiArtI : Integer;
+      for aiArtI:=0 to gc_MaxArtilleryType-1 do
+      aiArtTotal := aiArtTotal+gPlayer[plInd].artcount[aiArtI];
+      if aiArtTotal>=10 then
+      Result := gc_result_checkaccesscontrolreq_artlimit;
+   end;
+end;
+
+// _player_UpdateFOW
+'@
+$player = ReplaceOnce $player (FormatLines $playerMarker $nlPlayer) (FormatLines $playerAddon $nlPlayer) 'AI artillery access gate'
+
 # Commit outputs only after validating all anchors. A failed run can leave v7 outputs
 # from the underlying generator, but it never overwrites original source files.
-foreach ($target in @($outUnit, $outDamage, $outCountry, $outAI)) {
+foreach ($target in @($outUnit, $outDamage, $outCountry, $outAI, $outPlayer)) {
     New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
 }
 [System.IO.File]::WriteAllText($outGlobal, $g, $enc)
@@ -255,8 +289,9 @@ foreach ($target in @($outUnit, $outDamage, $outCountry, $outAI)) {
 [System.IO.File]::WriteAllText($outDamage, $d, $enc)
 [System.IO.File]::WriteAllText($outCountry, $c, $enc)
 [System.IO.File]::WriteAllText($outAI, $ai, $enc)
+[System.IO.File]::WriteAllText($outPlayer, $player, $enc)
 Write-Host 'Gameplay Overhaul phase 1 generated. UNTESTED IN GAME. OFFLINE ONLY.'
-Write-Host 'Copy these SEVEN files, preserving folders:'
+Write-Host 'Copy these EIGHT files, preserving folders:'
 Write-Host $outGlobal
 Write-Host $outInitial
 Write-Host $outTick
@@ -264,4 +299,5 @@ Write-Host $outUnit
 Write-Host $outDamage
 Write-Host $outCountry
 Write-Host $outAI
+Write-Host $outPlayer
 Write-Host 'Check logs for CavalryCharge HIT; test old NavalRamming HIT as regression.'
