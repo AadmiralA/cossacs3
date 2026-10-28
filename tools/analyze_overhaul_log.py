@@ -17,6 +17,7 @@ GROUPS = {
     "Artillery / buildings configuration": ["OVDIAG CONFIG_SPAWN", "OVDIAG GUN_INIT", "OVDIAG MORTAR_MEMBER_DISABLED"],
     "AI artillery": ["OVDIAG AI_ORDER", "OVDIAG AI_ART_LIMIT"],
     "Gold crisis and regiment defection": ["OVDIAG GOLD_SQUAD_REVOLT", "OVDIAG GOLD_CRISIS", "OVDIAG GOLD_RECOVERED"],
+    "Stone-cart economy": ["OVDIAG STONE_CART_CFG"],
 }
 # User explicitly canceled these. Do not put them back into the active backlog.
 CANCELED = [
