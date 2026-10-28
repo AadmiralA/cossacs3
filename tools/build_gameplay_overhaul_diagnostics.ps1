@@ -65,7 +65,9 @@ $actual=@'
                         Log('OVDIAG HP_APPLY attacker='+GetGameObjectBaseNameByHandle(goHnd)+' target='+GetGameObjectBaseNameByHandle(trgHnd)+
                             ' weapon='+IntToStr(weapkind)+' requested='+IntToStr(indamage)+' applied='+IntToStr(damage)+
                             ' hpBefore='+IntToStr(TObj(pobj2).hp)+' hpAfter='+IntToStr(TObj(pobj2).hp-damage)+
-                            ' atkSquad='+IntToStr(TObj(pobj).squad)+' tgtSquad='+IntToStr(TObj(pobj2).squad));
+                            ' atkSquad='+IntToStr(TObj(pobj).squad)+' tgtSquad='+IntToStr(TObj(pobj2).squad)+
+                            ' atkPl='+IntToStr(TObj(pobj).pl)+' tgtPl='+IntToStr(TObj(pobj2).pl)+
+                            ' atkHnd='+IntToStr(goHnd)+' tgtHnd='+IntToStr(trgHnd));
 '@
 $actual=$actual.Replace('__GATE__',$damageGate)
 $damage=ReplaceOnce $damage $damageNeedle ((Lines $actual $nd)+$nd+$damageNeedle) 'Final HP damage trace'
@@ -95,9 +97,10 @@ $spawnProbe=@'
       [*] = ;   (TObjProp(diagObjProp).usage=gc_obj_usage_weakwall) then
       [*] = ;begin
       [*] = ;   var diagObjBase : Pointer = gPlayer[arg_obj.pl].objbase[arg_obj.cid][arg_obj.id];
-      [*] = ;   Log('OVDIAG CONFIG_SPAWN sid='+basename+' player='+IntToStr(arg_obj.pl)+' hp='+IntToStr(TObjBase(diagObjBase).maxhp)+
+      [*] = ;   Log('OVDIAG CONFIG_SPAWN hnd='+IntToStr(myHnd)+' sid='+basename+' player='+IntToStr(arg_obj.pl)+' hp='+IntToStr(TObjBase(diagObjBase).maxhp)+
       [*] = ;       ' weapon0Damage='+IntToStr(TObjBase(diagObjBase).weapon[0].damage)+
       [*] = ;       ' reload0='+FloatToStr(TObjBase(diagObjBase).weapon[0].pause)+
+      [*] = ;       ' reload1='+FloatToStr(TObjBase(diagObjBase).weapon[1].pause)+
       [*] = ;       ' weapon1Enabled='+BoolToStr(TObjProp(diagObjProp).weapon[1].enabled)+
       [*] = ;       ' goldConsume='+IntToStr(TObjProp(diagObjProp).consume[gc_resource_type_gold]));
       [*] = ;end;
@@ -111,7 +114,7 @@ $initGun="      [*] = ;SetGameObjectMyTrackPointMoveStep(0.006);"
 $initGunReplacement=@'
       [*] = ;begin
       [*] = ;   SetGameObjectMyTrackPointMoveStep(0.006);
-      [*] = ;   Log('OVDIAG GUN_INIT sid='+basename+' step=0.006');
+      [*] = ;   Log('OVDIAG GUN_INIT hnd='+IntToStr(myHnd)+' sid='+basename+' step=0.006');
       [*] = ;end;
 '@
 $initial=ReplaceOnce $initial $initGun (Lines $initGunReplacement $ni) 'Artillery movement init'
