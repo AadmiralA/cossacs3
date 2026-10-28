@@ -141,6 +141,11 @@ $c = ReplaceOnce $c "      _country_AddFixedProduceWithAccessControl(country, fi
 $stoneUpgradeOld = "_country_AddUpgrade(country, upgplace+'.24', 1, gc_upg_tooltiptype_none, gc_upg_type_effectstoneperc, 200,"
 $stoneUpgradeNew = "_country_AddUpgrade(country, upgplace+'.24', 1, gc_upg_tooltiptype_none, gc_upg_type_effectstoneperc, 100,"
 $c = ReplaceOnce $c $stoneUpgradeOld $stoneUpgradeNew 'Second stone-cart upgrade +100'
+# One-time-per-country trace; avoids template-level per-unit log spam.
+$stoneLines = @($c -split '\r?\n' | Where-Object { $_.Contains("upgplace+'.24'") -and $_.Contains('gc_upg_type_effectstoneperc, 100,') })
+if ($stoneLines.Count -ne 1) { throw "Expected one second stone upgrade row; got $($stoneLines.Count)" }
+$c = ReplaceOnce $c $stoneLines[0] ($stoneLines[0] + $nlC + "      Log('OVDIAG STONE_CART_CFG upgrade=24 bonus=100');") 'Stone cart upgrade initialization logging'
+
 
 
 # Start cavalry at 50% of a faster 0.045 movement step; artillery remains slowed.
