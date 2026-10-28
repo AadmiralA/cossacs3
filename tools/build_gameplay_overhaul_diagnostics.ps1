@@ -154,7 +154,8 @@ $tick=ReplaceOnce $tick $chargeTrigger ($chargeExtra+$nt+$chargeTrigger) 'Cavalr
 $ai=ReadMod 'scripts\units\global.inc\progresseconomicai.inc'
 $na=Newline $ai
 foreach ($sid in @('cannon','howitzer')) {
-    $anchor="      [*] = ;      if (curcount<" + "$" + "{sid}_count) then"
+    $quotaName = if ($sid -eq 'cannon') { 'cannon_count' } else { 'howitzer_count' }
+    $anchor = '      [*] = ;      if (curcount<' + $quotaName + ') then'
     $call="      [*] = ;      _ai_TryUnit(plind, cid, gc_ai_unit_$sid, ordercount, False);"
     $old=$anchor+$na+$call
     $log="      [*] = ;         if ordercount>0 then Log('OVDIAG AI_ORDER sid=$sid count='+IntToStr(ordercount)+' player='+IntToStr(plind));"
