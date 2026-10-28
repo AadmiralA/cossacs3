@@ -101,7 +101,7 @@ class LogAnalyzerTests(unittest.TestCase):
                 f"effectiveFactor={boost} step={0.045*boost} "
                 f"x={x} z=0 t={t}"
             )
-        result = analyze_overhaul_log.report("\\n".join(lines))
+        result = analyze_overhaul_log.report("\n".join(lines))
         self.assertIn("REAL CAVALRY GROUND SPEED", result)
         self.assertIn("normal ~1x: mean=2.0000", result)
         self.assertIn("charge >1.7x: mean=5.0000", result)
